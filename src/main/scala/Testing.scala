@@ -7,7 +7,7 @@ import org.apache.commons.io.FilenameUtils
 import org.stingray.contester.common.{RunResult, TesterRunResult, InteractiveRunResult, SingleRunResult, JavaRunResult}
 import proto.Blobs.Module
 import proto.Local.{LocalExecutionResult, LocalExecutionParameters}
-import org.stingray.contester.invokers.{RunnerInstance, InvokerInstance}
+import org.stingray.contester.invokers.{Sandbox, RunnerInstance, InvokerInstance}
 
 object Tester extends Logging {
   private def asRunResult(x: (LocalExecutionParameters, LocalExecutionResult), isJava: Boolean) =

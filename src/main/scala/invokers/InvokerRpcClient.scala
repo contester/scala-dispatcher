@@ -5,7 +5,6 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.proto.Local._
 import org.stingray.contester.rpc4.{RemoteError, RpcClient}
 import org.stingray.contester.proto.Blobs.FileBlob
-import org.stingray.contester.InvokerBadException
 
 class RestartException(a: Throwable) extends Throwable(a)
 

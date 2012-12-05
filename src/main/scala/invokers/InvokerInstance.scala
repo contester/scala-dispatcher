@@ -1,6 +1,6 @@
 package org.stingray.contester.invokers
 
-import org.stingray.contester.{Sandbox, ModuleFactory}
+import org.stingray.contester.ModuleFactory
 import grizzled.slf4j.Logging
 import com.twitter.util.Future
 

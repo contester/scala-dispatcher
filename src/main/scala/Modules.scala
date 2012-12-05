@@ -7,7 +7,7 @@ import org.stingray.contester.common._
 import org.stingray.contester.modules.{LinuxHandlers, Win32Handlers}
 import org.stingray.contester.proto.Local.LocalExecutionParameters
 import org.stingray.contester.utils.ExecutionArguments
-import org.stingray.contester.invokers.InvokerId
+import org.stingray.contester.invokers.{Sandbox, InvokerId}
 
 trait ModuleHandler {
   def moduleTypes: Iterable[String]

@@ -3,6 +3,7 @@ package org.stingray.contester
 import com.twitter.util.Future
 import org.stingray.contester.common.ProblemDb
 import org.stingray.contester.polygon.SanitizedProblem
+import org.stingray.contester.invokers.Sandbox
 
 class TestAssetNotFoundException(what: String) extends scala.Throwable(what)
 

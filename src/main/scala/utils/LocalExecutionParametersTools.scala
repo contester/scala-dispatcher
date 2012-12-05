@@ -1,7 +1,7 @@
 package org.stingray.contester.utils
 
 import org.stingray.contester.proto.Local.{LocalEnvironment, LocalExecutionParameters}
-import org.stingray.contester.Sandbox
+import org.stingray.contester.invokers.Sandbox
 
 final class RichLocalExecutionParameters(val repr: LocalExecutionParameters) {
   import collection.JavaConversions._

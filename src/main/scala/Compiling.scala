@@ -3,7 +3,7 @@ package org.stingray.contester
 import com.twitter.util.Future
 import org.stingray.contester.common.CompileResult
 import proto.Blobs.Module
-import org.stingray.contester.invokers.CompilerInstance
+import org.stingray.contester.invokers.{Sandbox, CompilerInstance}
 
 // TODO: clear protobuf mess below
 
