@@ -40,13 +40,16 @@ libraryDependencies ++= Seq(
   "com.twitter" % "finagle-http" % "5.3.23",
   "org.streum" %% "configrity-core" % "0.10.2",
   "com.twitter" % "util-core" % "5.3.14",
+  "org.mongodb" %% "casbah" % "2.4.1",
   "org.clapper" %% "grizzled-slf4j" % "0.6.10",
   "org.clapper" %% "avsl" % "0.4",
   "joda-time" % "joda-time" % "2.1",
   "org.joda" % "joda-convert" % "1.2",
   "org.fusesource.scalate" % "scalate-core" % "1.5.3",
   "commons-io" % "commons-io" % "2.4",
-  "com.codahale" % "jerkson_2.9.1" % "0.5.0"
+  "com.rabbitmq" % "amqp-client" % "2.8.7",
+  "com.codahale" % "jerkson_2.9.1" % "0.5.0",
+  "mysql" % "mysql-connector-java" % "5.1.22"
 )
 
 scalateTemplateDirectory in Compile <<= (baseDirectory) { _ / "src/main/resources/templates" }
