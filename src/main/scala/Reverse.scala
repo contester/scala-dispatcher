@@ -111,7 +111,7 @@ class InvokerInstance(val invoker: InvokerBig, val instanceId: Int) extends Logg
     run.clear.join(comp.clear).map(_ => this)
 }
 
-class InvokerId(val clientId: IdentifyResponse, val rpc: InvokerRpcClient, val data: ContesterData) {
+class InvokerId(val clientId: IdentifyResponse, val rpc: InvokerRpcClient) {
 
   import collection.JavaConversions._
 
@@ -181,7 +181,7 @@ class Invoker(val data: ContesterData) extends Registry with Logging {
   private[this] val channelMap = new mutable.HashMap[Channel, InvokerBig]
 
   private[this] def configure(client: InvokerRpcClient) =
-    client.identify("palevo", data.mHost, "contester").map(new InvokerId(_, client, data)).flatMap { clientId =>
+    client.identify("palevo", data.mHost, "contester").map(new InvokerId(_, client)).flatMap { clientId =>
       ModuleFactoryFactory(clientId).map { moduleFactory =>
         new InvokerBig(clientId, moduleFactory)
       }
