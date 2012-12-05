@@ -15,7 +15,6 @@ trait Registry {
   def unregister(channel: Channel): Unit
 }
 
-
 class ChannelDisconnectedException(reason: scala.Throwable) extends scala.Throwable(reason) {
   def this() =
     this(new Throwable)
