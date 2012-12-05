@@ -5,10 +5,11 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.common.{RunResult, TesterRunResult, TestResult}
 import org.stingray.contester.polygon.SanitizedProblem
 import org.stingray.contester.proto.Blobs.Module
-import org.stingray.contester.{Tester, Compiler, Invoker, SubmitObject}
+import org.stingray.contester.{Tester, Compiler, SubmitObject}
+import org.stingray.contester.invokers.InvokerRegistry
 
 object Solution {
-  def test(invoker: Invoker, submit: SubmitObject, problem: SanitizedProblem, reporter: CombinedResultReporter) =
+  def test(invoker: InvokerRegistry, submit: SubmitObject, problem: SanitizedProblem, reporter: CombinedResultReporter) =
     invoker.wrappedGetClear(submit.sourceModule.getType, submit, "compile")(Compiler(_, submit.sourceModule))
       .flatMap { r =>
         reporter.compileResult(r).flatMap { _ =>
@@ -26,7 +27,7 @@ object Solution {
 
 trait SimpleSolution {
   def reporter: CombinedResultReporter
-  def invoker: Invoker
+  def invoker: InvokerRegistry
   def problem: SanitizedProblem
   def module: Module
   def submit: SubmitObject
@@ -48,7 +49,7 @@ trait SimpleSolution {
     }
 }
 
-class ACMSolution(val invoker: Invoker, val module: Module, val problem: SanitizedProblem, val reporter: CombinedResultReporter, val submit: SubmitObject) extends SimpleSolution with Logging {
+class ACMSolution(val invoker: InvokerRegistry, val module: Module, val problem: SanitizedProblem, val reporter: CombinedResultReporter, val submit: SubmitObject) extends SimpleSolution with Logging {
   def start: Future[Unit] =
     test(1).flatMap(testDone(_, 2))
 
@@ -62,7 +63,7 @@ class ACMSolution(val invoker: Invoker, val module: Module, val problem: Sanitiz
 
 }
 
-class SchoolSolution(val invoker: Invoker, val module: Module, val problem: SanitizedProblem, val reporter: CombinedResultReporter, val submit: SubmitObject) extends SimpleSolution with Logging {
+class SchoolSolution(val invoker: InvokerRegistry, val module: Module, val problem: SanitizedProblem, val reporter: CombinedResultReporter, val submit: SubmitObject) extends SimpleSolution with Logging {
   private def first(result: TestResult): Future[Unit] =
     (if (result.success)
       Future.collect(

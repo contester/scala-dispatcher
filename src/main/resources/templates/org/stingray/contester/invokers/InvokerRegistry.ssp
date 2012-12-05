@@ -1,4 +1,4 @@
-<%@ val invoker: Invoker  %>
+<%@ val invoker: InvokerRegistry  %>
 <% attributes("title") = "Invoker status" %>
 
   <table class="table table-bordered table-striped">

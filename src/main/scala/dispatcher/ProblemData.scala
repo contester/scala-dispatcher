@@ -3,12 +3,12 @@ package org.stingray.contester.dispatcher
 import collection.mutable
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
-import org.stingray.contester.Invoker
 import org.stingray.contester.common.ProblemDb
 import org.stingray.contester.polygon._
 import org.stingray.contester.utils.Utils
+import org.stingray.contester.invokers.InvokerRegistry
 
-class ProblemData(pclient: SpecializedClient, pdb: ProblemDb, invoker: Invoker) extends Logging {
+class ProblemData(pclient: SpecializedClient, pdb: ProblemDb, invoker: InvokerRegistry) extends Logging {
   private val contestByPid = new ContestByPid(pclient, pdb)
   private val problemByPid = new ProblemByPid(pclient, pdb)
   private val manifestByPid = new ProblemManifestByProblem(pdb, invoker)

@@ -8,6 +8,7 @@ import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
 import org.stingray.contester._
 import org.stingray.contester.common.ProblemDb
 import org.stingray.contester.dispatcher._
+import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.polygon.PolygonClient
 import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.streum.configrity.Configuration
@@ -30,7 +31,7 @@ object Main extends App with Logging {
 
   val client = PolygonClient(config.detach("polygon"))
   val pdb = ProblemDb(mHost, client)
-  val invoker = new Invoker(mHost)
+  val invoker = new InvokerRegistry(mHost)
   StatusPageBuilder.data("invoker") = invoker
 
   val problems = new ProblemData(client, pdb, invoker)

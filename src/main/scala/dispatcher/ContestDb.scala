@@ -11,8 +11,9 @@ import org.stingray.contester.common.ProblemDb
 import org.stingray.contester.db.ConnectionPool
 import org.stingray.contester.dispatcher._
 import org.stingray.contester.polygon.SanitizedProblem
+import org.stingray.contester.invokers.InvokerRegistry
 
-class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, pdb: ProblemDb, val invoker: Invoker, val amqconn: Channel, val amqid: String) extends Logging {
+class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, pdb: ProblemDb, val invoker: InvokerRegistry, val amqconn: Channel, val amqid: String) extends Logging {
   val pscanner = new ContestTableScanner(pdata, dbclient)
   val dispatcher = new SubmitDispatcher(this)
   val evaldispatcher = new CustomTestDispatcher(dbclient, invoker)
@@ -47,7 +48,7 @@ case class DbConfig(host: String, db: String, username: String, password: String
     "DbConfig(\"%s\", \"%s\", \"%s\", \"%s\")".format(host, db, username, "hunter2")
 }
 
-class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: Invoker, val amqconn: Channel, val pdb: ProblemDb) extends Logging {
+class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: InvokerRegistry, val amqconn: Channel, val pdb: ProblemDb) extends Logging {
   val dispatchers = new mutable.HashMap[DbConfig, DbDispatcher]()
   val scanners = new mutable.HashMap[DbDispatcher, Future[Unit]]()
 

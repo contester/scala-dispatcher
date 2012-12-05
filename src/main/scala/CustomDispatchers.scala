@@ -4,13 +4,14 @@ import com.twitter.util.Future
 import java.sql.{Timestamp, ResultSet}
 import org.stingray.contester.common.{SubmitWithModule, Blobs}
 import org.stingray.contester.db.{ConnectionPool, SelectDispatcher}
+import org.stingray.contester.invokers.InvokerRegistry
 
 case class CustomTestObject(id: Int, moduleType: String, arrived: Timestamp, source: Array[Byte], input: Array[Byte]) extends SchedulingKey with HasId with SubmitWithModule {
   protected val getTimestamp = arrived
 }
 
 object Custom {
-  def test(invoker: Invoker, submit: CustomTestObject): Future[Option[CustomTestResult]] =
+  def test(invoker: InvokerRegistry, submit: CustomTestObject): Future[Option[CustomTestResult]] =
     invoker.wrappedGetClear(submit.sourceModule.getType, submit, "compile")(Compiler(_, submit.sourceModule))
       .flatMap { r =>
         if (r.success) {
@@ -18,7 +19,7 @@ object Custom {
         } else Future.None
       }
 }
-class CustomTestDispatcher(db: ConnectionPool, invoker: Invoker) extends SelectDispatcher[CustomTestObject](db) {
+class CustomTestDispatcher(db: ConnectionPool, invoker: InvokerRegistry) extends SelectDispatcher[CustomTestObject](db) {
   def rowToSubmit(row: ResultSet) =
     CustomTestObject(
       row.getInt("ID"),

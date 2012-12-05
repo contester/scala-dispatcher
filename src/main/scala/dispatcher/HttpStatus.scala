@@ -31,7 +31,7 @@ object StatusPageBuilder extends Service[HttpRequest, HttpResponse] with Logging
     Future {
       val response = new DefaultHttpResponse(HTTP_1_1, OK)
       val t = path match {
-        case "/Invoker" => "Invoker"
+        case "/Invoker" => "invokers/InvokerRegistry"
         case _ => "Default"
       }
 
