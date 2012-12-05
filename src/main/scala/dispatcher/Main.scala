@@ -30,7 +30,7 @@ object Main extends App with Logging {
 
   val client = PolygonClient(config.detach("polygon"))
   val pdb = ProblemDb(mHost, client)
-  val invoker = new Invoker(new ContesterData(pdb, mHost))
+  val invoker = new Invoker(mHost)
   StatusPageBuilder.data("invoker") = invoker
 
   val problems = new ProblemData(client, pdb, invoker)

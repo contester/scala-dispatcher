@@ -177,15 +177,16 @@ class InvokerBig(val i: InvokerId, val moduleFactory: ModuleFactory) extends Log
 
 
 
-class Invoker(val data: ContesterData) extends Registry with Logging {
+class Invoker(mongoHost: String) extends Registry with Logging {
   private[this] val channelMap = new mutable.HashMap[Channel, InvokerBig]
 
   private[this] def configure(client: InvokerRpcClient) =
-    client.identify("palevo", data.mHost, "contester").map(new InvokerId(_, client)).flatMap { clientId =>
-      ModuleFactoryFactory(clientId).map { moduleFactory =>
-        new InvokerBig(clientId, moduleFactory)
+    client.identify("palevo", mongoHost, "contester")
+      .map(new InvokerId(_, client)).flatMap { clientId =>
+        ModuleFactoryFactory(clientId).map { moduleFactory =>
+          new InvokerBig(clientId, moduleFactory)
+        }
       }
-    }
 
   private[this] def register(invoker: InvokerBig) = {
     synchronized {
@@ -283,5 +284,3 @@ class Invoker(val data: ContesterData) extends Registry with Logging {
       }
     }
 }
-
-class ContesterData(val pdb: ProblemDb, val mHost: String)
