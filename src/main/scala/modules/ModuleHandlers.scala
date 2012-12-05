@@ -7,6 +7,7 @@ import org.stingray.contester._
 import org.stingray.contester.common.Blobs
 import proto.Local.LocalExecutionParameters
 import scala.Some
+import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
 
 class Win32Handlers(i: InvokerId) {
   implicit private def f2l(x: RemoteFile) = x :: Nil
@@ -217,7 +218,7 @@ class FPCSourceHandler(val compiler: String, linux: Boolean) extends SimpleCompi
 class VisualStudioSourceHandler(val compiler: String, vcvars: String) extends SimpleCompileHandler {
   val clflags = "/W4" :: "/F33554432" :: "/EHsc" :: "/O2" :: "/DONLINE_JUDGE" :: Nil
   val bFlags = "/S" :: "/C" :: "\"" + (
-    (CmdlineUtil.quoteArgument(vcvars) :: "&&" :: "cl" :: Nil) ++
+    (CommandLineTools.quoteArgument(vcvars) :: "&&" :: "cl" :: Nil) ++
       clflags ++ ("Solution.cxx" :: Nil)).mkString(" ") + "\"" :: Nil
   val flags: ExecutionArguments = bFlags.mkString
   val sourceName = "Solution.cxx"
@@ -233,7 +234,7 @@ trait Win16Handler extends SimpleCompileHandler {
 
 class BPCSourceHandler(val compiler: String, bpc: String) extends SimpleCompileHandler {
   val bpcflags = "-$M65520,0,655360" :: "Solution.pas" :: Nil
-  val flags: ExecutionArguments = "/S /C \"" + bpc + " " + CmdlineUtil.quoteArguments(bpcflags) + "\""
+  val flags: ExecutionArguments = "/S /C \"" + bpc + " " + CommandLineTools.quoteArguments(bpcflags) + "\""
   val sourceName = "Solution.pas"
   val binary = "Solution.exe"
   override val resultType = Some("com")
@@ -244,7 +245,7 @@ class BCCSourceHandler(val compiler: String, bcc: String, cplusplus: Boolean) ex
   val ext = if (cplusplus) "cpp" else "c"
   val moduleTypes = ext :: Nil
   val bccflags = "-ml" :: "-3" :: "-O2" :: ("Solution." + ext) :: Nil
-  val flags: ExecutionArguments = "/S /C \"" + bcc + " " + CmdlineUtil.quoteArguments(bccflags) + "\""
+  val flags: ExecutionArguments = "/S /C \"" + bcc + " " + CommandLineTools.quoteArguments(bccflags) + "\""
   val sourceName = "Solution." + ext
   val binary = "Solution.exe"
   override val resultType = Some("com")

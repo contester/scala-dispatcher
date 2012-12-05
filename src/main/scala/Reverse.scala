@@ -9,7 +9,7 @@ import org.stingray.contester.common._
 import proto.Blobs.{FileBlob, Blob, Module}
 import proto.Local._
 import rpc4.{Registry, RemoteError, ChannelDisconnectedException, RpcClient}
-import org.stingray.contester.utils.LocalEnvironmentTools
+import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments, LocalEnvironmentTools}
 
 class InvokerBadException(e: Throwable) extends scala.Throwable(e)
 class SandboxClearException(e: Throwable) extends InvokerBadException(e)
@@ -70,7 +70,7 @@ class Sandbox(val instance: InvokerInstance, val restricted: Boolean)  {
 
   def getExecutionParameters(filename: String, arguments: ExecutionArguments): Future[LocalExecutionParameters] =
     Future.value(
-      CmdlineUtil.fillCommandLine(filename, arguments)
+      CommandLineTools.fillCommandLine(filename, arguments)
         .setEnvironment(localEnvironment)
         .setSandboxId(sandboxId.name)
         .setCurrentAndTemp(path.name))

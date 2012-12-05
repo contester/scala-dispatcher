@@ -6,6 +6,7 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.common._
 import org.stingray.contester.modules.{LinuxHandlers, Win32Handlers}
 import org.stingray.contester.proto.Local.LocalExecutionParameters
+import org.stingray.contester.utils.ExecutionArguments
 
 trait ModuleHandler {
   def moduleTypes: Iterable[String]
