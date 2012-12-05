@@ -8,6 +8,7 @@ import proto.Blobs.{FileBlob, Blob, Module}
 import proto.Local._
 import rpc4.RemoteError
 import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments, LocalEnvironmentTools}
+import org.stingray.contester.invokers.InvokerRpcClient
 
 class InvokerBadException(e: Throwable) extends scala.Throwable(e)
 class SandboxClearException(e: Throwable) extends InvokerBadException(e)
