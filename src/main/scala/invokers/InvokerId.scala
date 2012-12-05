@@ -1,0 +1,72 @@
+package org.stingray.contester.invokers
+
+import org.stingray.contester.proto.Local.{LocalExecutionResult, LocalExecutionParameters, FileStat, IdentifyResponse}
+import org.stingray.contester.utils.LocalEnvironmentTools
+import org.stingray.contester.{InvokerInstance, ModuleFactory, RemoteFile, InvokerRemoteFile}
+import com.twitter.util.Future
+import org.stingray.contester.proto.Blobs.{Blob, FileBlob}
+import grizzled.slf4j.Logging
+
+class InvokerId(val clientId: IdentifyResponse, val rpc: InvokerRpcClient) {
+  import collection.JavaConversions._
+
+  val channel = rpc.channel
+  val sandboxes = clientId.getSandboxesList.toIndexedSeq
+  val name = clientId.getInvokerId
+  val localEnvironment = clientId.getEnvironment
+  val cleanedLocalEnvironment = LocalEnvironmentTools.sanitizeLocalEnv(localEnvironment)
+  val localEnvWithPath = LocalEnvironmentTools.sanitizeLocalEnv(localEnvironment, Set("path"))
+  val platform = clientId.getPlatform
+  val pathSeparator = clientId.getPathSeparator
+
+  val disks = clientId.getDisksList.map(file)
+  val programFiles = clientId.getProgramFilesList.map(file)
+
+  override def toString =
+    name
+
+  def file(name: String) =
+    InvokerRemoteFile(this, name)
+
+  def file(st: FileStat) =
+    InvokerRemoteFile(this, st)
+
+  def files(names: Iterable[String]) =
+    names.map(file)
+
+  def execute(params: LocalExecutionParameters) =
+    rpc.execute(params)
+
+  implicit def file2seq(x: RemoteFile) = Seq(x)
+
+  def fileStat(what: Iterable[RemoteFile], expand: Boolean, sandboxId: Option[String]) =
+    rpc.fileStat(what.map(_.name), expand, sandboxId).map(_.map(file))
+
+  def glob(what: Iterable[RemoteFile]): Future[Iterable[RemoteFile]] =
+    fileStat(what, true, None)
+
+  def stat(what: Iterable[RemoteFile]): Future[Iterable[RemoteFile]] =
+    fileStat(what, false, None)
+
+  def get(file: RemoteFile): Future[FileBlob] =
+    rpc.get(file.name)
+
+  def put(file: RemoteFile, blob: Blob) =
+    rpc.put(FileBlob.newBuilder().setName(file.name).setData(blob).build())
+
+  def putGridfs(items: Iterable[(String, RemoteFile)], sandboxId: String): Future[Iterable[String]] =
+    rpc.gridfsPut(items.map(m => m._1 -> m._2.name), sandboxId)
+
+  def getGridfs(items: Iterable[(RemoteFile, String)], sandboxId: String): Future[Iterable[String]] =
+    rpc.gridfsGet(items.map(m => m._1.name -> m._2), sandboxId)
+
+  def executeConnected(first: LocalExecutionParameters, second: LocalExecutionParameters): Future[(LocalExecutionResult, LocalExecutionResult)] =
+    rpc.executeConnected(first, second).map(x => (x.getFirst, x.getSecond))
+}
+
+class InvokerBig(val i: InvokerId, val moduleFactory: ModuleFactory) extends Logging {
+  val caps = moduleFactory.moduleTypes.toSet
+  val instances = (0 to (i.sandboxes.length - 1)).map(new InvokerInstance(this, _))
+  val channel = i.channel
+}
+

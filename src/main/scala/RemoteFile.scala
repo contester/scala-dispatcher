@@ -2,6 +2,7 @@ package org.stingray.contester
 
 import org.apache.commons.io.FilenameUtils
 import proto.Local.FileStat
+import org.stingray.contester.invokers.InvokerId
 
 
 trait RemoteFile {

@@ -8,6 +8,7 @@ import org.stingray.contester.common.Blobs
 import proto.Local.LocalExecutionParameters
 import scala.Some
 import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
+import org.stingray.contester.invokers.InvokerId
 
 class Win32Handlers(i: InvokerId) {
   implicit private def f2l(x: RemoteFile) = x :: Nil
