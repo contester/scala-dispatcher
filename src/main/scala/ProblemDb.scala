@@ -6,7 +6,7 @@ import com.mongodb.casbah.gridfs.Imports._
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import org.stingray.contester.polygon.{Problem, PolygonClient, Contest}
-import org.stingray.contester.rpc4.RpcTools
+import org.stingray.contester.utils.ProtobufTools
 import org.stingray.contester.utils.Utils
 import org.stingray.contester.{ProblemTuple, ProblemURL}
 
@@ -19,7 +19,7 @@ class ProblemDb(val mongoHost: String, val client: PolygonClient) extends Loggin
 
   def get[I <: com.google.protobuf.Message](key: String)(implicit manifest: Manifest[I]) =
     Future {
-      mfs.findOne(key).map(f => RpcTools.createProtobufFromInputStream[I](f.inputStream)).headOption
+      mfs.findOne(key).map(f => ProtobufTools.createProtobufFromInputStream[I](f.inputStream)).headOption
     }
 
   def set(key: String, value: com.google.protobuf.MessageLite) =

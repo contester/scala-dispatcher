@@ -4,37 +4,17 @@ import actors.threadpool.AtomicInteger
 import collection.mutable.HashMap
 import com.google.protobuf.MessageLite
 import com.twitter.util.Promise
-import java.io.InputStream
 import org.jboss.netty.buffer.{ChannelBuffers, ChannelBuffer}
 import org.jboss.netty.channel._
 import org.jboss.netty.handler.codec.frame.FrameDecoder
 import proto.RpcFour
+import org.stingray.contester.utils.ProtobufTools
 
 trait Registry {
   def register(channel: Channel): ChannelHandler
   def unregister(channel: Channel): Unit
 }
 
-object RpcTools {
-  private[this] val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
-  private[this] val ARRAY_OF_INPUT_STREAM = Array[Class[_]](classOf[InputStream])
-
-  def createProtobufFromBytes[I <: com.google.protobuf.Message](bytes: Array[Byte])(implicit manifest: Manifest[I]): I = {
-    manifest.erasure.getDeclaredMethod("parseFrom", ARRAY_OF_BYTE_ARRAY: _*).invoke(null, bytes).asInstanceOf[I]
-  }
-
-  def createProtobufFromInputStream[I <: com.google.protobuf.Message](input: InputStream)(implicit manifest: Manifest[I]): I = {
-    manifest.erasure.getDeclaredMethod("parseFrom", ARRAY_OF_INPUT_STREAM: _*).invoke(null, input).asInstanceOf[I]
-  }
-
-  def createEmptyProtobuf[I <: com.google.protobuf.Message](implicit manifest: Manifest[I]): I = {
-    manifest.erasure.getDeclaredMethod("getDefaultInstance").invoke(null).asInstanceOf[I]
-  }
-
-  def createProtobuf[I <: com.google.protobuf.Message](opt: Option[Array[Byte]])(implicit manifest: Manifest[I]): I =
-    opt.map(createProtobufFromBytes[I](_)).getOrElse(createEmptyProtobuf[I])
-
-}
 
 class ChannelDisconnectedException(reason: scala.Throwable) extends scala.Throwable(reason) {
   def this() =
@@ -189,10 +169,10 @@ class RpcClient(val channel: Channel) extends SimpleChannelUpstreamHandler {
     callUntyped(methodName, payload.map(_.toByteArray)).map(f(_))
 
   def call[I <: com.google.protobuf.Message](methodName: String, payload: MessageLite)(implicit manifest: Manifest[I]) =
-    callTrace(methodName, Some(payload))(v => RpcTools.createProtobuf[I](v))
+    callTrace(methodName, Some(payload))(v => ProtobufTools.createProtobuf[I](v))
 
   def call[I <: com.google.protobuf.Message](methodName: String)(implicit manifest: Manifest[I]) =
-    callTrace(methodName, None)(v => RpcTools.createProtobuf[I](v))
+    callTrace(methodName, None)(v => ProtobufTools.createProtobuf[I](v))
 
   def callNoResult(methodName: String, payload: MessageLite) =
     callTrace(methodName, Some(payload))(_ => ())
