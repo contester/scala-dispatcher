@@ -113,11 +113,11 @@ private class RpcFramerEncoder extends SimpleChannelDownstreamHandler {
 
   override def writeRequested(ctx: ChannelHandlerContext, e: MessageEvent) {
     val rpc = e.getMessage.asInstanceOf[Rpc4Tuple]
-      val cf = Channels.future(e.getChannel)
-      val buffer = ChannelBuffers.wrappedBuffer(
-        (List(withLength(e.getChannel, rpc.header.toByteArray)) ++ rpc.payload.map(withLength(e.getChannel, _))):_*)
-      cf.addListener(new JustReturnListener(e))
-      Channels.write(ctx, cf, buffer)
+    val cf = Channels.future(e.getChannel)
+    val buffer = ChannelBuffers.wrappedBuffer(
+      (List(withLength(e.getChannel, rpc.header.toByteArray)) ++ rpc.payload.map(withLength(e.getChannel, _))):_*)
+    cf.addListener(new JustReturnListener(e))
+    Channels.write(ctx, cf, buffer)
   }
 }
 
