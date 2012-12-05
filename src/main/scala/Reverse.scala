@@ -9,6 +9,7 @@ import org.stingray.contester.common._
 import proto.Blobs.{FileBlob, Blob, Module}
 import proto.Local._
 import rpc4.{Registry, RemoteError, ChannelDisconnectedException, RpcClient}
+import org.stingray.contester.utils.LocalEnvironmentTools
 
 class InvokerBadException(e: Throwable) extends scala.Throwable(e)
 class SandboxClearException(e: Throwable) extends InvokerBadException(e)
@@ -118,8 +119,8 @@ class InvokerId(val clientId: IdentifyResponse, val rpc: InvokerRpcClient, val d
   val sandboxes = clientId.getSandboxesList.toIndexedSeq
   val name = clientId.getInvokerId
   val localEnvironment = clientId.getEnvironment
-  val cleanedLocalEnvironment = EnvUtil.sanitizeLocalEnv(localEnvironment)
-  val localEnvWithPath = EnvUtil.sanitizeLocalEnv(localEnvironment, Set("path"))
+  val cleanedLocalEnvironment = LocalEnvironmentTools.sanitizeLocalEnv(localEnvironment)
+  val localEnvWithPath = LocalEnvironmentTools.sanitizeLocalEnv(localEnvironment, Set("path"))
   val platform = clientId.getPlatform
   val pathSeparator = clientId.getPathSeparator
 
