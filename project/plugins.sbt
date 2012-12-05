@@ -6,6 +6,6 @@ addSbtPlugin("com.github.gseitz" % "sbt-protobuf" % "0.2.2")
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.8.5")
 
-addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.6.0")
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.7.0")
 
 addSbtPlugin("com.mojolly.scalate" % "xsbt-scalate-generator" % "0.2.2")

@@ -12,13 +12,15 @@ seq(PB.protobufSettings: _*)
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
 
-name := "scala-dispatcher"
+name := "dispatcher"
 
 fork in run := true
 
 javaOptions in run += "-XX:+HeapDumpOnOutOfMemoryError"
 
 scalaVersion := "2.9.2"
+
+version := "0.1"
 
 organization := "org.stingray.contester"
 
@@ -33,17 +35,17 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "io.netty" % "netty" % "3.5.9.Final",
-  "com.twitter" % "finagle-core" % "5.3.9",
-  "com.twitter" % "finagle-http" % "5.3.9",
+  "io.netty" % "netty" % "3.5.11.Final",
+  "com.twitter" % "finagle-core" % "5.3.23",
+  "com.twitter" % "finagle-http" % "5.3.23",
   "org.streum" %% "configrity-core" % "0.10.2",
-  "com.twitter" % "util-core" % "5.3.13",
-  "org.clapper" %% "grizzled-slf4j" % "0.6.9",
+  "com.twitter" % "util-core" % "5.3.14",
+  "org.clapper" %% "grizzled-slf4j" % "0.6.10",
   "org.clapper" %% "avsl" % "0.4",
   "joda-time" % "joda-time" % "2.1",
   "org.joda" % "joda-convert" % "1.2",
   "org.fusesource.scalate" % "scalate-core" % "1.5.3",
-  "commons-io" % "commons-io" % "2.3",
+  "commons-io" % "commons-io" % "2.4",
   "com.codahale" % "jerkson_2.9.1" % "0.5.0"
 )
 
