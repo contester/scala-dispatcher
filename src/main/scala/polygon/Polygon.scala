@@ -78,8 +78,8 @@ object PolygonClient extends Logging {
 // 2. url construction
 
 class PolygonClient(authLogin: String, authPassword: String) extends Logging {
-  val postMap = Map("login" -> authLogin, "password" -> authPassword) 
-  
+  val postMap = Map("login" -> authLogin, "password" -> authPassword)
+
   def get(url: URL, extraPostMap: Map[String, String] = Map()) =
     PolygonClient.get(url, postMap ++ extraPostMap)
 
@@ -94,7 +94,7 @@ class PolygonClient(authLogin: String, authPassword: String) extends Logging {
 
   def getContest(url: URL): Future[Contest] =
     getXml(new URL(url, "contest.xml")).map(Contest(_))
-  
+
   def getProblem(url: URL) =
     getXml(new URL(url, "problem.xml")).map(Problem(_, url))
 
