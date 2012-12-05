@@ -4,6 +4,7 @@ import collection.mutable
 import com.twitter.util.Promise
 import java.sql.Timestamp
 import org.stingray.contester.common.SubmitWithModule
+import org.stingray.contester.invokers.InvokerInstance
 
 trait SchedulingKey extends Ordered[SchedulingKey] {
   protected val EARLIEST = new Timestamp(0)

@@ -6,6 +6,7 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.common.{ProblemManifest, ProblemDb}
 import org.stingray.contester.polygon.Problem
 import util.matching.Regex
+import org.stingray.contester.invokers.CompilerInstance
 
 class TesterNotFoundException extends scala.Throwable
 class PdbStoreException(path: String) extends scala.Throwable(path)

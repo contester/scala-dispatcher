@@ -2,13 +2,12 @@ package org.stingray.contester
 
 import ContesterImplicits._
 import com.twitter.util.Future
-import grizzled.slf4j.Logging
 import org.stingray.contester.common._
 import proto.Blobs.{Blob, Module}
 import proto.Local._
 import rpc4.RemoteError
 import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
-import org.stingray.contester.invokers.InvokerBig
+import org.stingray.contester.invokers.InvokerInstance
 
 class InvokerBadException(e: Throwable) extends scala.Throwable(e)
 class SandboxClearException(e: Throwable) extends InvokerBadException(e)
@@ -80,33 +79,5 @@ class Sandbox(val instance: InvokerInstance, val restricted: Boolean)  {
     execute(params).map(params -> _)
 }
 
-trait FactoryInstance {
-  def factory: ModuleFactory
-  def platform: String
-}
-
-trait CompilerInstance extends FactoryInstance {
-  def comp: Sandbox
-}
-
-trait RunnerInstance extends FactoryInstance {
-  def run: Sandbox
-}
-
-class InvokerInstance(val invoker: InvokerBig, val instanceId: Int) extends Logging with CompilerInstance with RunnerInstance {
-  val data = invoker.i.sandboxes(instanceId)
-  val run = new Sandbox(this, true)
-  val comp = new Sandbox(this, false)
-  val caps = invoker.caps
-  val name = invoker.i.name + "." + instanceId
-  val factory = invoker.moduleFactory
-  val platform = invoker.i.platform
-
-  override def toString =
-    name
-
-  def clear: Future[InvokerInstance] =
-    run.clear.join(comp.clear).map(_ => this)
-}
 
 

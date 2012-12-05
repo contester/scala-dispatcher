@@ -4,6 +4,7 @@ import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import org.stingray.contester.common.{Blobs, SingleRunResult}
 import proto.Blobs.{Blob, Module}
+import org.stingray.contester.invokers.RunnerInstance
 
 class CustomTestResult(val run: SingleRunResult, val output: Option[Blob])
 

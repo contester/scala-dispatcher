@@ -2,7 +2,7 @@ package org.stingray.contester.invokers
 
 import org.stingray.contester.proto.Local.{LocalExecutionResult, LocalExecutionParameters, FileStat, IdentifyResponse}
 import org.stingray.contester.utils.LocalEnvironmentTools
-import org.stingray.contester.{InvokerInstance, ModuleFactory, RemoteFile, InvokerRemoteFile}
+import org.stingray.contester.{ModuleFactory, RemoteFile, InvokerRemoteFile}
 import com.twitter.util.Future
 import org.stingray.contester.proto.Blobs.{Blob, FileBlob}
 import grizzled.slf4j.Logging
