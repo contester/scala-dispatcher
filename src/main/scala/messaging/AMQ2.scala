@@ -1,4 +1,4 @@
-package org.stingray.contester.rpc
+package org.stingray.contester.messaging
 
 import com.rabbitmq.client._
 import org.streum.configrity.Configuration

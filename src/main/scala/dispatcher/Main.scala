@@ -9,10 +9,10 @@ import org.stingray.contester._
 import org.stingray.contester.common.ProblemDb
 import org.stingray.contester.dispatcher._
 import org.stingray.contester.invokers.InvokerRegistry
+import org.stingray.contester.messaging.AMQ
 import org.stingray.contester.polygon.PolygonClient
 import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.streum.configrity.Configuration
-import rpc.AMQ
 
 object Main extends App with Logging {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
