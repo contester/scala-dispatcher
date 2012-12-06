@@ -5,8 +5,6 @@ import org.stingray.contester.common.CompileResult
 import proto.Blobs.Module
 import org.stingray.contester.invokers.{Sandbox, CompilerInstance}
 
-// TODO: clear protobuf mess below
-
 object Compiler {
   def justCompile(sandbox: Sandbox, handler: SourceHandler, module: Module) =
     sandbox.put(module, handler.sourceName)
