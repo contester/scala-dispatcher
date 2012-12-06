@@ -2,7 +2,6 @@ package org.stingray.contester.invokers
 
 import org.stingray.contester.proto.Blobs.{Blob, Module}
 import com.twitter.util.Future
-import org.stingray.contester.RemoteFile
 import org.stingray.contester.common.Modules
 import org.stingray.contester.rpc4.RemoteError
 import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}

@@ -1,9 +1,7 @@
-package org.stingray.contester
+package org.stingray.contester.invokers
 
 import org.apache.commons.io.FilenameUtils
-import proto.Local.FileStat
-import org.stingray.contester.invokers.InvokerId
-
+import org.stingray.contester.proto.Local.FileStat
 
 trait RemoteFile {
   def **(s: String): RemoteFile

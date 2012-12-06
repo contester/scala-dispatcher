@@ -6,6 +6,7 @@ import org.stingray.contester.utils._
 import proto.Blobs.Module
 import proto.Local.LocalExecutionParameters
 import scala.Some
+import org.stingray.contester.invokers.{FileListOps, RemoteFile}
 
 object ContesterImplicits {
   implicit def CreateExecutionArgumentsList(x: List[String]): ExecutionArguments = new ExecutionArgumentsList(x)
