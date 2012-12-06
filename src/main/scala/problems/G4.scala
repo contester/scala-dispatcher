@@ -1,4 +1,4 @@
-package org.stingray.contester
+package org.stingray.contester.problems
 
 import com.twitter.util.Future
 import org.stingray.contester.common.ProblemDb

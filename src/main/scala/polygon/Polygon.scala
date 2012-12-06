@@ -11,12 +11,11 @@ import java.net.{URLEncoder, InetSocketAddress, URL}
 import java.util.concurrent.TimeUnit
 import org.jboss.netty.buffer.ChannelBuffers.wrappedBuffer
 import org.jboss.netty.handler.codec.http.{HttpResponseStatus, HttpResponse, HttpRequest}
-import org.stingray.contester._
 import org.stingray.contester.common.{ProblemDb, ProblemManifest}
 import org.streum.configrity.Configuration
 import scala.Some
 import xml.{XML, Elem}
-import org.stingray.contester.problems.{ProblemTuple, ProblemURL}
+import org.stingray.contester.problems.{G4Test, ProblemTuple, ProblemURL}
 
 class PolygonClientHttpException(reason: String) extends Throwable(reason)
 

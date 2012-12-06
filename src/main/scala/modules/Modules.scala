@@ -7,7 +7,7 @@ import org.stingray.contester.proto.Local.LocalExecutionParameters
 import org.stingray.contester.utils.ExecutionArguments
 import org.stingray.contester.invokers.{Sandbox, InvokerId}
 import org.stingray.contester.ContesterImplicits._
-import org.stingray.contester.TestLimits
+import org.stingray.contester.problems.TestLimits
 
 trait ModuleHandler {
   def moduleTypes: Iterable[String]

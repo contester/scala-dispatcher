@@ -9,6 +9,7 @@ import proto.Blobs.Module
 import proto.Local.{LocalExecutionResult, LocalExecutionParameters}
 import org.stingray.contester.invokers.{Sandbox, RunnerInstance, InvokerInstance}
 import org.stingray.contester.modules.BinaryHandler
+import org.stingray.contester.problems.{Test, TestLimits}
 
 object Tester extends Logging {
   private def asRunResult(x: (LocalExecutionParameters, LocalExecutionResult), isJava: Boolean) =

@@ -6,6 +6,7 @@ import org.stingray.contester.common.{Blobs, SingleRunResult}
 import proto.Blobs.{Blob, Module}
 import org.stingray.contester.invokers.{Sandbox, RunnerInstance}
 import org.stingray.contester.modules.BinaryHandler
+import org.stingray.contester.problems.TestLimits
 
 class CustomTestResult(val run: SingleRunResult, val output: Option[Blob])
 

@@ -3,12 +3,12 @@ package org.stingray.contester.modules
 import com.twitter.util.Future
 import java.util.zip.ZipInputStream
 import org.stingray.contester.ContesterImplicits._
-import org.stingray.contester._
 import org.stingray.contester.common.Blobs
 import proto.Local.LocalExecutionParameters
 import scala.Some
 import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
 import org.stingray.contester.invokers.{RemoteFile, Sandbox, InvokerId}
+import org.stingray.contester.problems.TestLimits
 
 class Win32Handlers(i: InvokerId) {
   implicit private def f2l(x: RemoteFile) = x :: Nil
