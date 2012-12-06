@@ -1,4 +1,4 @@
-package org.stingray.contester
+package org.stingray.contester.problems
 
 import java.net.URL
 

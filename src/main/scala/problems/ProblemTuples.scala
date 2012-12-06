@@ -1,4 +1,6 @@
-package org.stingray.contester
+package org.stingray.contester.problems
+
+import org.stingray.contester.SchedulingKey
 
 trait ProblemTuple extends SchedulingKey {
   protected val getTimestamp = EARLIEST

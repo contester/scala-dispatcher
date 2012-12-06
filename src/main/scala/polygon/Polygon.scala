@@ -16,6 +16,7 @@ import org.stingray.contester.common.{ProblemDb, ProblemManifest}
 import org.streum.configrity.Configuration
 import scala.Some
 import xml.{XML, Elem}
+import org.stingray.contester.problems.{ProblemTuple, ProblemURL}
 
 class PolygonClientHttpException(reason: String) extends Throwable(reason)
 

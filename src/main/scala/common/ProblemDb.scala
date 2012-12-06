@@ -8,7 +8,7 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.polygon.{Problem, PolygonClient, Contest}
 import org.stingray.contester.utils.ProtobufTools
 import org.stingray.contester.utils.Utils
-import org.stingray.contester.{ProblemTuple, ProblemURL}
+import org.stingray.contester.problems.{ProblemURL, ProblemTuple}
 
 class ProblemManifest(val testerName: String, val answers: Iterable[Int], val interactorName: Option[String])
 
