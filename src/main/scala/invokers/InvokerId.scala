@@ -2,10 +2,10 @@ package org.stingray.contester.invokers
 
 import org.stingray.contester.proto.Local.{LocalExecutionResult, LocalExecutionParameters, FileStat, IdentifyResponse}
 import org.stingray.contester.utils.LocalEnvironmentTools
-import org.stingray.contester.ModuleFactory
 import com.twitter.util.Future
 import org.stingray.contester.proto.Blobs.{Blob, FileBlob}
 import grizzled.slf4j.Logging
+import org.stingray.contester.modules.ModuleFactory
 
 class InvokerId(val clientId: IdentifyResponse, val rpc: InvokerRpcClient) {
   import collection.JavaConversions._

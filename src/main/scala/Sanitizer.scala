@@ -7,6 +7,7 @@ import org.stingray.contester.common.{ProblemManifest, ProblemDb}
 import org.stingray.contester.polygon.Problem
 import util.matching.Regex
 import org.stingray.contester.invokers.{RemoteFile, Sandbox, CompilerInstance}
+import org.stingray.contester.modules.SevenzipHandler
 
 class TesterNotFoundException extends scala.Throwable
 class PdbStoreException(path: String) extends scala.Throwable(path)

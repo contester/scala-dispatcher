@@ -1,8 +1,8 @@
 package org.stingray.contester.invokers
 
-import org.stingray.contester.ModuleFactory
 import grizzled.slf4j.Logging
 import com.twitter.util.Future
+import org.stingray.contester.modules.ModuleFactory
 
 trait FactoryInstance {
   def factory: ModuleFactory

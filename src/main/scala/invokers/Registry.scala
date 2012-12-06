@@ -7,6 +7,7 @@ import org.jboss.netty.channel.{ChannelHandler, Channel}
 import org.stingray.contester._
 import com.twitter.util.Future
 import scala.Some
+import org.stingray.contester.modules.ModuleFactoryFactory
 
 class InvokerRegistry(mongoHost: String) extends Registry with Logging {
   private[this] val channelMap = new mutable.HashMap[Channel, InvokerBig]

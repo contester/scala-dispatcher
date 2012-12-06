@@ -1,13 +1,13 @@
-package org.stingray.contester
+package org.stingray.contester.modules
 
-import ContesterImplicits._
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import org.stingray.contester.common._
-import org.stingray.contester.modules.{LinuxHandlers, Win32Handlers}
 import org.stingray.contester.proto.Local.LocalExecutionParameters
 import org.stingray.contester.utils.ExecutionArguments
 import org.stingray.contester.invokers.{Sandbox, InvokerId}
+import org.stingray.contester.ContesterImplicits._
+import org.stingray.contester.TestLimits
 
 trait ModuleHandler {
   def moduleTypes: Iterable[String]

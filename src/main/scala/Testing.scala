@@ -8,6 +8,7 @@ import org.stingray.contester.common.{RunResult, TesterRunResult, InteractiveRun
 import proto.Blobs.Module
 import proto.Local.{LocalExecutionResult, LocalExecutionParameters}
 import org.stingray.contester.invokers.{Sandbox, RunnerInstance, InvokerInstance}
+import org.stingray.contester.modules.BinaryHandler
 
 object Tester extends Logging {
   private def asRunResult(x: (LocalExecutionParameters, LocalExecutionResult), isJava: Boolean) =

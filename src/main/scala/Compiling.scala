@@ -4,6 +4,7 @@ import com.twitter.util.Future
 import org.stingray.contester.common.CompileResult
 import proto.Blobs.Module
 import org.stingray.contester.invokers.{Sandbox, CompilerInstance}
+import org.stingray.contester.modules.{BinaryHandler, SourceHandler}
 
 object Compiler {
   def justCompile(sandbox: Sandbox, handler: SourceHandler, module: Module) =

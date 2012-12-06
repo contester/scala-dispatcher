@@ -5,6 +5,7 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.common.{Blobs, SingleRunResult}
 import proto.Blobs.{Blob, Module}
 import org.stingray.contester.invokers.{Sandbox, RunnerInstance}
+import org.stingray.contester.modules.BinaryHandler
 
 class CustomTestResult(val run: SingleRunResult, val output: Option[Blob])
 
