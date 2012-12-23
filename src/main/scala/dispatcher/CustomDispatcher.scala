@@ -2,10 +2,11 @@ package org.stingray.contester.dispatcher
 
 import java.sql.{ResultSet, Timestamp}
 import org.stingray.contester.invokers.{InvokerRegistry, SchedulingKey}
-import org.stingray.contester.{CustomTester, Compiler, CustomTestResult}
+import org.stingray.contester.{CustomTester, CustomTestResult}
 import org.stingray.contester.common.{Blobs, SubmitWithModule}
 import com.twitter.util.Future
 import org.stingray.contester.db.{HasId, SelectDispatcher, ConnectionPool}
+import org.stingray.contester.engine.Compiler
 
 case class CustomTestObject(id: Int, moduleType: String, arrived: Timestamp, source: Array[Byte], input: Array[Byte]) extends SchedulingKey with HasId with SubmitWithModule {
   protected val getTimestamp = arrived

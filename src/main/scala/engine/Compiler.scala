@@ -1,10 +1,10 @@
-package org.stingray.contester
+package org.stingray.contester.engine
 
+import org.stingray.contester.invokers.{CompilerInstance, Sandbox}
+import org.stingray.contester.modules.{BinaryHandler, SourceHandler}
+import org.stingray.contester.proto.Blobs.Module
 import com.twitter.util.Future
 import org.stingray.contester.common.CompileResult
-import proto.Blobs.Module
-import org.stingray.contester.invokers.{Sandbox, CompilerInstance}
-import org.stingray.contester.modules.{BinaryHandler, SourceHandler}
 
 object Compiler {
   def justCompile(sandbox: Sandbox, handler: SourceHandler, module: Module) =
