@@ -1,14 +1,14 @@
-package org.stingray.contester
+package org.stingray.contester.engine
 
-import ContesterImplicits._
-import com.twitter.util.Future
-import grizzled.slf4j.Logging
-import org.stingray.contester.common.{ProblemManifest, ProblemDb}
+import org.stingray.contester.invokers.{CompilerInstance, RemoteFile, Sandbox}
 import org.stingray.contester.polygon.Problem
+import grizzled.slf4j.Logging
 import util.matching.Regex
-import org.stingray.contester.invokers.{RemoteFile, Sandbox, CompilerInstance}
-import org.stingray.contester.modules.SevenzipHandler
+import com.twitter.util.Future
+import org.stingray.contester.common.{ProblemDb, ProblemManifest}
 import org.stingray.contester.problems.ProblemTuple
+import org.stingray.contester.modules.SevenzipHandler
+import org.stingray.contester.ContesterImplicits._
 
 class TesterNotFoundException extends scala.Throwable
 class PdbStoreException(path: String) extends scala.Throwable(path)
@@ -22,7 +22,7 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFile, problem: Problem) ext
       ("doall.*" :: ("Gen" + sandbox.i.pathSeparator + "doall.*") :: Nil).map(base ** _)
     )
       .map { g =>
-        val m = g.isFile.map(v => v.ext.toLowerCase -> v).toMap
+      val m = g.isFile.map(v => v.ext.toLowerCase -> v).toMap
       m.get("cmd").orElse(m.get("bat")).orElse(m.values.headOption)
     }
 
@@ -67,11 +67,11 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFile, problem: Problem) ext
   private[this] def storeProblem =
     findTester.join(findInteractorOption).flatMap {
       case (tester, interactor) =>
-      sandbox.getGridfs((1 to problem.testCount).map(i => (testBase ** "%02d".format(i) -> problem.inputName(i))) ++
-        (1 to problem.testCount).map(i => testBase ** "%02d.a".format(i) -> problem.answerName(i)) ++
-        (tester -> problem.checkerName :: Nil) ++ interactor.map(i => i -> problem.interactorName)).map { lists =>
-        new ProblemManifest(tester.basename, analyzeLists(lists), interactor.map(_.basename))
-      }
+        sandbox.getGridfs((1 to problem.testCount).map(i => (testBase ** "%02d".format(i) -> problem.inputName(i))) ++
+          (1 to problem.testCount).map(i => testBase ** "%02d.a".format(i) -> problem.answerName(i)) ++
+          (tester -> problem.checkerName :: Nil) ++ interactor.map(i => i -> problem.interactorName)).map { lists =>
+          new ProblemManifest(tester.basename, analyzeLists(lists), interactor.map(_.basename))
+        }
     }
 
   def sanitizeAndStore(db: ProblemDb) =
@@ -97,3 +97,4 @@ object Sanitizer extends Logging {
   def apply(instance: CompilerInstance, db: ProblemDb, problem: Problem) =
     sanitize(instance.comp, problem, instance.factory("zip").get.asInstanceOf[SevenzipHandler].p7z, db)
 }
+

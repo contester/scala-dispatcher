@@ -4,9 +4,9 @@ import collection.mutable
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import org.stingray.contester.common.{ProblemManifest, ProblemDb}
-import org.stingray.contester.Sanitizer
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.problems.ProblemURL
+import org.stingray.contester.engine.Sanitizer
 
 class ProblemByPid(client: SpecializedClient, pdb: ProblemDb) extends Logging {
   private val data = new mutable.HashMap[ProblemURL, Future[Problem]]()
