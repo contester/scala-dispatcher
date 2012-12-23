@@ -1,8 +1,7 @@
 package org.stingray.contester.dispatcher
 
 import java.sql.{Timestamp, ResultSet}
-import org.stingray.contester.db.SelectDispatcher
-import org.stingray.contester.{HasId, DbDispatcher}
+import org.stingray.contester.db.{HasId, SelectDispatcher}
 import org.stingray.contester.common.SubmitWithModule
 import org.stingray.contester.invokers.SchedulingKey
 

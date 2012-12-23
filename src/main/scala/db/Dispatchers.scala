@@ -5,9 +5,11 @@ import com.twitter.conversions.time._
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import java.sql.ResultSet
-import org.stingray.contester.HasId
 import org.stingray.contester.utils.Utils
 
+trait HasId {
+  def id: Int
+}
 
 abstract class SelectDispatcher[SubmitType <: HasId](db: ConnectionPool) extends Logging {
   def rowToSubmit(row: ResultSet): SubmitType

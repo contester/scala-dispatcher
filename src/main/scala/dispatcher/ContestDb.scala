@@ -1,4 +1,4 @@
-package org.stingray.contester
+package org.stingray.contester.dispatcher
 
 import collection.mutable
 import com.codahale.jerkson.Json
@@ -9,7 +9,6 @@ import grizzled.slf4j.Logging
 import java.io.File
 import org.stingray.contester.common.ProblemDb
 import org.stingray.contester.db.ConnectionPool
-import org.stingray.contester.dispatcher._
 import org.stingray.contester.polygon.SanitizedProblem
 import org.stingray.contester.invokers.InvokerRegistry
 
