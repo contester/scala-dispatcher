@@ -29,11 +29,13 @@ case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
     "Submit(%d, C:%d, T: %d, P: %s, M: %s, A: %s, F: %s)".format(id, contestId, teamId, problemId, moduleType, arrived, schoolMode)
 }
 
+// todo: refactor both stores into single data structure
+
 class RequestStore {
   val waiting = new mutable.HashMap[String, mutable.Set[(SchedulingKey, Promise[InvokerInstance])]]()
 
   def get(caps: Iterable[String]) =
-    waiting.synchronized {
+    synchronized {
       val candidates = caps.flatMap(waiting.getOrElse(_, Nil)).toSeq
       val candidate = candidates.sortBy(_._1).headOption
       candidate.foreach { x =>
@@ -46,7 +48,7 @@ class RequestStore {
 
   def put(caps: String, key: SchedulingKey) = {
     val p = new Promise[InvokerInstance]()
-    waiting.synchronized {
+    synchronized {
       waiting.getOrElseUpdate(caps, new mutable.HashSet[(SchedulingKey, Promise[InvokerInstance])]()).add((key, p))
     }
     p
@@ -58,19 +60,26 @@ class InvokerStore {
   val badList = mutable.Set[InvokerInstance]()
 
   def get(m: String) =
-    freelist.find(_.caps(m)).map { i =>
-      freelist.remove(i)
-      i
+    synchronized {
+      freelist.find(_.caps(m)).map { i =>
+        freelist.remove(i)
+        i
+      }
     }
 
   def put(i: InvokerInstance) =
-    freelist.add(i)
+    synchronized {
+      freelist.add(i)
+    }
 
   def bad(i: InvokerInstance) =
-    badList.add(i)
+    synchronized {
+      badList.add(i)
+    }
 
-  def remove(i: InvokerInstance) = {
-    freelist.remove(i)
-    badList.remove(i)
-  }
+  def remove(i: InvokerInstance) =
+    synchronized {
+      freelist.remove(i)
+      badList.remove(i)
+    }
 }

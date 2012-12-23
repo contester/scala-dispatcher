@@ -73,7 +73,7 @@ class InvokerRegistry(mongoHost: String) extends Registry with Logging {
   // TODO: Audit exceptions
 
   private[this] def wrappedGet[T](m: String, key: SchedulingKey, extra: AnyRef)(f: InvokerInstance => Future[T]): Future[T] =
-    getInvoker(m, key).flatMap {i =>
+    getInvoker(m, key).flatMap { i =>
       inUse.synchronized(inUse(i) = (key, extra))
       f(i).ensure(inUse.synchronized(inUse.remove(i)))
         .rescue {
@@ -116,4 +116,3 @@ class InvokerRegistry(mongoHost: String) extends Registry with Logging {
       }
     }
 }
-
