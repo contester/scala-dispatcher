@@ -1,15 +1,15 @@
-package org.stingray.contester
+package org.stingray.contester.engine
 
-import ContesterImplicits._
-import com.twitter.util.Future
 import grizzled.slf4j.Logging
-import org.apache.commons.io.FilenameUtils
-import org.stingray.contester.common.{RunResult, TesterRunResult, InteractiveRunResult, SingleRunResult, JavaRunResult}
-import proto.Blobs.Module
-import proto.Local.{LocalExecutionResult, LocalExecutionParameters}
-import org.stingray.contester.invokers.{Sandbox, RunnerInstance, InvokerInstance}
+import org.stingray.contester.proto.Local.{LocalExecutionResult, LocalExecutionParameters}
+import org.stingray.contester.common._
+import org.stingray.contester.invokers.{RunnerInstance, InvokerInstance, Sandbox}
 import org.stingray.contester.modules.BinaryHandler
+import org.stingray.contester.proto.Blobs.Module
 import org.stingray.contester.problems.{Test, TestLimits}
+import org.apache.commons.io.FilenameUtils
+import com.twitter.util.Future
+import org.stingray.contester.ContesterImplicits._
 
 object Tester extends Logging {
   private def asRunResult(x: (LocalExecutionParameters, LocalExecutionResult), isJava: Boolean) =
@@ -48,7 +48,7 @@ object Tester extends Logging {
   def testInteractive(instance: InvokerInstance, module: Module, test: Test): Future[(RunResult, Option[TesterRunResult])] = {
     val moduleHandler = instance.factory.getBinary(module.getType)
     instance.run.put(module, moduleHandler.solutionName).flatMap { _ =>
-    runInteractive(instance, moduleHandler, module.getType, test)}.flatMap { runResult =>
+      runInteractive(instance, moduleHandler, module.getType, test)}.flatMap { runResult =>
       if (runResult.success) {
         test.prepareTesterBinary(instance.comp).flatMap { testerName =>
           executeTester(instance.comp, instance.factory.getBinary(FilenameUtils.getExtension(testerName)), testerName)
@@ -73,14 +73,15 @@ object Tester extends Logging {
       .flatMap { _ => executeSolution(instance.run, moduleHandler, module, test.getLimits(module.getType), test.stdio) }
       .flatMap { solutionResult =>
       if (solutionResult.success) {
-          test.prepareInput(instance.run).flatMap{_ => test.prepareTester(instance.run)}
-            .flatMap(_ => test.prepareTesterBinary(instance.run))
-            .flatMap { testerName =>
-            executeTester(instance.run, instance.factory.getBinary(FilenameUtils.getExtension(testerName)), testerName)
-          }.map { testerResult =>
-            (solutionResult, Some(testerResult))
-          }
+        test.prepareInput(instance.run).flatMap{_ => test.prepareTester(instance.run)}
+          .flatMap(_ => test.prepareTesterBinary(instance.run))
+          .flatMap { testerName =>
+          executeTester(instance.run, instance.factory.getBinary(FilenameUtils.getExtension(testerName)), testerName)
+        }.map { testerResult =>
+          (solutionResult, Some(testerResult))
+        }
       } else Future.value((solutionResult, None))
     }
   }
 }
+

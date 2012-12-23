@@ -5,9 +5,8 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.common.{RunResult, TesterRunResult, TestResult}
 import org.stingray.contester.polygon.SanitizedProblem
 import org.stingray.contester.proto.Blobs.Module
-import org.stingray.contester.Tester
 import org.stingray.contester.invokers.InvokerRegistry
-import org.stingray.contester.engine.Compiler
+import org.stingray.contester.engine.{Tester, Compiler}
 
 object Solution {
   def test(invoker: InvokerRegistry, submit: SubmitObject, problem: SanitizedProblem, reporter: CombinedResultReporter) =
