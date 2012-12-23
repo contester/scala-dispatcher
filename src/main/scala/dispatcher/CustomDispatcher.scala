@@ -1,10 +1,11 @@
-package org.stingray.contester
+package org.stingray.contester.dispatcher
 
+import java.sql.{ResultSet, Timestamp}
+import org.stingray.contester.invokers.{InvokerRegistry, SchedulingKey}
+import org.stingray.contester.{CustomTester, Compiler, CustomTestResult, HasId}
+import org.stingray.contester.common.{Blobs, SubmitWithModule}
 import com.twitter.util.Future
-import java.sql.{Timestamp, ResultSet}
-import org.stingray.contester.common.{SubmitWithModule, Blobs}
-import org.stingray.contester.db.{ConnectionPool, SelectDispatcher}
-import org.stingray.contester.invokers.{SchedulingKey, InvokerRegistry}
+import org.stingray.contester.db.{SelectDispatcher, ConnectionPool}
 
 case class CustomTestObject(id: Int, moduleType: String, arrived: Timestamp, source: Array[Byte], input: Array[Byte]) extends SchedulingKey with HasId with SubmitWithModule {
   protected val getTimestamp = arrived
@@ -14,10 +15,10 @@ object Custom {
   def test(invoker: InvokerRegistry, submit: CustomTestObject): Future[Option[CustomTestResult]] =
     invoker.wrappedGetClear(submit.sourceModule.getType, submit, "compile")(Compiler(_, submit.sourceModule))
       .flatMap { r =>
-        if (r.success) {
-          invoker.wrappedGetClear(r.module.get.getType, submit, "custom")(CustomTester(_, r.module.get, submit.input)).map(Some(_))
-        } else Future.None
-      }
+      if (r.success) {
+        invoker.wrappedGetClear(r.module.get.getType, submit, "custom")(CustomTester(_, r.module.get, submit.input)).map(Some(_))
+      } else Future.None
+    }
 }
 class CustomTestDispatcher(db: ConnectionPool, invoker: InvokerRegistry) extends SelectDispatcher[CustomTestObject](db) {
   def rowToSubmit(row: ResultSet) =
