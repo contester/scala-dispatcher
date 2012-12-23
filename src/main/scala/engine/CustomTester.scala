@@ -1,13 +1,12 @@
-package org.stingray.contester
+package org.stingray.contester.engine
 
-import com.twitter.util.Future
-import grizzled.slf4j.Logging
 import org.stingray.contester.common.{Blobs, SingleRunResult}
-import proto.Blobs.{Blob, Module}
-import org.stingray.contester.invokers.{Sandbox, RunnerInstance}
-import org.stingray.contester.modules.BinaryHandler
+import org.stingray.contester.proto.Blobs.{Module, Blob}
 import org.stingray.contester.problems.TestLimits
-import org.stingray.contester.engine.Tester
+import grizzled.slf4j.Logging
+import org.stingray.contester.invokers.{RunnerInstance, Sandbox}
+import com.twitter.util.Future
+import org.stingray.contester.modules.BinaryHandler
 
 class CustomTestResult(val run: SingleRunResult, val output: Option[Blob])
 
@@ -40,3 +39,4 @@ object CustomTester extends Logging {
       }
     }.get
 }
+
