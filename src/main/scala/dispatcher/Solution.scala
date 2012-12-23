@@ -5,7 +5,7 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.common.{RunResult, TesterRunResult, TestResult}
 import org.stingray.contester.polygon.SanitizedProblem
 import org.stingray.contester.proto.Blobs.Module
-import org.stingray.contester.{Tester, Compiler, SubmitObject}
+import org.stingray.contester.{Tester, Compiler}
 import org.stingray.contester.invokers.InvokerRegistry
 
 object Solution {

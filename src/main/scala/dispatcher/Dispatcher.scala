@@ -1,8 +1,19 @@
 package org.stingray.contester.dispatcher
 
-import java.sql.ResultSet
+import java.sql.{Timestamp, ResultSet}
 import org.stingray.contester.db.SelectDispatcher
-import org.stingray.contester.{DbDispatcher, SubmitObject}
+import org.stingray.contester.{HasId, DbDispatcher}
+import org.stingray.contester.common.SubmitWithModule
+import org.stingray.contester.invokers.SchedulingKey
+
+case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String, moduleType: String,
+                        arrived: Timestamp, source: Array[Byte], schoolMode: Boolean, computer: Long)
+  extends SchedulingKey with HasId with SubmitWithModule {
+  protected val getTimestamp = arrived
+  override def toString =
+    "Submit(%d, C:%d, T: %d, P: %s, M: %s, A: %s, F: %s)".format(id, contestId, teamId, problemId, moduleType, arrived, schoolMode)
+}
+
 
 class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObject](parent.dbclient) {
   // startup: scan all started

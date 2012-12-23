@@ -5,7 +5,6 @@ import java.io.File
 import org.apache.commons.io.FileUtils
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
-import org.stingray.contester.SubmitObject
 import org.stingray.contester.common._
 import org.stingray.contester.db.ConnectionPool
 
