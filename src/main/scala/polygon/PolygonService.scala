@@ -59,7 +59,7 @@ class ContestByPid(client: SpecializedClient, pdb: ProblemDb) extends Logging {
   }
 }
 
-class ProblemManifestByProblem(pdb: ProblemDb, invoker: InvokerRegistry) extends Logging {
+class ProblemManifestByProblem(pdb: PolygonProblemDb, invoker: InvokerRegistry) extends Logging {
   private val data = mutable.HashMap[Problem, Future[ProblemManifest]]()
 
   private def getWithDb(pid: Problem) =

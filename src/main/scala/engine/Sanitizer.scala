@@ -1,7 +1,7 @@
 package org.stingray.contester.engine
 
 import org.stingray.contester.invokers.{CompilerInstance, RemoteFile, Sandbox}
-import org.stingray.contester.polygon.Problem
+import org.stingray.contester.polygon.{PolygonProblemDb, Problem}
 import grizzled.slf4j.Logging
 import util.matching.Regex
 import com.twitter.util.Future
@@ -87,14 +87,14 @@ object Sanitizer extends Logging {
       .flatMap(_ => sandbox.stat(sandbox.sandboxId ** problem.destName :: Nil))
       .map(_.filter(_.isDir).headOption.getOrElse(throw new UnpackError))
 
-  private[this] def sanitize(sandbox: Sandbox, problem: Problem, p7z: String, db: ProblemDb) = {
+  private[this] def sanitize(sandbox: Sandbox, problem: Problem, p7z: String, db: PolygonProblemDb) = {
     db.getProblemFile(problem)
       .flatMap(_ => sandbox.putGridfs(problem.archiveName, problem.zipName))
       .flatMap(_ => unpack(sandbox, problem, p7z))
       .flatMap(d => new ProblemSanitizer(sandbox, d, problem).sanitizeAndStore(db))
   }
 
-  def apply(instance: CompilerInstance, db: ProblemDb, problem: Problem) =
+  def apply(instance: CompilerInstance, db: PolygonProblemDb, problem: Problem) =
     sanitize(instance.comp, problem, instance.factory("zip").get.asInstanceOf[SevenzipHandler].p7z, db)
 }
 

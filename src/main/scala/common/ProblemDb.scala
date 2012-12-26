@@ -12,7 +12,7 @@ import org.stingray.contester.problems.{ProblemURL, ProblemTuple}
 
 class ProblemManifest(val testerName: String, val answers: Iterable[Int], val interactorName: Option[String])
 
-class ProblemDb(val mongoHost: String, val client: PolygonClient) extends Logging {
+class ProblemDb(val mongoHost: String) extends Logging {
   val mconn = MongoConnection(mongoHost)
   val mdb = mconn("contester")
   val mfs = GridFS.apply(mdb)
@@ -99,13 +99,21 @@ class ProblemDb(val mongoHost: String, val client: PolygonClient) extends Loggin
       }
     }.unit.flatMap(_ => Utils.later(2.seconds))
 
-  def getProblemFile(problem: ProblemTuple) =
+  def hasProblemFile(problem: ProblemTuple): Future[Boolean] =
     Future {
-      mfs.findOne(problem.archiveName).headOption.map(_ => true)
-    }.flatMap(_.map(_ => Future.Done).getOrElse(client.getProblemFile(problem).flatMap(p => storeProblemFile(problem, p))))
+      mfs.findOne(problem.archiveName).headOption.isDefined
+    }
+
+
+  def getProblemFile(problem: ProblemTuple, getFn: => Future[Array[Byte]]): Future[Unit] =
+    hasProblemFile(problem).flatMap { exists =>
+      if (!exists)
+        getFn.flatMap(storeProblemFile(problem, _))
+      else Future.Done
+    }
 }
 
 object ProblemDb {
-  def apply(mhost: String, pclient: PolygonClient) =
-    new ProblemDb(mhost, pclient)
+  def apply(mhost: String) =
+    new ProblemDb(mhost)
 }
