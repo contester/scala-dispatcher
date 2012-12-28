@@ -33,7 +33,7 @@ class InvokerStore {
   val freelist = mutable.Set[InvokerInstance]()
   val badList = mutable.Set[InvokerInstance]()
 
-  def get(m: String) =
+  def get(m: String): Option[InvokerInstance] =
     synchronized {
       freelist.find(_.caps(m)).map { i =>
         freelist.remove(i)
@@ -41,12 +41,12 @@ class InvokerStore {
       }
     }
 
-  def put(i: InvokerInstance) =
+  def put(i: InvokerInstance): Unit =
     synchronized {
       freelist.add(i)
     }
 
-  def bad(i: InvokerInstance) =
+  def bad(i: InvokerInstance): Unit =
     synchronized {
       badList.add(i)
     }
