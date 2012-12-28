@@ -26,6 +26,8 @@ organization := "org.stingray.contester"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
+javacOptions in Compile ++= Seq("-source", "1.6",  "-target", "1.6")
+
 resolvers ++= Seq(
     "twitter.com" at "http://maven.twttr.com/",
     "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases",
