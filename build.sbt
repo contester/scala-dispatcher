@@ -14,7 +14,7 @@ net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 name := "dispatcher"
 
-fork in run := true
+fork in (Compile, run) := true
 
 javaOptions in run += "-XX:+HeapDumpOnOutOfMemoryError"
 

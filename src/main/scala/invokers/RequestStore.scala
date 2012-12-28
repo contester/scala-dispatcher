@@ -91,7 +91,9 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
   def reuseInvoker(invoker: InvokerType): Unit =
     synchronized {
       trace("Returning " + invoker)
+      trace(uselist)
       uselist.remove(invoker).foreach { _ =>
+        trace(invoker)
         addInvoker(invoker)
       }
     }
