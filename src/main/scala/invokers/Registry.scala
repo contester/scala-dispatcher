@@ -46,7 +46,7 @@ class InvokerRegistry(mongoHost: String) extends Registry with NewRequestStore[S
     channelMap.contains(invoker.invoker.channel)
 
   def apply[T](m: String, key: SchedulingKey, extra: AnyRef)(f: InvokerInstance => Future[T]): Future[T] =
-    apply[T](m, key, extra)(i => i.clear.flatMap(f(_)))
+    get[T](m, key, extra)(i => i.clear.flatMap(f(_)))
 
   def getWaiting: Iterable[(String, (Int, Iterable[(SchedulingKey, Int)]))] =
     synchronized {

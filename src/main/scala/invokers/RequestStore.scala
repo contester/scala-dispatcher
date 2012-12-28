@@ -33,9 +33,9 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
       Future.exception(new TooManyErrors(e))
     else
       Utils.later(Duration(2, TimeUnit.SECONDS))
-        .flatMap(_ => apply(cap, schedulingKey, retries.map(_ - 1))(f))
+        .flatMap(_ => get(cap, schedulingKey, retries.map(_ - 1))(f))
 
-  def apply[X](cap: CapsType, schedulingKey: KeyType, extra: AnyRef, retries: Option[Int] = Some(5))(f: InvokerType => Future[X]): Future[X] =
+  def get[X](cap: CapsType, schedulingKey: KeyType, extra: AnyRef, retries: Option[Int] = Some(5))(f: InvokerType => Future[X]): Future[X] =
     getInvoker(cap, schedulingKey, extra).flatMap { invoker =>
       f(invoker)
         .rescue {
