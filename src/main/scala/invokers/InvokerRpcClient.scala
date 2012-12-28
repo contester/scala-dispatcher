@@ -6,8 +6,6 @@ import org.stingray.contester.proto.Local._
 import org.stingray.contester.rpc4.{RemoteError, RpcClient}
 import org.stingray.contester.proto.Blobs.FileBlob
 
-class RestartException(a: Throwable) extends Throwable(a)
-
 object InvokerRpcClient {
   def newNamePairs(x: Iterable[(String, String)]) =
     x.map(v => NamePair.newBuilder().setSource(v._1).setDestination(v._2).build())
@@ -77,10 +75,6 @@ class InvokerRpcClient(val client: RpcClient) extends Logging {
     client.call[IdentifyResponse]("Contester.Identify", IdentifyRequest.newBuilder().setContesterId(contesterId).setMongoHost(mHost).setMongoDb(mDb).build())
       .onSuccess(x => trace("IdentifyResult: " + x))
       .onFailure(x => error("Identify: ", x))
-      .handle {
-      case e: RemoteError => throw new InvokerBadException(e)
-    }
-
   }
 
   def gridfsPut(names: Iterable[(String, String)], sandboxId: String) = {
@@ -89,7 +83,7 @@ class InvokerRpcClient(val client: RpcClient) extends Logging {
       .onSuccess(x => trace("GridfsPutResult: " + x))
       .onFailure(x => error("GridfsPut: ", x))
       .handle {
-      case e: RemoteError => throw new RestartException(e)
+      case e: RemoteError => throw new TransientError(e)
     }
   }
 
@@ -99,7 +93,7 @@ class InvokerRpcClient(val client: RpcClient) extends Logging {
       .onSuccess(x => trace("GridfsGetResult: " + x))
       .onFailure(x => error("GridfsGet: ", x))
       .handle {
-      case e: RemoteError => throw new RestartException(e)
+      case e: RemoteError => throw new TransientError(e)
     }
   }
 
@@ -109,7 +103,7 @@ class InvokerRpcClient(val client: RpcClient) extends Logging {
       .onSuccess(x => trace("LocalExecuteConnected: " + x))
       .onFailure(x => error("LocalExecuteConnected", x))
       .handle {
-      case e: RemoteError => throw new RestartException(e)
+      case e: RemoteError => throw new TransientError(e)
     }
   }
 }

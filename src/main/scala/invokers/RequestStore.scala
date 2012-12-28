@@ -10,7 +10,7 @@ trait HasCaps[CapsType] {
 }
 
 // Transient error
-trait TransientError extends RuntimeException
+class TransientError(cause: RuntimeException) extends RuntimeException(cause)
 
 // Permanent error: invoker is bad
 trait PermanentError extends RuntimeException

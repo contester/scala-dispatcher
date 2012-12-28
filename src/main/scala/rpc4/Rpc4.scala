@@ -19,7 +19,7 @@ class ChannelDisconnectedException(reason: scala.Throwable) extends scala.Throwa
   def this() =
     this(new Throwable)
 }
-class RemoteError(value: String) extends scala.Throwable(value)
+class RemoteError(value: String) extends RuntimeException(value)
 
 class ServerPipelineFactory(registry: Registry) extends ChannelPipelineFactory {
   def getPipeline = {

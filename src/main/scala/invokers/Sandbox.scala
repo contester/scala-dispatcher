@@ -7,9 +7,6 @@ import org.stingray.contester.rpc4.RemoteError
 import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
 import org.stingray.contester.proto.Local.LocalExecutionParameters
 
-class InvokerBadException(e: Throwable) extends scala.Throwable(e)
-class SandboxClearException(e: Throwable) extends InvokerBadException(e)
-
 class Sandbox(val instance: InvokerInstance, val restricted: Boolean)  {
   import org.stingray.contester.ContesterImplicits._
 
@@ -62,7 +59,7 @@ class Sandbox(val instance: InvokerInstance, val restricted: Boolean)  {
     }
 
   def clear = i.rpc.clear(sandboxId.name).handle {
-    case e: RemoteError => throw new SandboxClearException(e)
+    case e: RemoteError => throw new TransientError(e)
   }
 
   def getExecutionParameters(filename: String, arguments: ExecutionArguments): Future[LocalExecutionParameters] =
