@@ -24,7 +24,7 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
   type QueueEntry = (KeyType, Promise[InvokerType], AnyRef)
   object entryOrdering extends Ordering[QueueEntry] {
     def compare(x: QueueEntry, y: QueueEntry): Int =
-      x._1.compare(y._1)
+      y._1.compare(x._1)
   }
 
   val waiting = new mutable.HashMap[CapsType, mutable.PriorityQueue[QueueEntry]]()
