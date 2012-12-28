@@ -21,7 +21,7 @@ class TooManyErrors(cause: RuntimeException) extends RuntimeException(cause)
 
 
 trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps[CapsType]] extends Logging {
-  val waiting = new mutable.HashMap[CapsType, mutable.Set[(KeyType, Promise[InvokerType])]]()
+  val waiting = new mutable.HashMap[CapsType, mutable.Set[(KeyType, Promise[InvokerType], AnyRef)]]()
 
   val freelist = mutable.Set[InvokerType]()
   val badlist = mutable.Set[InvokerType]()
@@ -64,7 +64,7 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
         Future.value(i)
       }.getOrElse {
         val p = new Promise[InvokerType]()
-        waiting.getOrElseUpdate(cap, new mutable.HashSet[(KeyType, Promise[InvokerType])]()).add(schedulingKey -> p)
+        waiting.getOrElseUpdate(cap, new mutable.HashSet[(KeyType, Promise[InvokerType], AnyRef)]()).add((schedulingKey, p, extra))
         p
       }
     }
@@ -78,10 +78,11 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
     if (stillAlive(invoker)) {
       trace("Adding " + invoker)
       invoker.caps.flatMap { cap =>
-        val w: mutable.Set[(KeyType, Promise[InvokerType])] = waiting.getOrElse(cap, mutable.Set())
+        val w = waiting.getOrElse(cap, mutable.Set())
         w.map(x => x -> w)
       }.toSeq.sortBy(_._1._1).headOption.map { candidate =>
         candidate._2.remove(candidate._1)
+        uselist(invoker) = candidate._1._1 -> candidate._1._3
         candidate._1._2.setValue(invoker)
       }.getOrElse {
         freelist += invoker
