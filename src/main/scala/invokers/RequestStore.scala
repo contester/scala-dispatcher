@@ -1,59 +1,111 @@
 package org.stingray.contester.invokers
 
 import collection.mutable
-import com.twitter.util.Promise
+import com.twitter.util.{Duration, Future, Promise}
+import org.stingray.contester.utils.Utils
+import java.util.concurrent.TimeUnit
 
-// todo: refactor both stores into single data structure
-
-class RequestStore {
-  val waiting = new mutable.HashMap[String, mutable.Set[(SchedulingKey, Promise[InvokerInstance])]]()
-
-  def get(caps: Iterable[String]) =
-    synchronized {
-      val candidates = caps.flatMap(waiting.getOrElse(_, Nil)).toSeq
-      val candidate = candidates.sortBy(_._1).headOption
-      candidate.foreach { x =>
-        caps.foreach { c =>
-          waiting.get(c).foreach(_.remove(x))
-        }
-      }
-      candidate.map(_._2)
-    }
-
-  def put(caps: String, key: SchedulingKey) = {
-    val p = new Promise[InvokerInstance]()
-    synchronized {
-      waiting.getOrElseUpdate(caps, new mutable.HashSet[(SchedulingKey, Promise[InvokerInstance])]()).add((key, p))
-    }
-    p
-  }
+trait HasCaps[CapsType] {
+  def caps: Iterable[CapsType]
 }
 
-class InvokerStore {
-  val freelist = mutable.Set[InvokerInstance]()
-  val badList = mutable.Set[InvokerInstance]()
+// Transient error
+trait TransientError extends RuntimeException
 
-  def get(m: String): Option[InvokerInstance] =
+// Permanent error: invoker is bad
+trait PermanentError extends RuntimeException
+
+// Too many errors
+class TooManyErrors(cause: RuntimeException) extends RuntimeException(cause)
+
+
+trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps[CapsType]] {
+  val waiting = new mutable.HashMap[CapsType, mutable.Set[(KeyType, Promise[InvokerType])]]()
+
+  val freelist = mutable.Set[InvokerType]()
+  val badlist = mutable.Set[InvokerType]()
+  val uselist = new mutable.HashMap[InvokerType, (KeyType, AnyRef)]()
+
+  def stillAlive(invoker: InvokerType): Boolean
+
+  private[this] def retryOrThrow[X](cap: CapsType, schedulingKey: KeyType, retries: Option[Int], e: RuntimeException, f: InvokerType => Future[X]): Future[X] =
+    if (!retries.exists(_ > 0))
+      Future.exception(new TooManyErrors(e))
+    else
+      Utils.later(Duration(2, TimeUnit.SECONDS))
+        .flatMap(_ => apply(cap, schedulingKey, retries.map(_ - 1))(f))
+
+  def apply[X](cap: CapsType, schedulingKey: KeyType, extra: AnyRef, retries: Option[Int] = Some(5))(f: InvokerType => Future[X]): Future[X] =
+    getInvoker(cap, schedulingKey, extra).flatMap { invoker =>
+      f(invoker)
+        .rescue {
+        case e: TransientError => {
+          reuseInvoker(invoker)
+          retryOrThrow(cap, schedulingKey, retries, e, f)
+        }
+        case e: PermanentError => {
+          badInvoker(invoker)
+          retryOrThrow(cap, schedulingKey, retries, e, f)
+        }
+        case e: Throwable => {
+          reuseInvoker(invoker)
+          Future.exception(e)
+        }
+      }.onSuccess(_ => reuseInvoker(invoker))
+    }
+
+  def getInvoker(cap: CapsType, schedulingKey: KeyType, extra: AnyRef): Future[InvokerType] =
     synchronized {
-      freelist.find(_.caps(m)).map { i =>
+      freelist.find(_.caps.exists(_ == cap)).map { i =>
         freelist.remove(i)
-        i
+        uselist(i) = (schedulingKey, extra)
+        Future.value(i)
+      }.getOrElse {
+        val p = new Promise[InvokerType]()
+        waiting.getOrElseUpdate(cap, new mutable.HashSet[(KeyType, Promise[InvokerType])]()).add(schedulingKey -> p)
+        p
       }
     }
 
-  def put(i: InvokerInstance): Unit =
+  def addInvokers(invokers: Iterable[InvokerType]): Unit =
     synchronized {
-      freelist.add(i)
+      invokers.foreach(addInvoker)
     }
 
-  def bad(i: InvokerInstance): Unit =
-    synchronized {
-      badList.add(i)
+  def addInvoker(invoker: InvokerType): Unit =
+    if (stillAlive(invoker)) {
+      invoker.caps.flatMap { cap =>
+        val w: mutable.Set[(KeyType, Promise[InvokerType])] = waiting.getOrElse(cap, mutable.Set())
+        w.map(x => x -> w)
+      }.toSeq.sortBy(_._1._1).headOption.map { candidate =>
+        candidate._2.remove(candidate._1)
+        candidate._1._2.setValue(invoker)
+      }.getOrElse {
+        freelist += invoker
+      }
     }
 
-  def remove(i: InvokerInstance) =
+  def reuseInvoker(invoker: InvokerType): Unit =
     synchronized {
-      freelist.remove(i)
-      badList.remove(i)
+      uselist.remove(invoker).foreach { _ =>
+        addInvoker(invoker)
+      }
+    }
+
+
+  def badInvoker(invoker: InvokerType): Unit =
+    synchronized {
+      uselist.remove(invoker).foreach { _ =>
+        if (stillAlive(invoker))
+          badlist += invoker
+      }
+    }
+
+  def removeInvokers(invokers: Iterable[InvokerType]): Unit =
+    synchronized {
+      invokers.foreach { i =>
+        freelist.remove(i)
+        badlist.remove(i)
+      }
     }
 }

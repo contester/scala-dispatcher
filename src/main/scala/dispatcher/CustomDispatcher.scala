@@ -13,10 +13,10 @@ case class CustomTestObject(id: Int, moduleType: String, arrived: Timestamp, sou
 
 object Custom {
   def test(invoker: InvokerRegistry, submit: CustomTestObject): Future[Option[CustomTestResult]] =
-    invoker.wrappedGetClear(submit.sourceModule.getType, submit, "compile")(Compiler(_, submit.sourceModule))
+    invoker(submit.sourceModule.getType, submit, "compile")(Compiler(_, submit.sourceModule))
       .flatMap { r =>
       if (r.success) {
-        invoker.wrappedGetClear(r.module.get.getType, submit, "custom")(CustomTester(_, r.module.get, submit.input)).map(Some(_))
+        invoker(r.module.get.getType, submit, "custom")(CustomTester(_, r.module.get, submit.input)).map(Some(_))
       } else Future.None
     }
 }

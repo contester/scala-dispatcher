@@ -67,7 +67,7 @@ class ProblemManifestByProblem(pdb: SanitizeDb, client: SpecializedClient, invok
 
   // TODO: Don't getProblemFile in sanitizer;
   private def callSanitize(pid: PolygonProblem): Future[ProblemManifest] =
-    invoker.wrappedGetClear("zip", pid, "sanitize")(Sanitizer(_, pid))
+    invoker("zip", pid, "sanitize")(Sanitizer(_, pid))
 
   private def getAndUpdateDb(pid: PolygonProblem): Future[Problem] =
     pdb.getProblemFile(pid, client.getProblemFile(pid)).flatMap(_ =>

@@ -17,7 +17,7 @@ trait RunnerInstance extends FactoryInstance {
   def run: Sandbox
 }
 
-class InvokerInstance(val invoker: InvokerBig, val instanceId: Int) extends Logging with CompilerInstance with RunnerInstance {
+class InvokerInstance(val invoker: InvokerBig, val instanceId: Int) extends Logging with CompilerInstance with RunnerInstance with HasCaps[String] {
   val data = invoker.i.sandboxes(instanceId)
   val run = new Sandbox(this, true)
   val comp = new Sandbox(this, false)

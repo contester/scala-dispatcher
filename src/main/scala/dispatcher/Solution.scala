@@ -11,7 +11,7 @@ import collection.SortedMap
 
 object Solution {
   def test(invoker: InvokerRegistry, submit: SubmitObject, problem: Problem, reporter: CombinedResultReporter) =
-    invoker.wrappedGetClear(submit.sourceModule.getType, submit, "compile")(Compiler(_, submit.sourceModule))
+    invoker(submit.sourceModule.getType, submit, "compile")(Compiler(_, submit.sourceModule))
       .flatMap { r =>
         reporter.compileResult(r).flatMap { _ =>
           if (r.success) {
@@ -42,7 +42,7 @@ trait SimpleSolution {
 
   def test(test: Test): Future[TestResult] =
     reporter.getId.flatMap { testingId =>
-      invoker.wrappedGetClear(module.getType, submit, test)(Tester(_, module, test))
+      invoker(module.getType, submit, test)(Tester(_, module, test))
         .flatMap {
         case (solution, tester) => saveResult(solution, tester, test.testId)
       }
