@@ -4,6 +4,7 @@ import collection.mutable
 import com.twitter.util.{Duration, Future, Promise}
 import org.stingray.contester.utils.Utils
 import java.util.concurrent.TimeUnit
+import grizzled.slf4j.Logging
 
 trait HasCaps[CapsType] {
   def caps: Iterable[CapsType]
@@ -19,7 +20,7 @@ trait PermanentError extends RuntimeException
 class TooManyErrors(cause: RuntimeException) extends RuntimeException(cause)
 
 
-trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps[CapsType]] {
+trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps[CapsType]] extends Logging {
   val waiting = new mutable.HashMap[CapsType, mutable.Set[(KeyType, Promise[InvokerType])]]()
 
   val freelist = mutable.Set[InvokerType]()
@@ -37,6 +38,7 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
 
   def get[X](cap: CapsType, schedulingKey: KeyType, extra: AnyRef, retries: Option[Int] = Some(5))(f: InvokerType => Future[X]): Future[X] =
     getInvoker(cap, schedulingKey, extra).flatMap { invoker =>
+      trace("Using " + invoker)
       f(invoker)
         .rescue {
         case e: TransientError => {
@@ -74,6 +76,7 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
 
   def addInvoker(invoker: InvokerType): Unit =
     if (stillAlive(invoker)) {
+      trace("Adding " + invoker)
       invoker.caps.flatMap { cap =>
         val w: mutable.Set[(KeyType, Promise[InvokerType])] = waiting.getOrElse(cap, mutable.Set())
         w.map(x => x -> w)
@@ -87,6 +90,7 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
 
   def reuseInvoker(invoker: InvokerType): Unit =
     synchronized {
+      trace("Returning " + invoker)
       uselist.remove(invoker).foreach { _ =>
         addInvoker(invoker)
       }
