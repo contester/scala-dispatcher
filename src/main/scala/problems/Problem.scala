@@ -74,6 +74,8 @@ class PDBProblem(val pdb: ProblemDb, val id: ProblemT, val testCount: Int, val t
     new PDBTest(this, key)
 
   def interactive = interactorName.isDefined
+
+  override def toString = "PDBProblem(%s, %d)".format(id.id, id.revision)
 }
 
 object PDBProblem {
@@ -83,6 +85,8 @@ object PDBProblem {
 }
 
 class PDBTest(val problem: PDBProblem, val testId: Int) extends Test with TestLimits {
+  override def toString = "PDBTest(%s, %d)".format(problem, testId)
+
   def memoryLimit: Long = problem.memoryLimit
 
   def timeLimitMicros: Long = problem.timeLimitMicros
