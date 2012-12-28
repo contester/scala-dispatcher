@@ -21,7 +21,13 @@ class TooManyErrors(cause: RuntimeException) extends RuntimeException(cause)
 
 
 trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps[CapsType]] extends Logging {
-  val waiting = new mutable.HashMap[CapsType, mutable.Set[(KeyType, Promise[InvokerType], AnyRef)]]()
+  type QueueEntry = (KeyType, Promise[InvokerType], AnyRef)
+  object entryOrdering extends Ordering[QueueEntry] {
+    def compare(x: QueueEntry, y: QueueEntry): Int =
+      x._1.compare(y._1)
+  }
+
+  val waiting = new mutable.HashMap[CapsType, mutable.PriorityQueue[QueueEntry]]()
 
   val freelist = mutable.Set[InvokerType]()
   val badlist = mutable.Set[InvokerType]()
@@ -64,7 +70,7 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
         Future.value(i)
       }.getOrElse {
         val p = new Promise[InvokerType]()
-        waiting.getOrElseUpdate(cap, new mutable.HashSet[(KeyType, Promise[InvokerType], AnyRef)]()).add((schedulingKey, p, extra))
+        waiting.getOrElseUpdate(cap, new mutable.PriorityQueue[QueueEntry]()(entryOrdering)).enqueue((schedulingKey, p, extra))
         p
       }
     }
@@ -77,13 +83,11 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
   def addInvoker(invoker: InvokerType): Unit =
     if (stillAlive(invoker)) {
       trace("Adding " + invoker)
-      invoker.caps.flatMap { cap =>
-        val w = waiting.getOrElse(cap, mutable.Set())
-        w.map(x => x -> w)
-      }.toSeq.sortBy(_._1._1).headOption.map { candidate =>
-        candidate._2.remove(candidate._1)
-        uselist(invoker) = candidate._1._1 -> candidate._1._3
-        candidate._1._2.setValue(invoker)
+      waiting.filterKeys(invoker.caps.toSet).values.flatMap(w => w.headOption.map(_ -> w)).toSeq
+        .sortBy(_._1._1).headOption.map { candidate =>
+        val result = candidate._2.dequeue()
+        uselist(invoker) = result._1 -> result._3
+        result._2.setValue(invoker)
       }.getOrElse {
         freelist += invoker
       }
