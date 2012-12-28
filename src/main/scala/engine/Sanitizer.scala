@@ -1,20 +1,31 @@
 package org.stingray.contester.engine
 
-import org.stingray.contester.invokers.{CompilerInstance, RemoteFile, Sandbox}
-import org.stingray.contester.polygon.{PolygonProblemDb, Problem}
+import org.stingray.contester.invokers.{SchedulingKey, CompilerInstance, RemoteFile, Sandbox}
 import grizzled.slf4j.Logging
 import util.matching.Regex
 import com.twitter.util.Future
-import org.stingray.contester.common.{ProblemDb, ProblemManifest}
-import org.stingray.contester.problems.ProblemTuple
+import org.stingray.contester.problems.{ProblemManifest, ProblemT}
 import org.stingray.contester.modules.SevenzipHandler
 import org.stingray.contester.ContesterImplicits._
+import java.sql.Timestamp
 
 class TesterNotFoundException extends scala.Throwable
 class PdbStoreException(path: String) extends scala.Throwable(path)
 class UnpackError extends scala.Throwable
+class SanitizerError extends Throwable
+class ProblemFileNotFound extends SanitizerError
 
-class ProblemSanitizer(sandbox: Sandbox, base: RemoteFile, problem: Problem) extends Logging {
+trait ProblemDescription extends ProblemT with SchedulingKey {
+  def interactive: Boolean
+  def stdio: Boolean
+  def testCount: Int
+  def timeLimitMicros: Long
+  def memoryLimit: Long
+
+  protected def getTimestamp: Timestamp = EARLIEST
+}
+
+class ProblemSanitizer(sandbox: Sandbox, base: RemoteFile, problem: ProblemDescription) extends Logging {
   private[this] val testerRe = new Regex("^check\\.(\\S+)$")
 
   private[this] def detectGenerator =
@@ -70,31 +81,31 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFile, problem: Problem) ext
         sandbox.getGridfs((1 to problem.testCount).map(i => (testBase ** "%02d".format(i) -> problem.inputName(i))) ++
           (1 to problem.testCount).map(i => testBase ** "%02d.a".format(i) -> problem.answerName(i)) ++
           (tester -> problem.checkerName :: Nil) ++ interactor.map(i => i -> problem.interactorName)).map { lists =>
-          new ProblemManifest(tester.basename, analyzeLists(lists), interactor.map(_.basename))
+          new ProblemManifest(problem.testCount, problem.timeLimitMicros, problem.memoryLimit, problem.stdio, tester.basename, analyzeLists(lists), interactor.map(_.basename))
         }
     }
 
-  def sanitizeAndStore(db: ProblemDb) =
+  def sanitizeAndStore =
     sanitize.flatMap(_ => storeProblem)
 }
 
 object Sanitizer extends Logging {
   private[this] val p7zFlags = "x" :: "-y" :: Nil
 
-  private[this] def unpack(sandbox: Sandbox, problem: ProblemTuple, p7z: String): Future[RemoteFile] =
+  private[this] def unpack(sandbox: Sandbox, problem: ProblemT, p7z: String): Future[RemoteFile] =
     sandbox.getExecutionParameters(p7z, p7zFlags ++ List("-o" + problem.destName, problem.zipName))
       .flatMap(sandbox.execute)
       .flatMap(_ => sandbox.stat(sandbox.sandboxId ** problem.destName :: Nil))
       .map(_.filter(_.isDir).headOption.getOrElse(throw new UnpackError))
 
-  private[this] def sanitize(sandbox: Sandbox, problem: Problem, p7z: String, db: PolygonProblemDb) = {
-    db.getProblemFile(problem)
-      .flatMap(_ => sandbox.putGridfs(problem.archiveName, problem.zipName))
+  // No need to get problem file; it will be already there - or we fail after putGridfs
+  private[this] def sanitize(sandbox: Sandbox, problem: ProblemDescription, p7z: String) = {
+    sandbox.putGridfs(problem.archiveName, problem.zipName)
       .flatMap(_ => unpack(sandbox, problem, p7z))
-      .flatMap(d => new ProblemSanitizer(sandbox, d, problem).sanitizeAndStore(db))
+      .flatMap(d => new ProblemSanitizer(sandbox, d, problem).sanitizeAndStore)
   }
 
-  def apply(instance: CompilerInstance, db: PolygonProblemDb, problem: Problem) =
-    sanitize(instance.comp, problem, instance.factory("zip").get.asInstanceOf[SevenzipHandler].p7z, db)
+  def apply(instance: CompilerInstance, problem: ProblemDescription) =
+    sanitize(instance.comp, problem, instance.factory("zip").get.asInstanceOf[SevenzipHandler].p7z)
 }
 

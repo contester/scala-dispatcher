@@ -3,19 +3,19 @@ package org.stingray.contester.polygon
 import collection.mutable
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
-import org.stingray.contester.common.{ProblemManifest, ProblemDb}
 import org.stingray.contester.invokers.InvokerRegistry
-import org.stingray.contester.problems.ProblemURL
+import org.stingray.contester.problems
 import org.stingray.contester.engine.Sanitizer
+import problems.{ProblemManifest, SanitizeDb, Problem}
 
-class ProblemByPid(client: SpecializedClient, pdb: ProblemDb) extends Logging {
-  private val data = new mutable.HashMap[ProblemURL, Future[Problem]]()
+class ProblemByPid(client: SpecializedClient, pdb: PolygonDb) extends Logging {
+  private val data = new mutable.HashMap[ProblemURL, Future[PolygonProblem]]()
 
   private def getDb(pid: ProblemURL) =
-    pdb.getProblem(pid).flatMap(_.headOption.map(Future.value(_)).getOrElse(getAndUpdateDb(pid)))
+    pdb.getProblemDescription(pid).flatMap(_.headOption.map(Future.value(_)).getOrElse(getAndUpdateDb(pid)))
 
   private def getAndUpdateDb(problemId: ProblemURL) =
-    client.getProblem(problemId).onSuccess(pdb.setProblem(_))
+    client.getProblem(problemId).onSuccess(pdb.setProblemDescription(_))
 
   def scan(problems: Seq[ProblemURL]) = {
     val prevProblems = data.keySet
@@ -33,14 +33,14 @@ class ProblemByPid(client: SpecializedClient, pdb: ProblemDb) extends Logging {
     data.synchronized { data.getOrElseUpdate(pid, getDb(pid)) }
 }
 
-class ContestByPid(client: SpecializedClient, pdb: ProblemDb) extends Logging {
-  private val data = mutable.HashMap[Int, Future[Contest]]()
+class ContestByPid(client: SpecializedClient, pdb: PolygonDb) extends Logging {
+  private val data = mutable.HashMap[Int, Future[ContestDescription]]()
 
   private def getWithDb(pid: Int) =
-    pdb.getContest(pid).flatMap(_.headOption.map(Future.value(_)).getOrElse(getAndUpdateDb(pid)))
+    pdb.getContestDescription(pid).flatMap(_.headOption.map(Future.value(_)).getOrElse(getAndUpdateDb(pid)))
 
   private def getAndUpdateDb(contestId: Int) =
-    client.getContest(contestId).onSuccess(pdb.setContest(contestId, _))
+    client.getContest(contestId).onSuccess(pdb.setContestDescription(contestId, _))
 
   def getContestByPid(pid: Int) =
     data.synchronized { data.getOrElseUpdate(pid, getWithDb(pid)) }
@@ -59,22 +59,23 @@ class ContestByPid(client: SpecializedClient, pdb: ProblemDb) extends Logging {
   }
 }
 
-class ProblemManifestByProblem(pdb: PolygonProblemDb, invoker: InvokerRegistry) extends Logging {
-  private val data = mutable.HashMap[Problem, Future[ProblemManifest]]()
+class ProblemManifestByProblem(pdb: SanitizeDb, client: SpecializedClient, invoker: InvokerRegistry) extends Logging {
+  private val data = mutable.HashMap[PolygonProblem, Future[Problem]]()
 
-  private def getWithDb(pid: Problem) =
-    pdb.getProblemManifest(pid).flatMap(_.headOption.map(Future.value(_)).getOrElse(getAndUpdateDb(pid)))
+  private def getWithDb(pid: PolygonProblem): Future[Problem] =
+    pdb.getProblem(pid).flatMap(_.headOption.map(Future.value(_)).getOrElse(getAndUpdateDb(pid)))
 
-  private def callSanitize(pid: Problem) =
-    invoker.wrappedGetClear("zip", pid, "sanitize")(Sanitizer(_, pdb, pid))
+  // TODO: Don't getProblemFile in sanitizer;
+  private def callSanitize(pid: PolygonProblem): Future[ProblemManifest] =
+    invoker.wrappedGetClear("zip", pid, "sanitize")(Sanitizer(_, pid))
 
-  private def getAndUpdateDb(pid: Problem) =
-    pdb.getProblemFile(pid).flatMap(_ =>
-      callSanitize(pid).onSuccess(i => pdb.setProblemManifest(pid, i)))
+  private def getAndUpdateDb(pid: PolygonProblem): Future[Problem] =
+    pdb.getProblemFile(pid, client.getProblemFile(pid)).flatMap(_ =>
+      callSanitize(pid).flatMap(i => pdb.setProblem(pid, i)))
 
-  def getByProblem(pid: Problem) =
+  def getByProblem(pid: PolygonProblem): Future[Problem] =
     data.synchronized { data.getOrElseUpdate(pid, getWithDb(pid))}
 
-  def scan(pids: Seq[Problem]) =
-    Future.collect(pids.map(getByProblem(_)))
+  def scan(pids: Seq[PolygonProblem]): Future[Unit] =
+    Future.collect(pids.map(getByProblem(_))).unit
 }

@@ -1,23 +1,24 @@
-package org.stingray.contester.problems
+package org.stingray.contester.polygon
 
 import java.net.URL
 
 trait ProblemURL {
-  def short: String
-  def url(base: URL): URL
-  def defaultUrl: URL
+  def shortId: String
 
-  override def hashCode() = short.hashCode
+  override def hashCode() = shortId.hashCode
   override def equals(obj: Any) = obj match {
-    case other: ProblemURL => short.equals(other.short)
+    case other: ProblemURL => shortId.equals(other.shortId)
     case _ => super.equals(obj)
   }
 
-  override def toString = short
+  def url(base: URL): URL
+  def defaultUrl: URL
+
+  override def toString = "ProblemURL(%s)".format(shortId)
 }
 
 private class FullProblemURL(fullUrl: String) extends ProblemURL {
-  lazy val short = fullUrl.split("/").takeRight(2).mkString("/")
+  lazy val shortId = fullUrl.split("/").takeRight(2).mkString("/")
   lazy val defaultUrl = addSlash(fullUrl)
   def url(base: URL) = defaultUrl
 
@@ -30,12 +31,11 @@ private class FullProblemURL(fullUrl: String) extends ProblemURL {
     )
 }
 
-class NoDefaultURLAvailable(shortUrl: String) extends Throwable(shortUrl)
+class NoDefaultURLAvailable(shortId: String) extends Throwable(shortId)
 
-private class ShortProblemURL(shortUrl: String) extends ProblemURL {
-  lazy val short = shortUrl
-  def url(base: URL) = new URL(base, short + "/")
-  def defaultUrl = throw new NoDefaultURLAvailable(short)
+private class ShortProblemURL(val shortId: String) extends ProblemURL {
+  def url(base: URL) = new URL(base, shortId + "/")
+  def defaultUrl = throw new NoDefaultURLAvailable(shortId)
 }
 
 object ProblemURL {
@@ -48,3 +48,4 @@ object ProblemURL {
   def apply(url: URL): ProblemURL =
     new FullProblemURL(url.toString)
 }
+

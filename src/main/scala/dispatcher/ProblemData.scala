@@ -6,11 +6,12 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.polygon._
 import org.stingray.contester.utils.Utils
 import org.stingray.contester.invokers.InvokerRegistry
+import org.stingray.contester.problems.Problem
 
-class ProblemData(pclient: SpecializedClient, pdb: PolygonProblemDb, invoker: InvokerRegistry) extends Logging {
+class ProblemData(pclient: SpecializedClient, pdb: CommonPolygonDb, invoker: InvokerRegistry) extends Logging {
   private val contestByPid = new ContestByPid(pclient, pdb)
   private val problemByPid = new ProblemByPid(pclient, pdb)
-  private val manifestByPid = new ProblemManifestByProblem(pdb, invoker)
+  private val manifestByPid = new ProblemManifestByProblem(pdb, pclient, invoker)
 
   private val activeContests = new mutable.HashMap[Any, mutable.Set[Int]]()
 
@@ -56,13 +57,11 @@ class ProblemData(pclient: SpecializedClient, pdb: PolygonProblemDb, invoker: In
       case _ => Future.Done
     }.flatMap(_ => Utils.later(1.minute).onSuccess(_ => rescan))
 
-  def getProblemInfo(ref: Any, contestPid: Int, problemId: String): Future[SanitizedProblem] = {
+  def getProblemInfo(ref: Any, contestPid: Int, problemId: String): Future[Problem] = {
     addContest(ref, contestPid)
       contestByPid.getContestByPid(contestPid).flatMap { contest =>
         problemByPid.getProblemByPid(contest.problems(problemId.toUpperCase)).flatMap { problem =>
-          manifestByPid.getByProblem(problem).map { manifest =>
-            problem.sanitized(manifest, pdb)
-          }
+          manifestByPid.getByProblem(problem)
         }
       }
   }

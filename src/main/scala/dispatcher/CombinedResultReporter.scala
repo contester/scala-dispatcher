@@ -26,7 +26,7 @@ object CombinedResultReporter {
     }
 }
 
-class CombinedResultReporter(client: ConnectionPool, val submit: SubmitObject, base: File, val prefix: String, pdb: ProblemDb, doneCb: Function[Int, Unit]) extends TestingResultReporter {
+class CombinedResultReporter(client: ConnectionPool, val submit: SubmitObject, base: File, val prefix: String, doneCb: Function[Int, Unit]) extends TestingResultReporter {
   val tests = collection.mutable.Map[Int, Boolean]()
   lazy val terse = new File(base, submit.id.toString)
   lazy val detailed = new File(base, submit.id.toString + ".proto")

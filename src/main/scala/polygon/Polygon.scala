@@ -11,11 +11,10 @@ import java.net.{URLEncoder, InetSocketAddress, URL}
 import java.util.concurrent.TimeUnit
 import org.jboss.netty.buffer.ChannelBuffers.wrappedBuffer
 import org.jboss.netty.handler.codec.http.{HttpResponseStatus, HttpResponse, HttpRequest}
-import org.stingray.contester.common.{ProblemDb, ProblemManifest}
 import org.streum.configrity.Configuration
 import scala.Some
 import xml.{XML, Elem}
-import org.stingray.contester.problems.{G4Test, ProblemTuple, ProblemURL}
+import org.stingray.contester.engine.ProblemDescription
 
 class PolygonClientHttpException(reason: String) extends Throwable(reason)
 
@@ -92,13 +91,13 @@ class PolygonClient(authLogin: String, authPassword: String) extends Logging {
   def getXml(url: URL) =
     getPage(url).map(PolygonClient.asXml(_))
 
-  def getContest(url: URL): Future[Contest] =
-    getXml(new URL(url, "contest.xml")).map(Contest(_))
+  def getContest(url: URL): Future[ContestDescription] =
+    getXml(new URL(url, "contest.xml")).map(PolygonContest(_))
 
   def getProblem(url: URL) =
-    getXml(new URL(url, "problem.xml")).map(Problem(_, url))
+    getXml(new URL(url, "problem.xml")).map(PolygonProblem(_, url))
 
-  def getProblemFile(problem: ProblemTuple) =
+  def getProblemFile(problem: PolygonProblem) =
     getFile(problem.url.defaultUrl, Map("revision" -> problem.revision.toString)).map{ d=>
       val bufferBytes = new Array[Byte](d.readableBytes())
       d.getBytes(d.readerIndex(), bufferBytes)
@@ -108,30 +107,30 @@ class PolygonClient(authLogin: String, authPassword: String) extends Logging {
 }
 
 class SpecializedClient(url: URL, authLogin: String, authPassword: String) extends PolygonClient(authLogin, authPassword) {
-  def getContest(contestId: Int): Future[Contest] =
+  def getContest(contestId: Int): Future[ContestDescription] =
     getContest(new URL(url, "c/%d/".format(contestId)))
 
-  def getProblem(problemId: ProblemURL): Future[Problem] =
+  def getProblem(problemId: ProblemURL): Future[PolygonProblem] =
     getProblem(problemId.url(url))
 }
 
-object Contest {
+object PolygonContest {
   def apply(x: Elem) =
-    new Contest(x)
+    new ContestDescription(x)
 }
 
-object Problem {
+object PolygonProblem {
   def apply(x: Elem, url: URL) =
-    new Problem(x, Some(ProblemURL(url)))
+    new PolygonProblem(x, Some(ProblemURL(url)))
 
   def apply(x: Elem) =
-    new Problem(x, None)
+    new PolygonProblem(x, None)
 
   def apply(x: Elem, url: ProblemURL) =
-    new Problem(x, Some(url))
+    new PolygonProblem(x, Some(url))
 }
 
-class Contest(val source: Elem) {
+class ContestDescription(val source: Elem) {
   lazy val names =
     (source \ "names" \ "name").map(entry => ((entry \ "@language").text.toLowerCase, (entry \ "@value").text)).toMap
 
@@ -148,7 +147,7 @@ class Contest(val source: Elem) {
   override def toString = source.toString()
 }
 
-class ContestWithProblems(contest: Contest, val problems: Map[String, Problem]) {
+class ContestWithProblems(contest: ContestDescription, val problems: Map[String, PolygonProblem]) {
   lazy val names = contest.names
   override def toString = contest.toString
   lazy val defaultName = contest.defaultName
@@ -156,11 +155,16 @@ class ContestWithProblems(contest: Contest, val problems: Map[String, Problem]) 
     contest.getName(language)
 }
 
-class Problem(val source: Elem, val externalUrl: Option[ProblemURL]) extends ProblemTuple {
+class PolygonProblem(val source: Elem, val externalUrl: Option[ProblemURL]) extends ProblemDescription {
   lazy val internalUrl =
     ProblemURL((source \ "@url").text)
 
   lazy val url = externalUrl.getOrElse(internalUrl)
+  lazy val shortUrl = url.shortId
+
+  def timeLimitMicros: Long = timeLimit * 1000
+
+  def id: String = shortUrl
 
   lazy val titles =
     (source \ "statements" \ "statement").map(entry => ((entry \ "@language").text.toLowerCase, (entry \ "@title").text)).toMap
@@ -187,7 +191,7 @@ class Problem(val source: Elem, val externalUrl: Option[ProblemURL]) extends Pro
     (source \ "judging" \ "testset" \ "time-limit").text.toInt
 
   lazy val memoryLimit =
-    (source \ "judging" \ "testset" \ "memory-limit").text.toInt
+    (source \ "judging" \ "testset" \ "memory-limit").text.toLong
 
   lazy val inputFile =
     (source \ "judging" \ "@input-file").text
@@ -204,16 +208,4 @@ class Problem(val source: Elem, val externalUrl: Option[ProblemURL]) extends Pro
   lazy val interactive = tags.contains("interactive")
   lazy val semi = tags.contains("semi-interactive-16")
 
-  lazy val shortId =
-    url.short
-
-  lazy val handle = this.asInstanceOf[ProblemTuple]
-
-  def sanitized(m: ProblemManifest, pdb: ProblemDb) =
-    new SanitizedProblem(source, url, m, pdb)
-}
-
-class SanitizedProblem(source: Elem, url: ProblemURL, val manifest: ProblemManifest, val pdb: ProblemDb) extends Problem(source, Some(url)) {
-  def getTest(testId: Int) =
-    new G4Test(this, pdb, testId)
 }

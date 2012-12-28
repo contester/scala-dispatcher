@@ -1,3 +1,4 @@
+import com.mongodb.casbah.MongoConnection
 import grizzled.slf4j.Logging
 import java.io.File
 import java.net.InetSocketAddress
@@ -8,7 +9,7 @@ import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
 import org.stingray.contester.dispatcher._
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.messaging.AMQ
-import org.stingray.contester.polygon.{PolygonProblemDb, PolygonClient}
+import org.stingray.contester.polygon.{CommonPolygonDb, PolygonClient}
 import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.streum.configrity.Configuration
 
@@ -28,13 +29,13 @@ object Main extends App with Logging {
   val httpStatus = HttpStatus.bind(config[Int]("dispatcher.port"))
 
   val client = PolygonClient(config.detach("polygon"))
-  val pdb = new PolygonProblemDb(mHost, client)
+  val pdb = new CommonPolygonDb(MongoConnection(mHost).getDB("contester"))
   val invoker = new InvokerRegistry(mHost)
   StatusPageBuilder.data("invoker") = invoker
 
   val problems = new ProblemData(client, pdb, invoker)
 
-  val dispatchers = new DbDispatchers(problems, new File(config[String]("reporting.base")), invoker, amqclient.createChannel(), pdb)
+  val dispatchers = new DbDispatchers(problems, new File(config[String]("reporting.base")), invoker, amqclient.createChannel())
 
   val sf = new NioServerSocketChannelFactory(
     Executors.newCachedThreadPool(),

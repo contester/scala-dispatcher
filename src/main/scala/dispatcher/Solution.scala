@@ -3,13 +3,14 @@ package org.stingray.contester.dispatcher
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import org.stingray.contester.common.{RunResult, TesterRunResult, TestResult}
-import org.stingray.contester.polygon.SanitizedProblem
 import org.stingray.contester.proto.Blobs.Module
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.engine.{Tester, Compiler}
+import org.stingray.contester.problems.{Test, Problem}
+import collection.SortedMap
 
 object Solution {
-  def test(invoker: InvokerRegistry, submit: SubmitObject, problem: SanitizedProblem, reporter: CombinedResultReporter) =
+  def test(invoker: InvokerRegistry, submit: SubmitObject, problem: Problem, reporter: CombinedResultReporter) =
     invoker.wrappedGetClear(submit.sourceModule.getType, submit, "compile")(Compiler(_, submit.sourceModule))
       .flatMap { r =>
         reporter.compileResult(r).flatMap { _ =>
@@ -28,7 +29,7 @@ object Solution {
 trait SimpleSolution {
   def reporter: CombinedResultReporter
   def invoker: InvokerRegistry
-  def problem: SanitizedProblem
+  def problem: Problem
   def module: Module
   def submit: SubmitObject
 
@@ -39,23 +40,22 @@ trait SimpleSolution {
     reporter.testResult(result).map(_ => result)
   }
 
-  def test(testId: Int): Future[TestResult] =
+  def test(test: Test): Future[TestResult] =
     reporter.getId.flatMap { testingId =>
-      val t = problem.getTest(testId)
-      invoker.wrappedGetClear(module.getType, submit, t)(Tester(_, module, t))
+      invoker.wrappedGetClear(module.getType, submit, test)(Tester(_, module, test))
         .flatMap {
-        case (solution, tester) => saveResult(solution, tester, testId)
+        case (solution, tester) => saveResult(solution, tester, test.testId)
       }
     }
 }
 
-class ACMSolution(val invoker: InvokerRegistry, val module: Module, val problem: SanitizedProblem, val reporter: CombinedResultReporter, val submit: SubmitObject) extends SimpleSolution with Logging {
+class ACMSolution(val invoker: InvokerRegistry, val module: Module, val problem: Problem, val reporter: CombinedResultReporter, val submit: SubmitObject) extends SimpleSolution with Logging {
   def start: Future[Unit] =
-    test(1).flatMap(testDone(_, 2))
+    test(problem.head._2).flatMap(testDone(_, problem.tail))
 
-  private def testDone(result: TestResult, nextTest: Int): Future[Unit] = {
-    if ((result.success) && (nextTest <= problem.testCount)) {
-      test(nextTest).flatMap(testDone(_, nextTest + 1))
+  private def testDone(result: TestResult, tail: SortedMap[Int, Test]): Future[Unit] = {
+    if ((result.success) && tail.nonEmpty) {
+      test(tail.head._2).flatMap(testDone(_, tail.tail))
     } else {
       Future.value()
     }
@@ -63,16 +63,16 @@ class ACMSolution(val invoker: InvokerRegistry, val module: Module, val problem:
 
 }
 
-class SchoolSolution(val invoker: InvokerRegistry, val module: Module, val problem: SanitizedProblem, val reporter: CombinedResultReporter, val submit: SubmitObject) extends SimpleSolution with Logging {
+class SchoolSolution(val invoker: InvokerRegistry, val module: Module, val problem: Problem, val reporter: CombinedResultReporter, val submit: SubmitObject) extends SimpleSolution with Logging {
   private def first(result: TestResult): Future[Unit] =
     (if (result.success)
       Future.collect(
-        Seq(Future.value(result)) ++ (2 to problem.testCount map(test(_)))
+        Seq(Future.value(result)) ++ (problem.tail.values map(test(_)))
       )
     else Future.value(Seq(result))).unit
 
   def start: Future[Unit] =
-    test(1).flatMap(first(_))
+    test(problem.head._2).flatMap(first(_))
 }
 
 

@@ -5,6 +5,7 @@ import org.stingray.contester.db.{ConnectionPool, SelectDispatcher, HasId}
 import org.stingray.contester.common._
 import java.sql.{ResultSet, Timestamp}
 import com.twitter.util.Future
+import org.stingray.contester.problems.ProblemDb
 
 case class MoodleSubmit(id: Int, problemId: String, moduleType: String, arrived: Timestamp, source: Array[Byte]) extends SchedulingKey with HasId with SubmitWithModule {
   protected def getTimestamp: Timestamp = arrived
@@ -62,7 +63,7 @@ class MoodleResultReporter(client: ConnectionPool, val submit: MoodleSubmit) ext
 }
 
 
-class MoodleDispatcher(db: ConnectionPool) extends SelectDispatcher[MoodleSubmit](db) {
+class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb) extends SelectDispatcher[MoodleSubmit](db) {
   def rowToSubmit(row: ResultSet): MoodleSubmit = null
 
   def selectAllActiveQuery: String =
