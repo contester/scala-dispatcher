@@ -5,6 +5,7 @@ import collection.JavaConversions
 import com.twitter.util.Future
 import org.stingray.contester.utils.Utils
 import com.mongodb.casbah.gridfs.GridFS
+import grizzled.slf4j.Logging
 
 case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
                            stdio: Boolean, testerName: String, answers: Iterable[Int], interactorName: Option[String]) {
@@ -51,17 +52,19 @@ trait ProblemFileStore {
 
 trait SanitizeDb extends ProblemDb with ProblemFileStore
 
-class CommonProblemDb(mdb: MongoDB) extends SanitizeDb {
+class CommonProblemDb(mdb: MongoDB) extends SanitizeDb with Logging {
   lazy val mfs = GridFS(mdb)
 
   def setProblem(problem: ProblemT, manifest: ProblemManifest) =
     Future {
+      trace("Inserting manifest: " + (problem :: manifest))
       mdb("manifest").insert(problem :: manifest)
       PDBProblem(this, problem, manifest)
     }
 
   private def getManifest(problem: ProblemT): Future[Option[ProblemManifest]] =
     Future {
+      trace("Looking for manifest: " + problem)
       val criteria = MongoDBObject("id" -> problem.id, "revision" -> problem.revision) ++ ("testerName" $exists true)
       mdb("manifest").findOne(criteria)
         .flatMap { i =>

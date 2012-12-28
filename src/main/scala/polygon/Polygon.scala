@@ -156,6 +156,8 @@ class ContestWithProblems(contest: ContestDescription, val problems: Map[String,
 }
 
 class PolygonProblem(val source: Elem, val externalUrl: Option[ProblemURL]) extends ProblemDescription {
+  override def toString = "PolygonProblem(%s, %d)".format(shortUrl, revision)
+
   lazy val internalUrl =
     ProblemURL((source \ "@url").text)
 

@@ -38,6 +38,8 @@ trait ProblemT {
   def id: String
   def revision: Int
 
+  override def toString = "ProblemT(%s, %d)".format(id, revision)
+
   override def hashCode() =
     id.hashCode() + revision.hashCode()
 
