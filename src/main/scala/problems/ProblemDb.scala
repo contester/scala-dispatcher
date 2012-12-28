@@ -1,7 +1,6 @@
 package org.stingray.contester.problems
 
 import com.mongodb.casbah.Imports._
-import collection.JavaConversions
 import com.twitter.util.Future
 import org.stingray.contester.utils.Utils
 import com.mongodb.casbah.gridfs.GridFS
@@ -24,21 +23,16 @@ case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: L
 }
 
 object ProblemManifest {
-  def apply(m: MongoDBObject): Option[ProblemManifest] =
-    m.getAs[String]("testerName").flatMap { testerName =>
-      m.getAs[Long]("timeLimitMicros").flatMap { timeLimitMicros =>
-        m.getAs[Long]("memoryLimit").flatMap { memoryLimit =>
-          m.getAs[Int]("testCount").flatMap { testCount =>
-            m.getAs[java.lang.Iterable[Int]]("answers").map { answers =>
-              val stdio = m.getAsOrElse[Boolean]("stdio", false)
-              val interactorName = m.getAs[String]("interactorName")
-              new ProblemManifest(testCount, timeLimitMicros, memoryLimit, stdio, testerName,
-                JavaConversions.iterableAsScalaIterable(answers), interactorName)
-            }
-          }
-        }
-      }
-    }
+  def apply(m: MongoDBObject): ProblemManifest =
+    new ProblemManifest(
+      m.getAsOrElse[Int]("testCount", 1),
+      m.getAsOrElse[Long]("timeLimitMicros", 1000000),
+      m.getAsOrElse[Long]("memoryLimit", 64 * 1024 * 1024),
+      m.getAsOrElse[Boolean]("stdio", false),
+      m.getAsOrElse[String]("testerName", "check.exe"),
+      m.getAs[Iterable[Int]]("answers").getOrElse(Seq()),
+      m.getAs[String]("interactorName")
+    )
 }
 
 trait ProblemDb {
@@ -67,7 +61,7 @@ class CommonProblemDb(mdb: MongoDB) extends SanitizeDb with Logging {
       trace("Looking for manifest: " + problem)
       val criteria = MongoDBObject("id" -> problem.id, "revision" -> problem.revision) ++ ("testerName" $exists true)
       mdb("manifest").findOne(criteria)
-        .flatMap { i =>
+        .map { i =>
         ProblemManifest(i)
       }
     }
