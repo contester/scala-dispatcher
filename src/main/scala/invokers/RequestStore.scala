@@ -19,7 +19,7 @@ trait PermanentError extends RuntimeException
 // Too many errors
 class TooManyErrors(cause: RuntimeException) extends RuntimeException(cause)
 
-trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps[CapsType]] extends Logging {
+trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps[CapsType]] extends Logging {
   protected type QueueEntry = (KeyType, Promise[InvokerType], AnyRef)
   private[this] object entryOrdering extends Ordering[QueueEntry] {
     def compare(x: QueueEntry, y: QueueEntry): Int =

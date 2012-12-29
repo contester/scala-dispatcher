@@ -8,7 +8,7 @@ import com.twitter.util.Future
 import scala.Some
 import org.stingray.contester.modules.ModuleFactoryFactory
 
-class InvokerRegistry(mongoHost: String) extends Registry with NewRequestStore[String, SchedulingKey, InvokerInstance] with Logging {
+class InvokerRegistry(mongoHost: String) extends Registry with RequestStore[String, SchedulingKey, InvokerInstance] with Logging {
   private[this] val channelMap = new mutable.HashMap[Channel, InvokerBig]
 
   private[this] def configure(client: InvokerRpcClient) =
