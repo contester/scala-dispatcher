@@ -77,6 +77,8 @@ class ProblemManifestByProblem(pdb: SanitizeDb, client: SpecializedClient, invok
   def getByProblem(pid: PolygonProblem): Future[Problem] =
     data.synchronized { data.getOrElseUpdate(pid, getWithDb(pid))}
 
-  def scan(pids: Seq[PolygonProblem]): Future[Unit] =
+  def scan(pids: Seq[PolygonProblem]): Future[Unit] = {
+    debug("PrevData: " + data.keys)
     Future.collect(pids.map(getByProblem(_))).unit
+  }
 }
