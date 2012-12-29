@@ -19,21 +19,20 @@ trait PermanentError extends RuntimeException
 // Too many errors
 class TooManyErrors(cause: RuntimeException) extends RuntimeException(cause)
 
-
 trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps[CapsType]] extends Logging {
-  type QueueEntry = (KeyType, Promise[InvokerType], AnyRef)
-  object entryOrdering extends Ordering[QueueEntry] {
+  protected type QueueEntry = (KeyType, Promise[InvokerType], AnyRef)
+  private[this] object entryOrdering extends Ordering[QueueEntry] {
     def compare(x: QueueEntry, y: QueueEntry): Int =
       y._1.compare(x._1)
   }
 
-  val waiting = new mutable.HashMap[CapsType, mutable.PriorityQueue[QueueEntry]]()
+  protected val waiting = new mutable.HashMap[CapsType, mutable.PriorityQueue[QueueEntry]]()
 
-  val freelist = mutable.Set[InvokerType]()
-  val badlist = mutable.Set[InvokerType]()
-  val uselist = new mutable.HashMap[InvokerType, (KeyType, AnyRef)]()
+  protected val freelist = mutable.Set[InvokerType]()
+  protected val badlist = mutable.Set[InvokerType]()
+  protected val uselist = new mutable.HashMap[InvokerType, (KeyType, AnyRef)]()
 
-  def stillAlive(invoker: InvokerType): Boolean
+  protected def stillAlive(invoker: InvokerType): Boolean
 
   private[this] def retryOrThrow[X](cap: CapsType, schedulingKey: KeyType, retries: Option[Int], e: RuntimeException, f: InvokerType => Future[X]): Future[X] =
     if (!retries.exists(_ > 0))
@@ -62,7 +61,7 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
       }.onSuccess(_ => reuseInvoker(invoker))
     }
 
-  def getInvoker(cap: CapsType, schedulingKey: KeyType, extra: AnyRef): Future[InvokerType] =
+  private[this] def getInvoker(cap: CapsType, schedulingKey: KeyType, extra: AnyRef): Future[InvokerType] =
     synchronized {
       freelist.find(_.caps.exists(_ == cap)).map { i =>
         freelist.remove(i)
@@ -75,12 +74,12 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
       }
     }
 
-  def addInvokers(invokers: Iterable[InvokerType]): Unit =
+  protected def addInvokers(invokers: Iterable[InvokerType]): Unit =
     synchronized {
       invokers.foreach(addInvoker)
     }
 
-  def addInvoker(invoker: InvokerType): Unit =
+  private[this] def addInvoker(invoker: InvokerType): Unit =
     if (stillAlive(invoker)) {
       trace("Adding " + invoker)
       waiting.filterKeys(invoker.caps.toSet).values.flatMap(w => w.headOption.map(_ -> w)).toSeq
@@ -93,7 +92,7 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
       }
     }
 
-  def reuseInvoker(invoker: InvokerType): Unit =
+  private[this] def reuseInvoker(invoker: InvokerType): Unit =
     synchronized {
       trace("Returning " + invoker)
       trace(uselist)
@@ -104,7 +103,7 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
     }
 
 
-  def badInvoker(invoker: InvokerType): Unit =
+  private[this] def badInvoker(invoker: InvokerType): Unit =
     synchronized {
       uselist.remove(invoker).foreach { _ =>
         if (stillAlive(invoker))
@@ -112,7 +111,7 @@ trait NewRequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasC
       }
     }
 
-  def removeInvokers(invokers: Iterable[InvokerType]): Unit =
+  protected def removeInvokers(invokers: Iterable[InvokerType]): Unit =
     synchronized {
       invokers.foreach { i =>
         freelist.remove(i)
