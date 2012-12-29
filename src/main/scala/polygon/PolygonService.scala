@@ -19,6 +19,7 @@ class ProblemByPid(client: SpecializedClient, pdb: PolygonDb) extends Logging {
 
   def scan(problems: Seq[ProblemURL]) = {
     val prevProblems = data.keySet
+    debug("PrevProblems: " + prevProblems)
     Future.collect(problems.map(problemId => getAndUpdateDb(problemId).map(problemId -> _)))
       .map(_.toMap).map { newMap =>
       data.synchronized {
