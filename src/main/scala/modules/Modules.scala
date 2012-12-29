@@ -14,7 +14,7 @@ trait ModuleHandler {
   def internal: Boolean = false
 }
 
-trait SourceHandler extends ModuleHandler {
+trait SourceHandler extends ModuleHandler with Logging {
   def sourceName: String
 
   def compile(sandbox: Sandbox): Future[CompileResult]
@@ -23,7 +23,10 @@ trait SourceHandler extends ModuleHandler {
   def step(stepName: String, sandbox: Sandbox, applicationName: String, arguments: ExecutionArguments): Future[StepResult] = {
     sandbox.getExecutionParameters(applicationName, arguments)
       .map(_.setCompiler).map(filter(_))
-      .flatMap(sandbox.executeWithParams).map(x => StepResult(stepName, x._1, x._2))
+      .flatMap(sandbox.executeWithParams).map { x =>
+      trace("sandbox.executeWithParams completed")
+      StepResult(stepName, x._1, x._2)
+    }
   }
 
   def compileAndCheck(sandbox: Sandbox, applicationName: String, arguments: ExecutionArguments, resultName: String) =
