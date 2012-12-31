@@ -11,7 +11,7 @@ import org.stingray.contester.problems.Problem
 class ProblemData(pclient: SpecializedClient, pdb: CommonPolygonDb, invoker: InvokerRegistry) extends Logging {
   private val contestByPid = new ContestByPid(pclient, pdb)
   private val problemByPid = new ProblemByPid(pclient, pdb)
-  private val manifestByPid = new ProblemManifestByProblem(pdb, pclient, invoker)
+  private val sanitizer = PolygonSanitizer(pdb, pclient, invoker)
 
   private val activeContests = new mutable.HashMap[Any, mutable.Set[Int]]()
 
@@ -48,7 +48,7 @@ class ProblemData(pclient: SpecializedClient, pdb: CommonPolygonDb, invoker: Inv
   private def scan(contests: Seq[Int]): Future[Unit] =
     contestByPid.scan(contests).map(_.flatMap(_.problems.values))
       .flatMap(problemByPid.scan(_))
-      .flatMap(manifestByPid.scan(_)).unit
+      .flatMap(sanitizer.scan(_)).unit
 
   import com.twitter.util.TimeConversions._
 
@@ -61,7 +61,7 @@ class ProblemData(pclient: SpecializedClient, pdb: CommonPolygonDb, invoker: Inv
     addContest(ref, contestPid)
       contestByPid.getContestByPid(contestPid).flatMap { contest =>
         problemByPid.getProblemByPid(contest.problems(problemId.toUpperCase)).flatMap { problem =>
-          manifestByPid.getByProblem(problem)
+          sanitizer(problem)
         }
       }
   }

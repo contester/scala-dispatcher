@@ -14,27 +14,32 @@ class SimpleSanitizer(invoker: InvokerRegistry) extends Function[ProblemDescript
     }
 }
 
-class ProblemDBSanitizer(db: SanitizeDb,
+abstract class ProblemDBSanitizer[ProblemType <: ProblemDescription](db: SanitizeDb,
                          simpleSanitizer: Function[ProblemDescription, Future[ProblemManifest]])
-  extends Function[ProblemDescription, Future[Problem]] {
+  extends Function[ProblemType, Future[Problem]] {
 
-  private val cache = new mutable.HashMap[ProblemDescription, Problem]()
-  private val futures = new mutable.HashMap[ProblemDescription, Future[Problem]]()
+  def getProblemFile(key: ProblemType): Future[Array[Byte]]
 
-  private def updateCache(key: ProblemDescription, result: Problem): Unit =
+  private val cache = new mutable.HashMap[ProblemType, Problem]()
+  private val futures = new mutable.HashMap[ProblemType, Future[Problem]]()
+
+  private def updateCache(key: ProblemType, result: Problem): Unit =
     synchronized {
       cache(key) = result
     }
 
-  private def removeFuture(key: ProblemDescription): Unit =
+  private def removeFuture(key: ProblemType): Unit =
     synchronized {
       futures.remove(key)
     }
 
-  private def returnOrSanitize(key: ProblemDescription, result: Option[Problem]): Future[Problem] =
-    result.map(Future.value(_)).getOrElse(simpleSanitizer(key).flatMap(db.setProblem(key, _)))
+  private def returnOrSanitize(key: ProblemType, result: Option[Problem]): Future[Problem] =
+    result.map(Future.value(_))
+      .getOrElse(
+          db.getProblemFile(key, getProblemFile(key))
+            .flatMap(_ => simpleSanitizer(key)).flatMap(db.setProblem(key, _)))
 
-  def apply(key: ProblemDescription): Future[Problem] =
+  def apply(key: ProblemType): Future[Problem] =
     synchronized {
       if (cache.contains(key))
         Future.value(cache(key))
@@ -42,4 +47,7 @@ class ProblemDBSanitizer(db: SanitizeDb,
         futures.getOrElseUpdate(key,
           db.getProblem(key).flatMap(returnOrSanitize(key, _)).onSuccess(updateCache(key, _)).ensure(removeFuture(key)))
     }
+
+  def scan(keys: Seq[ProblemType]): Future[Unit] =
+    Future.collect(keys.map(apply(_))).unit
 }

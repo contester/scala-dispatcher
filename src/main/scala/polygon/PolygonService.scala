@@ -5,8 +5,7 @@ import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.problems
-import org.stingray.contester.engine.Sanitizer
-import problems.{ProblemManifest, SanitizeDb, Problem}
+import problems._
 
 class ProblemByPid(client: SpecializedClient, pdb: PolygonDb) extends Logging {
   private val data = new mutable.HashMap[ProblemURL, Future[PolygonProblem]]()
@@ -60,25 +59,13 @@ class ContestByPid(client: SpecializedClient, pdb: PolygonDb) extends Logging {
   }
 }
 
-class ProblemManifestByProblem(pdb: SanitizeDb, client: SpecializedClient, invoker: InvokerRegistry) extends Logging {
-  private val data = mutable.HashMap[PolygonProblem, Future[Problem]]()
+class PolygonSanitizer(db: SanitizeDb, client: SpecializedClient, invoker: InvokerRegistry)
+  extends ProblemDBSanitizer[PolygonProblem](db, new SimpleSanitizer(invoker)) {
+  def getProblemFile(key: PolygonProblem): Future[Array[Byte]] =
+    client.getProblemFile(key)
+}
 
-  private def getWithDb(pid: PolygonProblem): Future[Problem] =
-    pdb.getProblem(pid).flatMap(_.headOption.map(Future.value(_)).getOrElse(getAndUpdateDb(pid)))
-
-  // TODO: Don't getProblemFile in sanitizer;
-  private def callSanitize(pid: PolygonProblem): Future[ProblemManifest] =
-    invoker("zip", pid, "sanitize")(Sanitizer(_, pid))
-
-  private def getAndUpdateDb(pid: PolygonProblem): Future[Problem] =
-    pdb.getProblemFile(pid, client.getProblemFile(pid)).flatMap(_ =>
-      callSanitize(pid).flatMap(i => pdb.setProblem(pid, i)))
-
-  def getByProblem(pid: PolygonProblem): Future[Problem] =
-    data.synchronized { data.getOrElseUpdate(pid, getWithDb(pid))}
-
-  def scan(pids: Seq[PolygonProblem]): Future[Unit] = {
-    debug("PrevData: " + data.keys)
-    Future.collect(pids.map(getByProblem(_))).unit
-  }
+object PolygonSanitizer {
+  def apply(db: SanitizeDb, client: SpecializedClient, invoker: InvokerRegistry) =
+    new PolygonSanitizer(db, client, invoker)
 }
