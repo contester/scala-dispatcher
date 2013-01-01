@@ -32,4 +32,18 @@ class UtilTests extends FlatSpec with ShouldMatchers {
       results.apply()
     }
   }
+  it should "return different results when prev request is completed" in {
+    val sq = new SerialHash[Int, Int]
+    val p = new Promise[Int]()
+    val q = new Promise[Int]()
+
+    val f1 = sq(1, () => p)
+    p.setValue(2)
+    f1()
+
+    Utils.later(Duration(1, TimeUnit.SECONDS)).apply()
+
+    val f2 = sq(1, () => q)
+    f2 should not equal f1
+  }
 }
