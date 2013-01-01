@@ -51,7 +51,8 @@ libraryDependencies ++= Seq(
   "commons-io" % "commons-io" % "2.4",
   "com.rabbitmq" % "amqp-client" % "2.8.7",
   "com.codahale" % "jerkson_2.9.1" % "0.5.0",
-  "mysql" % "mysql-connector-java" % "5.1.22"
+  "mysql" % "mysql-connector-java" % "5.1.22",
+  "org.scalatest" %% "scalatest" % "1.8" % "test"
 )
 
 scalateTemplateDirectory in Compile <<= (baseDirectory) { _ / "src/main/resources/templates" }
