@@ -6,7 +6,7 @@ import org.scalatest.FlatSpec
 import java.util.concurrent.TimeUnit
 import com.twitter.util.{Future, Promise, Duration}
 
-class UtilTests extends FlatSpec with ShouldMatchers {
+class SerialHashTests extends FlatSpec with ShouldMatchers {
   "HashQueue" should "return the same future for long-running request" in {
     val sq = new SerialHash[Int, Unit]
 
@@ -45,5 +45,42 @@ class UtilTests extends FlatSpec with ShouldMatchers {
 
     val f2 = sq(1, () => q)
     f2 should not equal f1
+  }
+}
+
+class ScannerCacheTests extends FlatSpec with ShouldMatchers {
+  "ScannerCache" should "behave transparently" in {
+    val c = ScannerCache[Int, Int](_ => Future.None, (_, _) => Future.Done, _ => Future.value(1))
+
+    expect(1) {
+      c(1).apply()
+    }
+  }
+
+  it should "serialize properly" in {
+    val p = new Promise[Int]()
+
+    val c = ScannerCache[Int, Int](_ => Future.None, (_, _) => Future.Done, _ => p)
+    val f1 = c(1)
+    val f2 = c(1)
+
+    expect(f1) {
+      c(1)
+    }
+
+    p.setValue(2)
+    expect(2) {
+      f1.apply()
+    }
+
+    expect(2) {
+      f2.apply()
+    }
+
+    val f3 = c(1)
+    f3 should not equal f1
+    expect(2) {
+      f3.apply()
+    }
   }
 }

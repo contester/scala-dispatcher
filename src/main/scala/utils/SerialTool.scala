@@ -19,18 +19,17 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[Val
     }
 }
 
-trait CacheFunctions[KeyType, ValueType] {
-  def get(key: KeyType): Future[Option[ValueType]]
-  def set(key: KeyType, value: ValueType): Future[Unit]
-}
+abstract class ScannerCache[KeyType, ValueType] extends Function[KeyType, Future[ValueType]] {
+  def nearGet(key: KeyType): Future[Option[ValueType]]
+  def nearPut(key: KeyType, value: ValueType): Future[Unit]
+  def farGet(key: KeyType): Future[ValueType]
 
-class ScannerCache[KeyType, ValueType](cache: CacheFunctions[KeyType, ValueType], farEnd: Function[KeyType, Future[ValueType]]) extends Function[KeyType, Future[ValueType]] {
   val localCache = new mutable.HashMap[KeyType, ValueType]()
   val serialHash = new SerialHash[KeyType, ValueType]()
 
   private[this] def getValue(key: KeyType) =
-    cache.get(key).flatMap { optVal =>
-      optVal.map(Future.value(_)).getOrElse(farEnd(key).flatMap(x => cache.set(key, x).map(_ => x)))
+    nearGet(key).flatMap { optVal =>
+      optVal.map(Future.value(_)).getOrElse(farGet(key).flatMap(x => nearPut(key, x).map(_ => x)))
     }
 
   private[this] def setLocal(key: KeyType, value: ValueType) =
@@ -53,15 +52,17 @@ class ScannerCache[KeyType, ValueType](cache: CacheFunctions[KeyType, ValueType]
     Future.collect(keys.map(apply(_)).toSeq).onSuccess { vals =>
       setKeys(keys.toSet)
     }
-
 }
 
-case class CallbackCache[KeyType, ValueType](getFn: Function[KeyType, Future[Option[ValueType]]],
-                                        setFn: Function2[KeyType, ValueType, Future[Unit]])
-  extends CacheFunctions[KeyType, ValueType] {
-  def get(key: KeyType): Future[Option[ValueType]] =
-    getFn(key)
+object ScannerCache {
+  def apply[KeyType, ValueType](nearGetFn: KeyType => Future[Option[ValueType]],
+                                nearPutFn: (KeyType, ValueType) => Future[Unit],
+                                farGetFn: KeyType => Future[ValueType]): ScannerCache[KeyType, ValueType] =
+    new ScannerCache[KeyType, ValueType] {
+      def nearGet(key: KeyType): Future[Option[ValueType]] = nearGetFn(key)
 
-  def set(key: KeyType, value: ValueType): Future[Unit] =
-    setFn(key, value)
+      def nearPut(key: KeyType, value: ValueType): Future[Unit] = nearPutFn(key, value)
+
+      def farGet(key: KeyType): Future[ValueType] = farGetFn(key)
+    }
 }
