@@ -7,24 +7,6 @@ import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.problems
 import problems._
 
-abstract class CachingScanner[KeyType, ValueType] extends Function[KeyType, Future[ValueType]] {
-  private val cache = new mutable.HashMap[KeyType, ValueType]()
-  private val futures = new mutable.HashMap[KeyType, Future[ValueType]]()
-
-  private def updateCache(key: KeyType, result: ValueType): Unit =
-    synchronized {
-      cache(key) = result
-    }
-
-  private def removeFuture(key: KeyType): Unit =
-    synchronized {
-      futures.remove(key)
-    }
-
-
-}
-
-
 class ProblemByPid(client: SpecializedClient, pdb: PolygonDb) extends Logging {
   private val data = new mutable.HashMap[ProblemURL, Future[PolygonProblem]]()
 
