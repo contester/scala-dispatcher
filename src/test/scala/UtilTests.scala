@@ -77,8 +77,6 @@ class SerialHashTests extends FlatSpec with ShouldMatchers {
     expect("one") {
       sq(1, () => Future.value("one")).apply()
     }
-    Utils.later(Duration(1, TimeUnit.SECONDS)).apply()
-    println(sq.data)
     expect("two") {
       sq(1, () => Future.value("two")).apply()
     }

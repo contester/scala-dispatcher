@@ -4,7 +4,7 @@ import com.twitter.util.{Try, Future}
 import collection.mutable
 
 class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[ValueType], Future[ValueType]] {
-  val data = new mutable.HashMap[KeyType, Future[ValueType]]()
+  private val data = new mutable.HashMap[KeyType, Future[ValueType]]()
 
   private[this] def removeKey(key: KeyType, v: Try[ValueType]) = {
     synchronized {
