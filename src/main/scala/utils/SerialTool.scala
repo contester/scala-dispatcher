@@ -23,16 +23,16 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[Val
     }
 }
 
-abstract class ScannerCache[KeyType, ValueType] extends Function[KeyType, Future[ValueType]] {
+abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyType, Future[ValueType]] {
   def nearGet(key: KeyType): Future[Option[ValueType]]
-  def nearPut(key: KeyType, value: ValueType): Future[Unit]
-  def farGet(key: KeyType): Future[ValueType]
+  def nearPut(key: KeyType, value: SomeType): Future[ValueType]
+  def farGet(key: KeyType): Future[SomeType]
 
   val localCache = new mutable.HashMap[KeyType, ValueType]()
   val serialHash = new SerialHash[KeyType, ValueType]()
 
   private[this] def fetchValue(key: KeyType) =
-    farGet(key).flatMap(x => nearPut(key, x).map(_ => x))
+    farGet(key).flatMap(x => nearPut(key, x))
 
   private[this] def getValue(key: KeyType) =
     nearGet(key).flatMap { optVal =>
@@ -67,11 +67,11 @@ abstract class ScannerCache[KeyType, ValueType] extends Function[KeyType, Future
 object ScannerCache {
   def apply[KeyType, ValueType](nearGetFn: KeyType => Future[Option[ValueType]],
                                 nearPutFn: (KeyType, ValueType) => Future[Unit],
-                                farGetFn: KeyType => Future[ValueType]): ScannerCache[KeyType, ValueType] =
-    new ScannerCache[KeyType, ValueType] {
+                                farGetFn: KeyType => Future[ValueType]): ScannerCache[KeyType, ValueType, ValueType] =
+    new ScannerCache[KeyType, ValueType, ValueType] {
       def nearGet(key: KeyType): Future[Option[ValueType]] = nearGetFn(key)
 
-      def nearPut(key: KeyType, value: ValueType): Future[Unit] = nearPutFn(key, value)
+      def nearPut(key: KeyType, value: ValueType): Future[ValueType] = nearPutFn(key, value).map(_ => value)
 
       def farGet(key: KeyType): Future[ValueType] = farGetFn(key)
     }
