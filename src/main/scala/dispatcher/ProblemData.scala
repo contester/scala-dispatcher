@@ -33,7 +33,7 @@ class ProblemData(pclient: SpecializedClient, pdb: CommonPolygonDb, invoker: Inv
   def getContests(ref: Any, contests: Seq[Int]): Future[Map[Int, ContestWithProblems]] = {
     setContests(ref, contests)
     Future.collect(contests.map { contestPid =>
-      contestByPid.getContestByPid(contestPid).flatMap { contest =>
+      contestByPid(contestPid).flatMap { contest =>
         Future.collect(contest.problems.map(p => problemByPid.getProblemByPid(p._2).map(p._1 -> _)).toSeq)
           .map(v => contestPid -> new ContestWithProblems(contest, v.toMap))
       }
@@ -59,7 +59,7 @@ class ProblemData(pclient: SpecializedClient, pdb: CommonPolygonDb, invoker: Inv
 
   def getProblemInfo(ref: Any, contestPid: Int, problemId: String): Future[Problem] = {
     addContest(ref, contestPid)
-      contestByPid.getContestByPid(contestPid).flatMap { contest =>
+      contestByPid(contestPid).flatMap { contest =>
         problemByPid.getProblemByPid(contest.problems(problemId.toUpperCase)).flatMap { problem =>
           sanitizer(problem)
         }

@@ -6,6 +6,7 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.problems
 import problems._
+import org.stingray.contester.utils.ScannerCache
 
 class ProblemByPid(client: SpecializedClient, pdb: PolygonDb) extends Logging {
   private val data = new mutable.HashMap[ProblemURL, Future[PolygonProblem]]()
@@ -33,30 +34,15 @@ class ProblemByPid(client: SpecializedClient, pdb: PolygonDb) extends Logging {
     data.synchronized { data.getOrElseUpdate(pid, getDb(pid)) }
 }
 
-class ContestByPid(client: SpecializedClient, pdb: PolygonDb) extends Logging {
-  private val data = mutable.HashMap[Int, Future[ContestDescription]]()
+class ContestByPid(client: SpecializedClient, pdb: PolygonDb) extends ScannerCache[Int, ContestDescription, ContestDescription] {
+  def nearGet(key: Int): Future[Option[ContestDescription]] =
+    pdb.getContestDescription(key)
 
-  private def getWithDb(pid: Int) =
-    pdb.getContestDescription(pid).flatMap(_.headOption.map(Future.value(_)).getOrElse(getAndUpdateDb(pid)))
+  def nearPut(key: Int, value: ContestDescription): Future[ContestDescription] =
+    pdb.setContestDescription(key, value).map(_ => value)
 
-  private def getAndUpdateDb(contestId: Int) =
-    client.getContest(contestId).onSuccess(pdb.setContestDescription(contestId, _))
-
-  def getContestByPid(pid: Int) =
-    data.synchronized { data.getOrElseUpdate(pid, getWithDb(pid)) }
-
-  def scan(contests: Seq[Int]) = {
-    val prevContests = data.keySet
-    Future.collect(contests.map { contestId =>
-      getAndUpdateDb(contestId).map((contestId -> _))
-    }).map(_.toMap).map { newMap =>
-      data.synchronized {
-        prevContests.foreach(data.remove(_))
-        newMap.foreach(x => data(x._1) = Future.value(x._2))
-      }
-      newMap.values.toSeq
-    }
-  }
+  def farGet(key: Int): Future[ContestDescription] =
+    client.getContest(key)
 }
 
 class PolygonSanitizer(db: SanitizeDb, client: SpecializedClient, invoker: InvokerRegistry)
