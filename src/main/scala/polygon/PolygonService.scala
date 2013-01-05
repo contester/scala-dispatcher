@@ -1,37 +1,20 @@
 package org.stingray.contester.polygon
 
-import collection.mutable
 import com.twitter.util.Future
-import grizzled.slf4j.Logging
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.problems
 import problems._
 import org.stingray.contester.utils.ScannerCache
 
-class ProblemByPid(client: SpecializedClient, pdb: PolygonDb) extends Logging {
-  private val data = new mutable.HashMap[ProblemURL, Future[PolygonProblem]]()
+class ProblemByPid(client: SpecializedClient, pdb: PolygonDb) extends ScannerCache[ProblemURL, PolygonProblem, PolygonProblem] {
+  def nearGet(key: ProblemURL): Future[Option[PolygonProblem]] =
+    pdb.getProblemDescription(key)
 
-  private def getDb(pid: ProblemURL) =
-    pdb.getProblemDescription(pid).flatMap(_.headOption.map(Future.value(_)).getOrElse(getAndUpdateDb(pid)))
+  def nearPut(key: ProblemURL, value: PolygonProblem): Future[PolygonProblem] =
+    pdb.setProblemDescription(value).map(_ => value)
 
-  private def getAndUpdateDb(problemId: ProblemURL) =
-    client.getProblem(problemId).onSuccess(pdb.setProblemDescription(_))
-
-  def scan(problems: Seq[ProblemURL]) = {
-    val prevProblems = data.keySet
-    debug("PrevProblems: " + prevProblems)
-    Future.collect(problems.map(problemId => getAndUpdateDb(problemId).map(problemId -> _)))
-      .map(_.toMap).map { newMap =>
-      data.synchronized {
-        prevProblems.foreach(data.remove(_))
-        newMap.foreach(x => data(x._1) = Future.value(x._2))
-      }
-      newMap.values.toSeq
-    }
-  }
-
-  def getProblemByPid(pid: ProblemURL) =
-    data.synchronized { data.getOrElseUpdate(pid, getDb(pid)) }
+  def farGet(key: ProblemURL): Future[PolygonProblem] =
+    client.getProblem(key)
 }
 
 class ContestByPid(client: SpecializedClient, pdb: PolygonDb) extends ScannerCache[Int, ContestDescription, ContestDescription] {

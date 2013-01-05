@@ -27,6 +27,7 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool) extends Logging {
     }
 
   private[this] val data = new mutable.HashMap[Int, ContestRow]()
+  private[this] val
 
   private[this] val scanMutex = new AsyncMutex()
 
