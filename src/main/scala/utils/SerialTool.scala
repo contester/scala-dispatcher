@@ -30,6 +30,8 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
   def nearPut(key: KeyType, value: SomeType): Future[ValueType]
   def farGet(key: KeyType): Future[SomeType]
 
+  val farScan = false
+
   val localCache = new mutable.HashMap[KeyType, ValueType]()
   val serialHash = new SerialHash[KeyType, ValueType]()
 
@@ -68,7 +70,7 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
     }
 
   def scan(keys: Iterable[KeyType]) =
-    Future.collect(keys.map(fetchAndSet(fetchValue, _)).toSeq).onSuccess { vals =>
+    Future.collect(keys.map(fetchAndSet(if (farScan) fetchValue else getValue, _)).toSeq).onSuccess { vals =>
       setKeys(keys.toSet)
     }
 }

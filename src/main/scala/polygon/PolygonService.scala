@@ -15,6 +15,8 @@ class ProblemByPid(client: SpecializedClient, pdb: PolygonDb) extends ScannerCac
 
   def farGet(key: ProblemURL): Future[PolygonProblem] =
     client.getProblem(key)
+
+  override val farScan: Boolean = true
 }
 
 class ContestByPid(client: SpecializedClient, pdb: PolygonDb) extends ScannerCache[Int, ContestDescription, ContestDescription] {
@@ -26,6 +28,8 @@ class ContestByPid(client: SpecializedClient, pdb: PolygonDb) extends ScannerCac
 
   def farGet(key: Int): Future[ContestDescription] =
     client.getContest(key)
+
+  override val farScan: Boolean = true
 }
 
 class PolygonSanitizer(db: SanitizeDb, client: SpecializedClient, invoker: InvokerRegistry)
