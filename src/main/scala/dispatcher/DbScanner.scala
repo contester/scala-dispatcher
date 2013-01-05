@@ -1,8 +1,7 @@
 package org.stingray.contester.dispatcher
 
-import collection.mutable
-import com.twitter.concurrent.AsyncMutex
-import com.twitter.util.Future
+import collection.immutable
+import com.twitter.util.{Promise, Future}
 import com.twitter.util.TimeConversions._
 import grizzled.slf4j.Logging
 import org.stingray.contester.db.ConnectionPool
@@ -14,7 +13,7 @@ case class ProblemRow(contest: Int, id: String, tests: Int, name: String, rating
 
 class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
-class ContestTableScanner(d: ProblemData, db: ConnectionPool) extends Logging {
+class ContestTableScanner(d: ProblemData, db: ConnectionPool) extends Function[Int, Future[Int]] with Logging {
   private def getContestsFromDb: Future[Seq[ContestRow]] =
     db.select("select ID, Name, SchoolMode, PolygonID, Language from Contests where PolygonID != 0") { row =>
       ContestRow(row.getInt("ID"), row.getString("Name"), row.getInt("PolygonID"), row.getInt("SchoolMode") == 1, row.getString("Language").toLowerCase)
@@ -26,10 +25,8 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool) extends Logging {
         row.getString("Name"), row.getInt("Rating"))
     }
 
-  private[this] val data = new mutable.HashMap[Int, ContestRow]()
-  private[this] val
-
-  private[this] val scanMutex = new AsyncMutex()
+  private[this] var data: Map[Int, ContestRow] = new immutable.HashMap[Int, ContestRow]()
+  private[this] var nextScan = new Promise[Unit]()
 
   private[this] def maybeUpdateContestName(contestId: Int, rowName: String, contestName: String): Option[Future[Unit]] =
     if (rowName != contestName)
@@ -55,38 +52,31 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool) extends Logging {
     }).unit
   }
 
-  private def updateContests(contestList: Seq[ContestRow]) = {
-    val newData = contestList.map(v => v.id -> v).toMap
-    trace("Updating contest info with " + newData)
-    val newIds = newData.values.map(_.polygonId).toSet
-    val newKeys = newData.keySet
-    data.synchronized {
-       val oldIds = data.values.map(_.polygonId).toSet
-       (data.keySet -- newKeys).foreach(data.remove)
-       newData.foreach(v => data.put(v._1, v._2))
-       oldIds
-     }
-
-    d.getContests(this, newIds.toSeq).join(getProblemsFromDb)
-      .flatMap { o =>
-      Future.collect(o._1.flatMap(x => contestList.filter(_.polygonId == x._1).map(singleContest(_, x._2, o._2))).toSeq)
-    }
-      .onFailure(error("foo", _))
+  private def updateContests(contestList: Iterable[ContestRow]): Future[Unit] = {
+    d.getContests(this, contestList.map(_.polygonId).toSet.toSeq).join(getProblemsFromDb)
+      .flatMap {
+      case (contests, problems) =>
+        Future.collect(contests.flatMap(x => contestList.filter(_.polygonId == x._1).map(singleContest(_, x._2, problems))).toSeq)
+    }.unit
   }
 
-  private def scan =
-    scanMutex.acquire().flatMap { permit =>
-      getContestsFromDb.map { contestList =>
-        updateContests(contestList)
-      }.ensure(permit.release())
+  def getNewContestMap: Future[Map[Int, ContestRow]] =
+    getContestsFromDb.map(_.map(v => v.id -> v).toMap)
+
+  def apply(key: Int): Future[Int] =
+    synchronized {
+      data.get(key).map(x => Future.value(x.polygonId)).getOrElse(nextScan.map(_ => data(key).polygonId))
     }
 
-  private[this] def justGetPid(contestId: Int): Option[Int] =
-    data.get(contestId).map(_.polygonId)
-
-  def getContestPid(contestId: Int): Future[Int] =
-    justGetPid(contestId).map(Future.value(_))
-      .getOrElse(scan.map(_ => justGetPid(contestId).get))
+  def scan: Future[Unit] =
+    getNewContestMap.flatMap { newMap =>
+      synchronized {
+        data = newMap
+        nextScan.setValue()
+        nextScan = new Promise[Unit]()
+      }
+      updateContests(newMap.values)
+    }
 
   def rescan: Future[Unit] =
     scan.onFailure(error("rescan", _)).rescue {
@@ -94,6 +84,4 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool) extends Logging {
     }.flatMap { _ =>
       Utils.later(15.second).flatMap(_ => rescan)
     }
-
-  // TODO: rescan
 }

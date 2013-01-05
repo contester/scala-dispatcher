@@ -20,7 +20,7 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
     Future.collect(x.toSeq).map(_.headOption)
 
   def getProblem(cid: Int, problem: String): Future[Problem] =
-    pscanner.getContestPid(cid).flatMap(pdata.getProblemInfo(pscanner, _, problem))
+    pscanner(cid).flatMap(pdata.getProblemInfo(pscanner, _, problem))
 
   def amqPost(id: Int) = {
     info("Finished: %s/%d".format(amqid, id))
