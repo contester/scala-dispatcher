@@ -2,8 +2,9 @@ package org.stingray.contester.utils
 
 import com.twitter.util.{Try, Future}
 import collection.mutable
+import grizzled.slf4j.Logging
 
-class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[ValueType], Future[ValueType]] {
+class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[ValueType], Future[ValueType]] with Logging {
   private val data = new mutable.HashMap[KeyType, Future[ValueType]]()
 
   private[this] def removeKey(key: KeyType, v: Try[ValueType]) = {
@@ -23,7 +24,7 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[Val
     }
 }
 
-abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyType, Future[ValueType]] {
+abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyType, Future[ValueType]] with Logging {
   def nearGet(key: KeyType): Future[Option[ValueType]]
   def nearPut(key: KeyType, value: SomeType): Future[ValueType]
   def farGet(key: KeyType): Future[SomeType]
@@ -31,12 +32,17 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
   val localCache = new mutable.HashMap[KeyType, ValueType]()
   val serialHash = new SerialHash[KeyType, ValueType]()
 
-  private[this] def fetchValue(key: KeyType) =
+  private[this] def fetchValue(key: KeyType) = {
+    trace("Far miss for %s".format(key))
     farGet(key).flatMap(x => nearPut(key, x))
+  }
 
   private[this] def getValue(key: KeyType) =
     nearGet(key).flatMap { optVal =>
-      optVal.map(Future.value(_)).getOrElse(fetchValue(key))
+      optVal.map { v =>
+        trace("Serving %s from near miss".format(key))
+        Future.value(v)
+      }.getOrElse(fetchValue(key))
     }
 
   private[this] def setLocal(key: KeyType, value: ValueType) =
@@ -54,8 +60,10 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
 
   def apply(key: KeyType): Future[ValueType] =
     synchronized {
-      localCache.get(key).map(Future.value(_))
-        .getOrElse(fetchAndSet(getValue, key))
+      localCache.get(key).map { v =>
+        trace("Serving %s from local cache".format(v))
+        Future.value(v)
+      }.getOrElse(fetchAndSet(getValue, key))
     }
 
   def scan(keys: Iterable[KeyType]) =

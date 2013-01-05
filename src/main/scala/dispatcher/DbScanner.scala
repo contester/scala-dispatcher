@@ -68,8 +68,10 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool) extends Function[I
       data.get(key).map(x => Future.value(x.polygonId)).getOrElse(nextScan.map(_ => data(key).polygonId))
     }
 
-  def scan: Future[Unit] =
+  def scan: Future[Unit] = {
+    trace("Started scanning Contest/Problem tables")
     getNewContestMap.flatMap { newMap =>
+      trace("Finished scanning Contests, publishing the map")
       synchronized {
         data = newMap
         nextScan.setValue()
@@ -77,6 +79,7 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool) extends Function[I
       }
       updateContests(newMap.values)
     }
+  }
 
   def rescan: Future[Unit] =
     scan.onFailure(error("rescan", _)).rescue {
