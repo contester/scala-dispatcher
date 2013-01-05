@@ -180,5 +180,16 @@ class ScannerCacheTests extends FlatSpec with ShouldMatchers {
     }
   }
 
+  it should "use near-cache" in {
+    val c = ScannerCache[Int, Int](_ => Future.value(Some(5)), (_, _) => Future.Done, _ => Future.value(7))
+
+    expect(5) {
+      c(1).apply()
+    }
+    c.scan(Seq(1)).apply()
+    expect(7) {
+      c(1).apply()
+    }
+  }
 
 }

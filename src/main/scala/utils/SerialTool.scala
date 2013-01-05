@@ -16,9 +16,10 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[Val
 
   def apply(key: KeyType, get: () => Future[ValueType]): Future[ValueType] =
     synchronized {
-      if (data.contains(key))
+      if (data.contains(key)) {
+        trace("Enqueued: %s".format(key))
         data(key)
-      else
+      } else
         data(key) = get()
         data(key).transform(removeKey(key, _))
     }
@@ -33,14 +34,14 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
   val serialHash = new SerialHash[KeyType, ValueType]()
 
   private[this] def fetchValue(key: KeyType) = {
-    trace("Far miss for %s".format(key))
+    trace("Miss: %s".format(key))
     farGet(key).flatMap(x => nearPut(key, x))
   }
 
   private[this] def getValue(key: KeyType) =
     nearGet(key).flatMap { optVal =>
       optVal.map { v =>
-        trace("Serving %s from near miss".format(key))
+        trace("Near-hit: %s, result: %s".format(key, v))
         Future.value(v)
       }.getOrElse(fetchValue(key))
     }
@@ -61,7 +62,7 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
   def apply(key: KeyType): Future[ValueType] =
     synchronized {
       localCache.get(key).map { v =>
-        trace("Serving %s from local cache".format(v))
+        trace("Hit: %s, result: %s".format(key, v))
         Future.value(v)
       }.getOrElse(fetchAndSet(getValue, key))
     }
