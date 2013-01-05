@@ -42,12 +42,18 @@ class InvokerRpcClient(val client: RpcClient) extends Logging {
     trace("Clear: " + sandbox)
     client.callNoResult("Contester.Clear", ClearSandboxRequest.newBuilder().setSandbox(sandbox).build())
       .onFailure(x => error("Clear: ", x))
+      .handle {
+      case e: RemoteError => throw new TransientError(e)
+    }
   }
 
   def put(file: FileBlob): Future[Unit] = {
     trace("Put: " + file.getName)
     client.callNoResult("Contester.Put", file)
       .onFailure(x => error("Put: ", x))
+      .handle {
+      case e: RemoteError => throw new TransientError(e)
+    }
   }
 
   def get(name: String) = {
