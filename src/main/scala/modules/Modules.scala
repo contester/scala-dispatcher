@@ -22,7 +22,8 @@ trait SourceHandler extends ModuleHandler with Logging {
 
   def step(stepName: String, sandbox: Sandbox, applicationName: String, arguments: ExecutionArguments): Future[StepResult] = {
     sandbox.getExecutionParameters(applicationName, arguments)
-      .map(_.setCompiler).map(filter(_))
+      .map(_.setCompiler)
+      .map(filter(_))
       .flatMap(sandbox.executeWithParams).map { x =>
       trace("sandbox.executeWithParams completed")
       StepResult(stepName, x._1, x._2)
