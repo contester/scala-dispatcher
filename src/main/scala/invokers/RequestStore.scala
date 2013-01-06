@@ -74,7 +74,7 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
       }
     }
 
-  protected def addInvokers(invokers: Iterable[InvokerType]): Unit =
+  def addInvokers(invokers: Iterable[InvokerType]): Unit =
     synchronized {
       invokers.foreach(addInvoker)
     }

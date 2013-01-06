@@ -187,7 +187,7 @@ class ScannerCacheTests extends FlatSpec with ShouldMatchers {
       c(1).apply()
     }
     c.scan(Seq(1)).apply()
-    expect(7) {
+    expect(5) {
       c(1).apply()
     }
   }
