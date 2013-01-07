@@ -73,7 +73,7 @@ object Tester extends Logging {
       .flatMap { _ => executeSolution(instance.run, moduleHandler, module, test.getLimits(module.getType), test.stdio) }
       .flatMap { solutionResult =>
       if (solutionResult.success) {
-        instance.run.stat("*").flatMap { stats =>
+        instance.run.glob("*").flatMap { stats =>
           trace(stats)
           test.prepareInput(instance.run).flatMap{_ => test.prepareTester(instance.run)}
           .flatMap(_ => test.prepareTesterBinary(instance.run))

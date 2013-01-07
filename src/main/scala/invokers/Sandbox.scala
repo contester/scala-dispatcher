@@ -47,6 +47,9 @@ class Sandbox(val instance: InvokerInstance, val restricted: Boolean)  {
   def glob(f: Iterable[RemoteFile]) =
     i.glob(f)
 
+  def glob(name: String) =
+    i.glob(sandboxId ** name :: Nil)
+
   def stat(name: String): Future[Iterable[RemoteFile]] =
     stat(sandboxId ** name :: Nil)
 
