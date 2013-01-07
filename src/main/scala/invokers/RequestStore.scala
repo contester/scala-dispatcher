@@ -47,14 +47,17 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
       f(invoker)
         .rescue {
         case e: TransientError => {
+          error("Transient error:", e)
           reuseInvoker(invoker)
           retryOrThrow(cap, schedulingKey, retries, e, f)
         }
         case e: PermanentError => {
+          error("Permanent error:", e)
           badInvoker(invoker)
           retryOrThrow(cap, schedulingKey, retries, e, f)
         }
         case e: Throwable => {
+          error("Unknown error:", e)
           reuseInvoker(invoker)
           Future.exception(e)
         }
@@ -94,10 +97,8 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
 
   private[this] def reuseInvoker(invoker: InvokerType): Unit =
     synchronized {
-      trace("Returning " + invoker)
-      trace(uselist)
       uselist.remove(invoker).foreach { _ =>
-        trace(invoker)
+        trace("Returning " + invoker)
         addInvoker(invoker)
       }
     }
