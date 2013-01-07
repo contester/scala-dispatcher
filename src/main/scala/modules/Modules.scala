@@ -33,6 +33,7 @@ trait SourceHandler extends ModuleHandler with Logging {
   def compileAndCheck(sandbox: Sandbox, applicationName: String, arguments: ExecutionArguments, resultName: String) =
     step("Compilation", sandbox, applicationName, arguments)
       .flatMap { result =>
+      trace("Before statfile, result is:" + result)
       sandbox.statFile(resultName).map(!_.isEmpty).map((result, _))
     }
 
