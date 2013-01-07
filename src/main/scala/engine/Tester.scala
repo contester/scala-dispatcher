@@ -3,7 +3,7 @@ package org.stingray.contester.engine
 import grizzled.slf4j.Logging
 import org.stingray.contester.proto.Local.{LocalExecutionResult, LocalExecutionParameters}
 import org.stingray.contester.common._
-import org.stingray.contester.invokers.{RunnerInstance, InvokerInstance, Sandbox}
+import org.stingray.contester.invokers.{TransientError, RunnerInstance, InvokerInstance, Sandbox}
 import org.stingray.contester.modules.BinaryHandler
 import org.stingray.contester.proto.Blobs.Module
 import org.stingray.contester.problems.{Test, TestLimits}
@@ -12,6 +12,7 @@ import com.twitter.util.{Duration, Future}
 import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.utils.Utils
 import java.util.concurrent.TimeUnit
+import org.stingray.contester.rpc4.RemoteError
 
 object Tester extends Logging {
   private def asRunResult(x: (LocalExecutionParameters, LocalExecutionResult), isJava: Boolean) =
@@ -82,6 +83,9 @@ object Tester extends Logging {
           .flatMap { testerName =>
             Utils.later(Duration(500, TimeUnit.MILLISECONDS)).flatMap(_ => instance.run.glob("*")).flatMap { nstats =>
           executeTester(instance.run, instance.factory.getBinary(FilenameUtils.getExtension(testerName)), testerName)
+             .handle {
+            case e: RemoteError => throw new TransientError(e)
+          }
             }
         }.map { testerResult =>
           (solutionResult, Some(testerResult))
