@@ -28,12 +28,16 @@ object Tester extends Logging {
     sandbox.put(module, handler.solutionName)
       .flatMap(_ => handler.getSolutionParameters(sandbox, handler.solutionName, testLimits))
       .map(_.emulateStdioIf(stdio, sandbox))
-      .flatMap(sandbox.executeWithParams).map(asRunResult(_, module.getType == "jar"))
+      .flatMap(sandbox.executeWithParams(_).handle {
+      case e: RemoteError => throw new TransientError(e)
+    }).map(asRunResult(_, module.getType == "jar"))
 
   def executeTester(sandbox: Sandbox, handler: BinaryHandler, name: String) =
     handler.getTesterParameters(sandbox, name, "input.txt" :: "output.txt" :: "answer.txt" :: Nil)
       .map(_.setTester)
-      .flatMap(sandbox.executeWithParams).map(asTesterRunResult(_))
+      .flatMap(sandbox.executeWithParams(_).handle {
+      case e: RemoteError => throw new TransientError(e)
+    }).map(asTesterRunResult(_))
 
   def runInteractive(instance: InvokerInstance, handler: BinaryHandler, moduleType: String, test: Test) =
     test.prepareInteractorBinary(instance.comp).flatMap { interactorName =>
@@ -83,9 +87,7 @@ object Tester extends Logging {
           .flatMap { testerName =>
             Utils.later(Duration(500, TimeUnit.MILLISECONDS)).flatMap(_ => instance.run.glob("*")).flatMap { nstats =>
           executeTester(instance.run, instance.factory.getBinary(FilenameUtils.getExtension(testerName)), testerName)
-             .handle {
-            case e: RemoteError => throw new TransientError(e)
-          }
+
             }
         }.map { testerResult =>
           (solutionResult, Some(testerResult))
