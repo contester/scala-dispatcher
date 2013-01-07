@@ -43,13 +43,16 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
 
   def get[X](cap: CapsType, schedulingKey: KeyType, extra: AnyRef, retries: Option[Int] = Some(5))(f: InvokerType => Future[X]): Future[X] =
     getInvoker(cap, schedulingKey, extra).flatMap { invoker =>
-      trace("Using " + invoker)
+      trace("Using %s for %s".format(invoker, schedulingKey))
       f(invoker)
         .rescue {
         case e: TransientError => {
           error("Transient error:", e)
-          reuseInvoker(invoker)
-          retryOrThrow(cap, schedulingKey, retries, e, f)
+          reuseInvoker(invoker, schedulingKey)
+          retryOrThrow(cap, schedulingKey, retries, e, f).map { tresult =>
+            trace("Traced recovery after transient error")
+            tresult
+          }
         }
         case e: PermanentError => {
           error("Permanent error:", e)
@@ -58,10 +61,10 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
         }
         case e: Throwable => {
           error("Unknown error:", e)
-          reuseInvoker(invoker)
+          reuseInvoker(invoker, schedulingKey)
           Future.exception(e)
         }
-      }.onSuccess(_ => reuseInvoker(invoker))
+      }.onSuccess(_ => reuseInvoker(invoker, schedulingKey))
     }
 
   private[this] def getInvoker(cap: CapsType, schedulingKey: KeyType, extra: AnyRef): Future[InvokerType] =
@@ -95,10 +98,10 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
       }
     }
 
-  private[this] def reuseInvoker(invoker: InvokerType): Unit =
+  private[this] def reuseInvoker(invoker: InvokerType, schedulingKey: KeyType): Unit =
     synchronized {
       uselist.remove(invoker).foreach { _ =>
-        trace("Returning " + invoker)
+        trace("Returning %s after %s".format(invoker, schedulingKey))
         addInvoker(invoker)
       }
     }
