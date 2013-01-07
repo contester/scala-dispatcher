@@ -8,8 +8,10 @@ import org.stingray.contester.modules.BinaryHandler
 import org.stingray.contester.proto.Blobs.Module
 import org.stingray.contester.problems.{Test, TestLimits}
 import org.apache.commons.io.FilenameUtils
-import com.twitter.util.Future
+import com.twitter.util.{Duration, Future}
 import org.stingray.contester.ContesterImplicits._
+import org.stingray.contester.utils.Utils
+import java.util.concurrent.TimeUnit
 
 object Tester extends Logging {
   private def asRunResult(x: (LocalExecutionParameters, LocalExecutionResult), isJava: Boolean) =
@@ -78,7 +80,7 @@ object Tester extends Logging {
           test.prepareInput(instance.run).flatMap{_ => test.prepareTester(instance.run)}
           .flatMap(_ => test.prepareTesterBinary(instance.run))
           .flatMap { testerName =>
-            instance.run.glob("*").flatMap { nstats =>
+            Utils.later(Duration(500, TimeUnit.MILLISECONDS)).flatMap(_ => instance.run.glob("*")).flatMap { nstats =>
           executeTester(instance.run, instance.factory.getBinary(FilenameUtils.getExtension(testerName)), testerName)
             }
         }.map { testerResult =>
