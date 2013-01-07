@@ -78,7 +78,9 @@ object Tester extends Logging {
           test.prepareInput(instance.run).flatMap{_ => test.prepareTester(instance.run)}
           .flatMap(_ => test.prepareTesterBinary(instance.run))
           .flatMap { testerName =>
+            instance.run.glob("*").flatMap { nstats =>
           executeTester(instance.run, instance.factory.getBinary(FilenameUtils.getExtension(testerName)), testerName)
+            }
         }.map { testerResult =>
           (solutionResult, Some(testerResult))
         }
