@@ -45,6 +45,7 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
     getInvoker(cap, schedulingKey, extra).flatMap { invoker =>
       trace("Using %s for %s".format(invoker, schedulingKey))
       f(invoker)
+        .onSuccess(_ => reuseInvoker(invoker, schedulingKey))
         .rescue {
         case e: TransientError => {
           error("Transient error:", e)
@@ -64,7 +65,7 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
           reuseInvoker(invoker, schedulingKey)
           Future.exception(e)
         }
-      }.onSuccess(_ => reuseInvoker(invoker, schedulingKey))
+      }
     }
 
   private[this] def getInvoker(cap: CapsType, schedulingKey: KeyType, extra: AnyRef): Future[InvokerType] =
