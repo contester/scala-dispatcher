@@ -87,14 +87,14 @@ object Tester extends Logging {
       .flatMap { _ => executeSolution(instance.run, moduleHandler, module, test.getLimits(module.getType), test.stdio) }
       .flatMap { solutionResult =>
       if (solutionResult.success) {
-        instance.run.glob("*", true)
+        instance.run.statAll
           .map(sandboxAfterExecutionResult(_))
           .flatMap { _ =>
             test.prepareInput(instance.run).flatMap { _ => test.prepareTester(instance.run)}
             .flatMap(_ => test.prepareTesterBinary(instance.run))
             .flatMap { testerName =>
               Utils.later(Duration(500, TimeUnit.MILLISECONDS))
-                .flatMap(_ => instance.run.glob("*", true))
+                .flatMap(_ => instance.run.statAll)
                 .flatMap { nstats =>
                   executeTester(instance.run, instance.factory.getBinary(FilenameUtils.getExtension(testerName)), testerName)
                 }
