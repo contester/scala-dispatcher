@@ -11,6 +11,9 @@ trait RemoteFile {
   def basename: String
   def ext: String
 
+  def hasSha1: Boolean = false
+  def getSha1: Array[Byte] = null
+
   def hasStat: Boolean = false
   def isDir: Boolean = false
   def size: Long = 0
@@ -42,6 +45,9 @@ class InvokerRemoteWithStats(i: InvokerId, st: FileStat) extends InvokerRemoteFi
   override val hasStat = true
   override val isDir = st.getIsDirectory
   override val size = st.getSize
+
+  override val hasSha1: Boolean = st.hasSha1Sum
+  override def getSha1: Array[Byte] = st.getSha1Sum.toByteArray
 }
 
 object InvokerRemoteFile {

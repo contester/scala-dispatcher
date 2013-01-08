@@ -25,6 +25,9 @@ object Utils extends Logging {
 
   def later(delay: Duration): Future[Unit] =
     later(timer, delay)
+
+  def pause[X](delay: Duration)(x: X): Future[X] =
+    later(delay).map(_ => x)
 }
 
 class FutureOps[A](val repr: Future[A]) {

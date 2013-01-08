@@ -42,18 +42,12 @@ class InvokerRpcClient(val client: RpcClient) extends Logging {
     trace("Clear: " + sandbox)
     client.callNoResult("Contester.Clear", ClearSandboxRequest.newBuilder().setSandbox(sandbox).build())
       .onFailure(x => error("Clear: ", x))
-      .handle {
-      case e: RemoteError => throw new TransientError(e)
-    }
   }
 
   def put(file: FileBlob): Future[Unit] = {
     trace("Put: " + file.getName)
     client.callNoResult("Contester.Put", file)
       .onFailure(x => error("Put: ", x))
-      .handle {
-      case e: RemoteError => throw new TransientError(e)
-    }
   }
 
   def get(name: String) = {
@@ -63,11 +57,13 @@ class InvokerRpcClient(val client: RpcClient) extends Logging {
       .onFailure(x => error("GetResult: ", x))
   }
 
-  def fileStat(names: Iterable[String], expand: Boolean, sandboxId: Option[String]) = {
+  def fileStat(names: Iterable[String], expand: Boolean, sandboxId: Option[String], calculateSha1: Boolean) = {
     trace("Stat: " + (names, expand, sandboxId))
     import collection.JavaConversions.asJavaIterable
     val v = StatRequest.newBuilder().addAllName(names).setExpand(expand)
     sandboxId.foreach(v.setSandboxId(_))
+    if (calculateSha1)
+      v.setCalculateSha1(calculateSha1)
     client.call[FileStats]("Contester.Stat", v.build())
   }.map {
     import collection.JavaConverters._

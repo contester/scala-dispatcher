@@ -39,14 +39,14 @@ class InvokerId(val clientId: IdentifyResponse, val rpc: InvokerRpcClient) {
 
   implicit def file2seq(x: RemoteFile) = Seq(x)
 
-  def fileStat(what: Iterable[RemoteFile], expand: Boolean, sandboxId: Option[String]) =
-    rpc.fileStat(what.map(_.name), expand, sandboxId).map(_.map(file))
+  def fileStat(what: Iterable[RemoteFile], expand: Boolean, sandboxId: Option[String], calculateSha1: Boolean) =
+    rpc.fileStat(what.map(_.name), expand, sandboxId, calculateSha1).map(_.map(file))
 
-  def glob(what: Iterable[RemoteFile]): Future[Iterable[RemoteFile]] =
-    fileStat(what, true, None)
+  def glob(what: Iterable[RemoteFile], calculateSha1: Boolean): Future[Iterable[RemoteFile]] =
+    fileStat(what, true, None, calculateSha1)
 
-  def stat(what: Iterable[RemoteFile]): Future[Iterable[RemoteFile]] =
-    fileStat(what, false, None)
+  def stat(what: Iterable[RemoteFile], calculateSha1: Boolean): Future[Iterable[RemoteFile]] =
+    fileStat(what, false, None, calculateSha1)
 
   def get(file: RemoteFile): Future[FileBlob] =
     rpc.get(file.name)

@@ -12,7 +12,7 @@ import org.stingray.contester.proto.Blobs.{Module, Blob}
 class BlobChecksumMismatch(oldChecksum: String, newChecksum: String) extends Throwable("%s vs. %s".format(oldChecksum, newChecksum))
 
 object Blobs {
-  private def bytesToString(x: Array[Byte]) = x.map("%02X" format _).mkString
+  def bytesToString(x: Array[Byte]) = x.map("%02X" format _).mkString
 
   def getBinary(x: Blob): Array[Byte] = {
     val result = if (x.hasCompression) {

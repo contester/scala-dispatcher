@@ -42,13 +42,13 @@ class Sandbox(val instance: InvokerInstance, val restricted: Boolean)  {
     getModule(sandboxId ** name)
 
   def stat(f: Iterable[RemoteFile]): Future[Iterable[RemoteFile]] =
-    i.stat(f)
+    i.stat(f, false)
 
   def glob(f: Iterable[RemoteFile]) =
-    i.glob(f)
+    i.glob(f, true)
 
-  def glob(name: String) =
-    i.glob(sandboxId ** name :: Nil)
+  def glob(name: String, calculateSha1: Boolean) =
+    i.glob(sandboxId ** name :: Nil, calculateSha1)
 
   def stat(name: String): Future[Iterable[RemoteFile]] =
     stat(sandboxId ** name :: Nil)

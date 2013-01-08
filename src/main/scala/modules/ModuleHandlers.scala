@@ -31,7 +31,7 @@ class Win32Handlers(i: InvokerId) {
   private val FirstDir = (x: Iterable[RemoteFile]) => x.firstDir
 
   private def withFile(x: Iterable[RemoteFile])(f: Function[RemoteFile, Future[Seq[ModuleHandler]]]): Future[Seq[ModuleHandler]] =
-    i.glob(x).flatMap { foundOpt =>
+    i.glob(x, false).flatMap { foundOpt =>
       foundOpt.firstFile.map { found =>
         f(found)
       }.getOrElse(Future.value(Seq()))
@@ -96,7 +96,7 @@ class LinuxHandlers(i: InvokerId) {
   private val FirstDir = (x: Iterable[RemoteFile]) => x.firstDir
 
   private def withFile(x: Iterable[RemoteFile])(f: Function[RemoteFile, Future[Seq[ModuleHandler]]]): Future[Seq[ModuleHandler]] =
-    i.glob(x).flatMap { foundOpt =>
+    i.glob(x, false).flatMap { foundOpt =>
       foundOpt.firstFile.map { found =>
         f(found)
       }.getOrElse(Future.value(Seq()))

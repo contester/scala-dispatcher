@@ -3,7 +3,7 @@ package org.stingray.contester.engine
 import grizzled.slf4j.Logging
 import org.stingray.contester.proto.Local.{LocalExecutionResult, LocalExecutionParameters}
 import org.stingray.contester.common._
-import org.stingray.contester.invokers.{TransientError, RunnerInstance, InvokerInstance, Sandbox}
+import org.stingray.contester.invokers._
 import org.stingray.contester.modules.BinaryHandler
 import org.stingray.contester.proto.Blobs.Module
 import org.stingray.contester.problems.{Test, TestLimits}
@@ -13,6 +13,7 @@ import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.utils.Utils
 import java.util.concurrent.TimeUnit
 import org.stingray.contester.rpc4.RemoteError
+import scala.Some
 
 object Tester extends Logging {
   private def asRunResult(x: (LocalExecutionParameters, LocalExecutionResult), isJava: Boolean) =
@@ -73,6 +74,12 @@ object Tester extends Logging {
     else
       testOld(instance, module, test)
 
+  def sandboxAfterExecutionResult(stats: Iterable[RemoteFile]) = {
+    val m = stats.map(x => x.name -> x).toMap
+    trace("After execution result, we have: %s".format(m.mapValues(x => if (x.hasSha1) Blobs.bytesToString(x.getSha1) else "")))
+    stats
+  }
+
 
   def testOld(instance: RunnerInstance, module: Module, test: Test): Future[(RunResult, Option[TesterRunResult])] = {
     val moduleHandler = instance.factory.getBinary(module.getType)
@@ -80,18 +87,20 @@ object Tester extends Logging {
       .flatMap { _ => executeSolution(instance.run, moduleHandler, module, test.getLimits(module.getType), test.stdio) }
       .flatMap { solutionResult =>
       if (solutionResult.success) {
-        instance.run.glob("*").flatMap { stats =>
-          trace(stats)
-          test.prepareInput(instance.run).flatMap{_ => test.prepareTester(instance.run)}
-          .flatMap(_ => test.prepareTesterBinary(instance.run))
-          .flatMap { testerName =>
-            Utils.later(Duration(500, TimeUnit.MILLISECONDS)).flatMap(_ => instance.run.glob("*")).flatMap { nstats =>
-          executeTester(instance.run, instance.factory.getBinary(FilenameUtils.getExtension(testerName)), testerName)
-
-            }
-        }.map { testerResult =>
-          (solutionResult, Some(testerResult))
-        }
+        instance.run.glob("*", true)
+          .map(sandboxAfterExecutionResult(_))
+          .flatMap { _ =>
+            test.prepareInput(instance.run).flatMap { _ => test.prepareTester(instance.run)}
+            .flatMap(_ => test.prepareTesterBinary(instance.run))
+            .flatMap { testerName =>
+              Utils.later(Duration(500, TimeUnit.MILLISECONDS))
+                .flatMap(_ => instance.run.glob("*", true))
+                .flatMap { nstats =>
+                  executeTester(instance.run, instance.factory.getBinary(FilenameUtils.getExtension(testerName)), testerName)
+                }
+          }.map { testerResult =>
+            (solutionResult, Some(testerResult))
+          }
         }
       } else Future.value((solutionResult, None))
     }
