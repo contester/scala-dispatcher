@@ -2,9 +2,8 @@ package org.stingray.contester.utils
 
 import com.twitter.util.{Try, Future}
 import collection.mutable
-import grizzled.slf4j.Logging
 
-class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[ValueType], Future[ValueType]] with Logging {
+class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[ValueType], Future[ValueType]] {
   private val data = new mutable.HashMap[KeyType, Future[ValueType]]()
 
   private[this] def removeKey(key: KeyType, v: Try[ValueType]) = {
@@ -17,7 +16,6 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[Val
   def apply(key: KeyType, get: () => Future[ValueType]): Future[ValueType] =
     synchronized {
       if (data.contains(key)) {
-        trace("Enqueued: %s".format(key))
         data(key)
       } else
         data(key) = get()
@@ -25,7 +23,7 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[Val
     }
 }
 
-abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyType, Future[ValueType]] with Logging {
+abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyType, Future[ValueType]] {
   def nearGet(key: KeyType): Future[Option[ValueType]]
   def nearPut(key: KeyType, value: SomeType): Future[ValueType]
   def farGet(key: KeyType): Future[SomeType]
@@ -36,14 +34,12 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
   val serialHash = new SerialHash[KeyType, ValueType]()
 
   private[this] def fetchValue(key: KeyType) = {
-    trace("Miss: %s".format(key))
     farGet(key).flatMap(x => nearPut(key, x))
   }
 
   private[this] def getValue(key: KeyType) =
     nearGet(key).flatMap { optVal =>
       optVal.map { v =>
-        trace("Near-hit: %s, result: %s".format(key, v))
         Future.value(v)
       }.getOrElse(fetchValue(key))
     }
@@ -64,7 +60,6 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
   def apply(key: KeyType): Future[ValueType] =
     synchronized {
       localCache.get(key).map { v =>
-        trace("Hit: %s, result: %s".format(key, v))
         Future.value(v)
       }.getOrElse(fetchAndSet(getValue, key))
     }
