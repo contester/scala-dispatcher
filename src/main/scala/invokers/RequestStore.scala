@@ -92,6 +92,7 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
       waiting.filterKeys(invoker.caps.toSet).values.flatMap(w => w.headOption.map(_ -> w)).toSeq
         .sortBy(_._1._1).headOption.map { candidate =>
         val result = candidate._2.dequeue()
+        waiting.find(_._2 == candidate).filter(_._2.isEmpty).foreach(k => waiting.remove(k._1))
         uselist(invoker) = result._1 -> result._3
         result._2.setValue(invoker)
       }.getOrElse {
