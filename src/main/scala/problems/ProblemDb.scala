@@ -38,6 +38,7 @@ object ProblemManifest {
 trait ProblemDb {
   def setProblem(problem: ProblemT, manifest: ProblemManifest): Future[Problem]
   def getProblem(problem: ProblemT): Future[Option[Problem]]
+  def getMostRecentProblem(problemId: String): Future[Option[Problem]]
 }
 
 trait ProblemFileStore {
@@ -91,6 +92,16 @@ class CommonProblemDb(mdb: MongoDB) extends SanitizeDb with Logging {
       if (!exists)
         getFn.flatMap(storeProblemFile(problem, _))
       else Future.Done
+    }
+
+  def getMostRecentProblem(problemId: String): Future[Option[Problem]] =
+    Future {
+      mdb("manifest").find(MongoDBObject("id" -> problemId)).sort(MongoDBObject("revision" -> -1))
+        .take(1).toIterable.headOption.map { found =>
+        val pt = SimpleProblemT(problemId, found.getAsOrElse[Int]("revision", 1))
+        val m = ProblemManifest(found)
+        PDBProblem(this, pt, m)
+      }
     }
 }
 

@@ -5,9 +5,13 @@ import org.stingray.contester.db.{HasId, SelectDispatcher}
 import org.stingray.contester.common.SubmitWithModule
 import org.stingray.contester.invokers.TimeKey
 
+trait Submit extends TimeKey with HasId with SubmitWithModule {
+  def schoolMode: Boolean = false
+}
+
 case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String, moduleType: String,
-                        arrived: Timestamp, source: Array[Byte], schoolMode: Boolean, computer: Long)
-  extends TimeKey with HasId with SubmitWithModule {
+                        arrived: Timestamp, source: Array[Byte], override val schoolMode: Boolean, computer: Long)
+  extends Submit {
   val timestamp = arrived
   override def toString =
     "Submit(%d, %s)".format(id, problemId)
