@@ -1,13 +1,12 @@
 package org.stingray.contester.engine
 
-import org.stingray.contester.invokers.{SchedulingKey, CompilerInstance, RemoteFile, Sandbox}
+import org.stingray.contester.invokers._
 import grizzled.slf4j.Logging
 import util.matching.Regex
 import com.twitter.util.Future
 import org.stingray.contester.problems.{ProblemManifest, ProblemT}
 import org.stingray.contester.modules.SevenzipHandler
 import org.stingray.contester.ContesterImplicits._
-import java.sql.Timestamp
 
 class TesterNotFoundException extends scala.Throwable
 class PdbStoreException(path: String) extends scala.Throwable(path)
@@ -15,14 +14,12 @@ class UnpackError extends scala.Throwable
 class SanitizerError extends Throwable
 class ProblemFileNotFound extends SanitizerError
 
-trait ProblemDescription extends ProblemT with SchedulingKey {
+trait ProblemDescription extends ProblemT with EarliestTimeKey {
   def interactive: Boolean
   def stdio: Boolean
   def testCount: Int
   def timeLimitMicros: Long
   def memoryLimit: Long
-
-  protected def getTimestamp: Timestamp = EARLIEST
 }
 
 class ProblemSanitizer(sandbox: Sandbox, base: RemoteFile, problem: ProblemDescription) extends Logging {

@@ -1,14 +1,14 @@
 package org.stingray.contester.dispatcher
 
-import org.stingray.contester.invokers.SchedulingKey
+import org.stingray.contester.invokers.TimeKey
 import org.stingray.contester.db.{ConnectionPool, SelectDispatcher, HasId}
 import org.stingray.contester.common._
 import java.sql.{ResultSet, Timestamp}
 import com.twitter.util.Future
 import org.stingray.contester.problems.ProblemDb
 
-case class MoodleSubmit(id: Int, problemId: String, moduleType: String, arrived: Timestamp, source: Array[Byte]) extends SchedulingKey with HasId with SubmitWithModule {
-  protected def getTimestamp: Timestamp = arrived
+case class MoodleSubmit(id: Int, problemId: String, moduleType: String, arrived: Timestamp, source: Array[Byte]) extends TimeKey with HasId with SubmitWithModule {
+  val timestamp = arrived
 
   override def toString =
     "MoodleSubmit(%d)".format(id)

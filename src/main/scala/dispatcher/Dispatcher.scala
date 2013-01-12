@@ -3,14 +3,14 @@ package org.stingray.contester.dispatcher
 import java.sql.{Timestamp, ResultSet}
 import org.stingray.contester.db.{HasId, SelectDispatcher}
 import org.stingray.contester.common.SubmitWithModule
-import org.stingray.contester.invokers.SchedulingKey
+import org.stingray.contester.invokers.TimeKey
 
 case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String, moduleType: String,
                         arrived: Timestamp, source: Array[Byte], schoolMode: Boolean, computer: Long)
-  extends SchedulingKey with HasId with SubmitWithModule {
-  protected val getTimestamp = arrived
+  extends TimeKey with HasId with SubmitWithModule {
+  val timestamp = arrived
   override def toString =
-    "Submit(%d, C:%d, T: %d, P: %s, M: %s, A: %s, F: %s)".format(id, contestId, teamId, problemId, moduleType, arrived, schoolMode)
+    "Submit(%d, %s)".format(id, problemId)
 }
 
 
