@@ -102,7 +102,7 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: InvokerRegistry)
     "update mdl_contester_submits set processed = 254 where id = ?"
 
   def run(item: MoodleSubmit): Future[Unit] =
-    pdb.getMostRecentProblem(item.problemId).flatMap { problem =>
+    pdb.getMostRecentProblem("moodle/" + item.problemId).flatMap { problem =>
       Solution.test(inv, item, problem.get, new MoodleResultReporter(db, item))
     }
 }
