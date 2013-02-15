@@ -18,7 +18,7 @@ fork in (Compile, run) := true
 
 javaOptions in run += "-XX:+HeapDumpOnOutOfMemoryError"
 
-scalaVersion := "2.9.2"
+scalaVersion := "2.10.0"
 
 version := "0.1"
 
@@ -37,25 +37,33 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "io.netty" % "netty" % "3.6.0.Final",
-  "com.twitter" % "finagle-core" % "6.0.3",
-  "com.twitter" % "finagle-http" % "6.0.3",
-  "org.streum" %% "configrity-core" % "0.10.2",
-  "com.twitter" % "util-core" % "6.0.4",
-  "org.mongodb" %% "casbah" % "2.4.1",
-  "org.clapper" %% "grizzled-slf4j" % "0.6.10",
-  "org.clapper" %% "avsl" % "0.4",
+  "io.netty" % "netty" % "3.6.2.Final",
+  "com.twitter" %% "finagle-core" % "6.1.1",
+  "com.twitter" %% "finagle-http" % "6.1.1",
+  "org.streum" %% "configrity-core" % "1.0.0",
+  "com.twitter" %% "util-core" % "6.2.0",
+  "org.mongodb" %% "casbah" % "2.5.0",
+  "org.clapper" %% "grizzled-slf4j" % "1.0.1",
+  "org.clapper" %% "avsl" % "1.0.1",
   "joda-time" % "joda-time" % "2.1",
-  "org.joda" % "joda-convert" % "1.2",
-  "org.fusesource.scalate" % "scalate-core" % "1.5.3",
+  "org.joda" % "joda-convert" % "1.3",
+  "org.fusesource.scalate" %% "scalate-core" % "1.6.1",
   "commons-io" % "commons-io" % "2.4",
-  "com.rabbitmq" % "amqp-client" % "2.8.7",
+  "com.rabbitmq" % "amqp-client" % "3.0.2",
   "com.codahale" % "jerkson_2.9.1" % "0.5.0",
-  "mysql" % "mysql-connector-java" % "5.1.22",
-  "org.scalatest" %% "scalatest" % "1.8" % "test"
+  "mysql" % "mysql-connector-java" % "5.1.23",
+  "org.scalatest" %% "scalatest" % "1.9" % "test"
 )
 
-scalateTemplateDirectory in Compile <<= (baseDirectory) { _ / "src/main/resources/templates" }
+// Scalate Precompilation and Bindings
+scalateTemplateConfig in Compile <<= (sourceDirectory in Compile){ base =>
+  Seq(
+    TemplateConfig(
+      base / "resources" / "templates",
+      Seq(),
+      Seq(),
+      Some("")
+    ))}
 
 mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
   {
