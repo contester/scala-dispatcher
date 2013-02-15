@@ -1,3 +1,5 @@
+package org.stingray.contester.dispatcher
+
 import com.mongodb.casbah.MongoConnection
 import grizzled.slf4j.Logging
 import java.io.File
@@ -6,7 +8,6 @@ import java.util.concurrent.Executors
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
-import org.stingray.contester.dispatcher._
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.messaging.AMQ
 import org.stingray.contester.polygon.{CommonPolygonDb, PolygonClient}
