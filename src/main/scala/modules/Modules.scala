@@ -8,6 +8,7 @@ import org.stingray.contester.utils.ExecutionArguments
 import org.stingray.contester.invokers.{Sandbox, InvokerId}
 import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.problems.TestLimits
+import org.stingray.contester.proto.Blobs.Module
 
 trait ModuleHandler {
   def moduleTypes: Iterable[String]
@@ -17,7 +18,7 @@ trait ModuleHandler {
 trait SourceHandler extends ModuleHandler with Logging {
   def sourceName: String
 
-  def compile(sandbox: Sandbox): Future[CompileResult]
+  def compile(sandbox: Sandbox): Future[(CompileResult, Option[Module])]
   def filter(params: LocalExecutionParameters) = params
 
   def step(stepName: String, sandbox: Sandbox, applicationName: String, arguments: ExecutionArguments): Future[StepResult] = {
@@ -50,13 +51,13 @@ class SevenzipHandler(val p7z: String) extends ModuleHandler {
   val moduleTypes = "zip" :: Nil
 }
 
+// TODO: Return module name instead of the module
 object SourceHandler {
-  def makeCompileResult(steps: Seq[StepResult], sandbox: Sandbox, filename: String, moduleType: Option[String]) =
+  def makeCompileResult(steps: Seq[StepResult], sandbox: Sandbox, filename: String, moduleType: Option[String]): Future[(CompileResult, Option[Module])] =
     (if (steps.last.success) {
       sandbox.getModuleOption(sandbox.sandboxId ** filename).map(_.map(_.setType(moduleType)))
-    } else Future.value(None)).map(CompileResult(steps, _))
-  }
-
+    } else Future.value(None)).map(m => new RealCompileResult(steps, m.isDefined) -> m)
+}
 
 trait ModuleFactory {
   def apply(moduleType: String): Option[ModuleHandler]
@@ -109,7 +110,7 @@ trait SimpleCompileHandler extends SourceHandler {
   def binary: String
   def resultType: Option[String] = None
 
-  def compile(sandbox: Sandbox): Future[CompileResult] =
+  def compile(sandbox: Sandbox): Future[(CompileResult, Option[Module])] =
     compile0(sandbox, compiler, flags, binary, resultType)
 }
 

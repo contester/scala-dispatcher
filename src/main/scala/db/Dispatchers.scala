@@ -11,6 +11,11 @@ trait HasId {
   def id: Int
 }
 
+// Dispatcher:
+//   - can schedule submits
+//   - can cancel scheduled submits
+//   - subscribed to the progress
+
 abstract class SelectDispatcher[SubmitType <: HasId](db: ConnectionPool) extends Logging {
   def rowToSubmit(row: ResultSet): SubmitType
 

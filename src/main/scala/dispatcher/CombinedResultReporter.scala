@@ -26,6 +26,38 @@ object CombinedResultReporter {
     }
 }
 
+class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, val testingId: Int) extends SingleProgress[Boolean] {
+  def compile(r: CompileResult): Future[Boolean] =
+    client.execute("insert into Results (UID, Submit, Result, Test, Timex, Memory, TesterOutput, TesterError) values (?, ?, ?, ?, ?, ?, ?, ?)",
+      testingId, submit.id, r.status, 0, 0,
+      0, r.stdOut, r.stdErr).unit.join(client.execute("Update Submits set Compiled = ? where ID = ?", (if (r.success) 1 else 0), submit.id))
+    .unit.map(_ => r.success)
+
+  def test(testId: Int, result: TestResult): Future[Boolean] =
+    client.execute("Insert into Results (UID, Submit, Result, Test, Timex, Memory, Info, TesterOutput, TesterError, TesterExitCode) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      testingId, submit.id, result.status, testId, result.solution.time / 1000,
+      result.solution.memory, result.solution.returnCode,
+      result.getTesterOutput, result.getTesterError,
+      result.getTesterReturnCode).unit.map(_ => result.success)
+
+  def finish(c: Seq[CompileResult], t: Seq[(Int, TestResult)]): Future[Boolean] =
+    client.execute("update Testings set Finish = NOW() where ID = ?", testingId).unit.join(
+      client.execute("Update Submits set Finished = 1, Taken = ?, Passed = ? where ID = ?",
+      t.size, t.filter(_._2.success).size, submit.id).unit).unit.map(_ => true)
+}
+
+class DBResultReporter(client: ConnectionPool, val submit: SubmitObject) extends ProgressReporter[Boolean] {
+  def start: Future[SingleProgress[Boolean]] =
+    client.execute("Insert into Testings (Submit, Start) values (?, NOW())", submit.id)
+      .map(_.lastInsertId.get)
+      .flatMap { lastInsertId =>
+      client.execute("Replace Submits (Contest, Arrived, Team, Task, ID, Ext, Computer, TestingID, Touched, Finished) values (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 0)",
+        submit.contestId, submit.arrived, submit.teamId, submit.problemId, submit.id, submit.moduleType, submit.computer, lastInsertId)
+      .unit.map(_ => new DBSingleResultReporter(client, submit, lastInsertId))
+    }
+}
+
+
 class CombinedResultReporter(client: ConnectionPool, val submit: SubmitObject, base: File, val prefix: String, doneCb: Function[Int, Unit]) extends TestingResultReporter {
   val tests = collection.mutable.Map[Int, Boolean]()
   lazy val terse = new File(base, submit.id.toString)
