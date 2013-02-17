@@ -3,12 +3,19 @@ package org.stingray.contester.dispatcher
 import com.twitter.util.Future
 import org.stingray.contester.common.{TestResult, CompileResult}
 
-trait SingleProgress[T] {
-  def compile(r: CompileResult): Future[Boolean]
-  def test(id: Int, r: TestResult): Future[Boolean]
-  def finish(c: Seq[CompileResult], t: Seq[(Int, TestResult)]): Future[T]
+/*
+trait SolutionTestingResult {
+  def compilation: CompileResult
+  def tests: Seq[(Int, TestResult)]
+}*/
+
+case class SolutionTestingResult(compilation: CompileResult, tests: Seq[(Int, TestResult)])
+
+trait SingleProgress {
+  def compile(r: CompileResult): Future[Unit]
+  def test(id: Int, r: TestResult): Future[Unit]
 }
 
-trait ProgressReporter[T] {
-  def start: Future[SingleProgress[T]]
+trait ProgressReporter {
+  def apply(f: SingleProgress => Future[SolutionTestingResult]): Future[Unit]
 }

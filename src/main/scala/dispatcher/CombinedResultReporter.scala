@@ -26,45 +26,43 @@ object CombinedResultReporter {
     }
 }
 
-class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, val testingId: Int) extends SingleProgress[Boolean] {
-  def compile(r: CompileResult): Future[Boolean] =
+class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, val testingId: Int) extends SingleProgress {
+  def compile(r: CompileResult): Future[Unit] =
     client.execute("insert into Results (UID, Submit, Result, Test, Timex, Memory, TesterOutput, TesterError) values (?, ?, ?, ?, ?, ?, ?, ?)",
       testingId, submit.id, r.status, 0, 0,
       0, r.stdOut, r.stdErr).unit.join(client.execute("Update Submits set Compiled = ? where ID = ?", (if (r.success) 1 else 0), submit.id))
-    .unit.map(_ => r.success)
+    .unit
 
-  def test(testId: Int, result: TestResult): Future[Boolean] =
+  def test(testId: Int, result: TestResult): Future[Unit] =
     client.execute("Insert into Results (UID, Submit, Result, Test, Timex, Memory, Info, TesterOutput, TesterError, TesterExitCode) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       testingId, submit.id, result.status, testId, result.solution.time / 1000,
       result.solution.memory, result.solution.returnCode,
       result.getTesterOutput, result.getTesterError,
-      result.getTesterReturnCode).unit.map(_ => result.success)
+      result.getTesterReturnCode).unit
 
-  def finish(c: Seq[CompileResult], t: Seq[(Int, TestResult)]): Future[Boolean] =
+  def finish(result: SolutionTestingResult): Future[Unit] =
     client.execute("update Testings set Finish = NOW() where ID = ?", testingId).unit.join(
       client.execute("Update Submits set Finished = 1, Taken = ?, Passed = ? where ID = ?",
-      t.size, t.filter(_._2.success).size, submit.id).unit).unit.map(_ => true)
+      result.tests.size, result.tests.filter(_._2.success).size, submit.id).unit).unit
 }
 
-class DBResultReporter(client: ConnectionPool, val submit: SubmitObject) extends ProgressReporter[Boolean] {
-  def start: Future[SingleProgress[Boolean]] =
+class DBResultReporter(client: ConnectionPool, val submit: SubmitObject) extends ProgressReporter {
+  def apply(f: (SingleProgress) => Future[SolutionTestingResult]): Future[Unit] =
     client.execute("Insert into Testings (Submit, Start) values (?, NOW())", submit.id)
       .map(_.lastInsertId.get)
       .flatMap { lastInsertId =>
       client.execute("Replace Submits (Contest, Arrived, Team, Task, ID, Ext, Computer, TestingID, Touched, Finished) values (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 0)",
-        submit.contestId, submit.arrived, submit.teamId, submit.problemId, submit.id, submit.moduleType, submit.computer, lastInsertId)
-      .unit.map(_ => new DBSingleResultReporter(client, submit, lastInsertId))
+        submit.contestId, submit.arrived, submit.teamId, submit.problemId, submit.id, submit.moduleType, submit.computer, lastInsertId).unit.flatMap { _ =>
+        val rep = new DBSingleResultReporter(client, submit, lastInsertId)
+        f(rep).flatMap(rep.finish(_)) // TODO: rescue here
+      }
+
     }
 }
 
-
-class CombinedResultReporter(client: ConnectionPool, val submit: SubmitObject, base: File, val prefix: String, doneCb: Function[Int, Unit]) extends TestingResultReporter {
-  val tests = collection.mutable.Map[Int, Boolean]()
+class RawLogResultReporter(base: File, val submit: SubmitObject) extends ProgressReporter with SingleProgress {
   lazy val terse = new File(base, submit.id.toString)
   lazy val detailed = new File(base, submit.id.toString + ".proto")
-
-  lazy val getId = client.execute("Insert into Testings (Submit, Start) values (?, NOW())", submit.id)
-    .map(_.lastInsertId.get)
 
   def rawlog(short: String, pb: Option[String] = None) =
     Future {
@@ -75,60 +73,14 @@ class CombinedResultReporter(client: ConnectionPool, val submit: SubmitObject, b
       pb.foreach(p => FileUtils.writeLines(detailed, p.toString.lines.map(ts + "     " + _).toIterable, true))
     }
 
-  lazy val start =
-    rawlog("Started testing " + submit).join(
-    getId.flatMap { lastInsertId =>
-      Future {
-      }.join(client.execute("Replace Submits (Contest, Arrived, Team, Task, ID, Ext, Computer, TestingID, Touched, Finished) values (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 0)",
-        submit.contestId, submit.arrived, submit.teamId, submit.problemId, submit.id, submit.moduleType, submit.computer, lastInsertId))
-    }.unit).unit
+  def compile(result: CompileResult): Future[Unit] =
+    rawlog("  " + result, Some(result.toMap.toString()))
 
-  def report(r: Result): Future[Unit] = r match {
-    case c: CompileResult => compileResult(c)
-    case t: TestResult => testResult(t)
-  }
+  def test(id: Int, result: TestResult): Future[Unit] =
+    rawlog("  Test " + id + ": " + result, Some(result.toMap.toString()))
 
-  def compileResult(result: CompileResult) =
-    start.flatMap { _ =>
-    rawlog("  " + result, Some(result.toMap.toString())).join(
-    getId.flatMap { testingId =>
-      client.execute("insert into Results (UID, Submit, Result, Test, Timex, Memory, TesterOutput, TesterError) values (?, ?, ?, ?, ?, ?, ?, ?)",
-      testingId, submit.id, result.status, 0, 0,
-      0, result.stdOut, result.stdErr).unit
-    }).join(
-      start.flatMap { unit =>
-        client.execute("Update Submits set Compiled = ? where ID = ?", (if (result.success) 1 else 0), submit.id)
-      }).unit
+  def apply(f: (SingleProgress) => Future[SolutionTestingResult]): Future[Unit] =
+    rawlog("Started testing " + submit).flatMap { _ =>
+      f(this).flatMap(_ => rawlog("Finished testing " + submit))
     }
-
-  def testResult(result: TestResult) = {
-    val testId = result.testId
-    tests(testId) = result.success
-    rawlog("  " + result, Some(result.toMap.toString())).join(
-    getId.flatMap { testingId =>
-      client.execute("Insert into Results (UID, Submit, Result, Test, Timex, Memory, Info, TesterOutput, TesterError, TesterExitCode) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      testingId, submit.id, result.status, testId, result.solution.time / 1000,
-      result.solution.memory, result.solution.returnCode,
-      result.getTesterOutput, result.getTesterError,
-      result.getTesterReturnCode)
-    }.unit).unit
-  }
-
-  def getTestTaken = tests.keys.size
-  def getTestsPassed = tests.values.count(y => y)
-
-  // TODO: fix implicit race WTF IS THIS
-  def finish(isError: Boolean): Future[Unit] =
-    getId.flatMap { testingId =>
-      client.execute("update Testings set Finish = NOW() where ID = ?", testingId)
-    }.join(
-    start.flatMap { x =>
-      if (isError)
-        rawlog("NO UPDATE Finished testing " + submit)
-      else
-        rawlog("Finished testing " + submit).join(
-          client.execute("Update Submits set Finished = 1, Taken = ?, Passed = ? where ID = ?",
-          getTestTaken, getTestsPassed, submit.id)).unit.map(_ => doneCb(submit.id))
-    }).unit
-
 }
