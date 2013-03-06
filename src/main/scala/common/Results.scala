@@ -151,11 +151,11 @@ trait CompileResult extends Result {
   override def toString =
     StatusCode(status)
 
-  val time = 0
-  val memory = 0
+  val time: Long = 0
+  val memory: Long = 0
 
-  val stdOut = Blobs.storeBinary("".getBytes())
-  val stdErr = Blobs.storeBinary("".getBytes())
+  val stdOut = "".getBytes()
+  val stdErr = "".getBytes()
 
   def toMap: Map[String, Any] = Map()
 }
@@ -188,8 +188,8 @@ object BinaryModuleCompileResult extends CompileResult {
 }
 
 object TestResult {
-  def apply(solution: RunResult, tester: Option[TesterRunResult], testId: Int) =
-    new TestResult(solution, tester, testId)
+  def apply(solution: RunResult, tester: Option[TesterRunResult]) =
+    new TestResult(solution, tester)
 }
 
 object StatusCode {

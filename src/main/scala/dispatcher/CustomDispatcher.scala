@@ -2,13 +2,23 @@ package org.stingray.contester.dispatcher
 
 import java.sql.{ResultSet, Timestamp}
 import org.stingray.contester.invokers.{TimeKey, InvokerRegistry}
-import org.stingray.contester.common.{Blobs, SubmitWithModule}
+import org.stingray.contester.common.{CompileResult, TestResult, Blobs, SubmitWithModule}
 import com.twitter.util.Future
 import org.stingray.contester.db.{HasId, SelectDispatcher, ConnectionPool}
 import org.stingray.contester.engine.{CustomTester, CustomTestResult, Compiler}
 
 case class CustomTestObject(id: Int, moduleType: String, arrived: Timestamp, source: Array[Byte], input: Array[Byte]) extends TimeKey with HasId with SubmitWithModule {
   val timestamp = arrived
+}
+
+class CustomResultReporter(submit: CustomTestObject) extends ProgressReporter with SingleProgress {
+  def start: Future[SingleProgress] = Future.value(this)
+
+  def compile(r: CompileResult): Future[Unit] = Future.Done
+
+  def test(id: Int, r: TestResult): Future[Unit] = Future.Done
+
+  def finish(r: SolutionTestingResult): Future[Unit] = ???
 }
 
 object Custom {

@@ -32,7 +32,7 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
   }
 
   def getReporter(submit: SubmitObject) =
-    new CombinedResultReporter(dbclient, submit, basePath, amqid, amqPost(_))
+    new DBResultReporter(dbclient, submit)
 
   def start =
     pscanner.rescan.join(dispatcher.scan).join(evaldispatcher.scan).unit

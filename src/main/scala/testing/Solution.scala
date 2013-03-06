@@ -1,12 +1,12 @@
-package org.stingray.contester.dispatcher
+package org.stingray.contester.testing
 
-import com.twitter.util.Future
+import org.stingray.contester.problems.{Problem, Test}
 import org.stingray.contester.common.TestResult
-import org.stingray.contester.proto.Blobs.Module
+import com.twitter.util.Future
 import org.stingray.contester.engine.InvokerSimpleApi
-import org.stingray.contester.problems.{Test, Problem}
-import org.stingray.contester.invokers.SchedulingKey
 import grizzled.slf4j.Logging
+import org.stingray.contester.invokers.SchedulingKey
+import org.stingray.contester.proto.Blobs.Module
 
 // test, report, proceed
 // - strategy
@@ -14,14 +14,6 @@ import grizzled.slf4j.Logging
 // (strategy inside class/test)
 
 object Solution {
-  def apply(invoker: InvokerSimpleApi, submit: SchedulingKey, source: Module, problem: Problem, reporter: ProgressReporter, schoolMode: Boolean): Future[Unit] =
-    reporter { pr =>
-      compile(invoker, submit, source, pr).flatMap {
-        case (compileResult, Some(binary)) =>
-          new BinarySolution(invoker, binary, submit, pr, schoolMode, problem).run.map(x => SolutionTestingResult(compileResult, x.map(v => v._2 -> v._3)))
-      }
-    }
-
   type NumberedTest = (Int, Test)
   type NumberedTestResult = (Int, TestResult)
   type EvaluatedTestResult = (Boolean, Int, TestResult)
@@ -32,9 +24,32 @@ object Solution {
 
   type TestAll = Seq[NumberedTest] => Future[Seq[NumberedTestResult]]
 
-  private[this] def compile(invoker: InvokerSimpleApi, submit: SchedulingKey, m: Module, reporter: SingleProgress) =
-    invoker.compile(submit, m).flatMap { cr =>
+}
+
+class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
+  def compile(submit: SchedulingKey, sourceModule: Module, reporter: SingleProgress) =
+    invoker.compile(submit, sourceModule).flatMap { cr =>
       reporter.compile(cr._1).map(_ => cr)
+    }
+
+  def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, reporter: ProgressReporter, schoolMode: Boolean): Future[Unit] =
+    reporter { pr =>
+      compile(submit, sourceModule, pr).flatMap {
+        case (compileResult, binaryOption) =>
+          binaryOption.map { binary =>
+            new BinarySolution(invoker, submit, problem, binary, pr, schoolMode).run
+          }.getOrElse(Future.value(Nil)).map(x => SolutionTestingResult(compileResult, x.map(v => v._2 -> v._3)))
+      }
+    }
+
+  def custom(submit: SchedulingKey, sourceModule: Module, input: Array[Byte], reporter: ProgressReporter) =
+    reporter { pr =>
+      compile(submit, sourceModule, pr).flatMap {
+        case (compileResult, binaryOption) =>
+          binaryOption.map { binary =>
+            invoker.custom(submit, binary, input)
+          }.getOrElse()
+      }
     }
 }
 
@@ -69,7 +84,7 @@ trait TestingStrategy {
 // ACM: seq
 // School: 1, parallel
 
-class BinarySolution(invoker: InvokerSimpleApi, binary: Module, submit: SchedulingKey, reporter: SingleProgress, schoolMode: Boolean, problem: Problem) extends Logging with TestingStrategy {
+class BinarySolution(invoker: InvokerSimpleApi, submit: SchedulingKey, problem: Problem, binary: Module, reporter: SingleProgress, schoolMode: Boolean) extends Logging with TestingStrategy {
   def proceed(r: Solution.NumberedTestResult): Boolean =
     r._2.success || (schoolMode && r._1 != 1)
 

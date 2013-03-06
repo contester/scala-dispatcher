@@ -1,12 +1,34 @@
-package org.stingray.contester.dispatcher
+package org.stingray.contester.testing
 
+import org.stingray.contester.common.{TestResult, CompileResult}
 import com.twitter.util.Future
+import org.joda.time.format.ISODateTimeFormat
+import org.joda.time.DateTime
+import org.stingray.contester.db.ConnectionPool
+import org.stingray.contester.dispatcher.SubmitObject
 import java.io.File
 import org.apache.commons.io.FileUtils
-import org.joda.time.DateTime
-import org.joda.time.format.ISODateTimeFormat
-import org.stingray.contester.common._
-import org.stingray.contester.db.ConnectionPool
+
+case class SolutionTestingResult(compilation: CompileResult, tests: Seq[(Int, TestResult)])
+
+trait SingleProgress {
+  def compile(r: CompileResult): Future[Unit]
+  def test(id: Int, r: TestResult): Future[Unit]
+
+  def finish(r: SolutionTestingResult): Future[Unit]
+  def rescue: PartialFunction[Throwable, Future[Unit]] = Map.empty
+}
+
+trait ProgressReporter {
+  def start: Future[SingleProgress]
+
+  final def apply(f: SingleProgress => Future[SolutionTestingResult]): Future[Unit] =
+    start.flatMap { pr =>
+      f(pr)
+        .flatMap(pr.finish)
+        .rescue(pr.rescue)
+    }
+}
 
 object CombinedResultReporter {
   val fmt = ISODateTimeFormat.dateTime()
@@ -31,7 +53,7 @@ class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, v
     client.execute("insert into Results (UID, Submit, Result, Test, Timex, Memory, TesterOutput, TesterError) values (?, ?, ?, ?, ?, ?, ?, ?)",
       testingId, submit.id, r.status, 0, 0,
       0, r.stdOut, r.stdErr).unit.join(client.execute("Update Submits set Compiled = ? where ID = ?", (if (r.success) 1 else 0), submit.id))
-    .unit
+      .unit
 
   def test(testId: Int, result: TestResult): Future[Unit] =
     client.execute("Insert into Results (UID, Submit, Result, Test, Timex, Memory, Info, TesterOutput, TesterError, TesterExitCode) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -43,20 +65,19 @@ class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, v
   def finish(result: SolutionTestingResult): Future[Unit] =
     client.execute("update Testings set Finish = NOW() where ID = ?", testingId).unit.join(
       client.execute("Update Submits set Finished = 1, Taken = ?, Passed = ? where ID = ?",
-      result.tests.size, result.tests.filter(_._2.success).size, submit.id).unit).unit
+        result.tests.size, result.tests.filter(_._2.success).size, submit.id).unit).unit
+
 }
 
 class DBResultReporter(client: ConnectionPool, val submit: SubmitObject) extends ProgressReporter {
-  def apply(f: (SingleProgress) => Future[SolutionTestingResult]): Future[Unit] =
+  def start =
     client.execute("Insert into Testings (Submit, Start) values (?, NOW())", submit.id)
       .map(_.lastInsertId.get)
       .flatMap { lastInsertId =>
-      client.execute("Replace Submits (Contest, Arrived, Team, Task, ID, Ext, Computer, TestingID, Touched, Finished) values (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 0)",
-        submit.contestId, submit.arrived, submit.teamId, submit.problemId, submit.id, submit.moduleType, submit.computer, lastInsertId).unit.flatMap { _ =>
-        val rep = new DBSingleResultReporter(client, submit, lastInsertId)
-        f(rep).flatMap(rep.finish(_)) // TODO: rescue here
-      }
-
+      client.execute(
+        "Replace Submits (Contest, Arrived, Team, Task, ID, Ext, Computer, TestingID, Touched, Finished) values (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 0)",
+        submit.contestId, submit.arrived, submit.teamId, submit.problemId, submit.id, submit.moduleType, submit.computer, lastInsertId)
+        .unit.map(_ => new DBSingleResultReporter(client, submit, lastInsertId))
     }
 }
 
@@ -79,8 +100,9 @@ class RawLogResultReporter(base: File, val submit: SubmitObject) extends Progres
   def test(id: Int, result: TestResult): Future[Unit] =
     rawlog("  Test " + id + ": " + result, Some(result.toMap.toString()))
 
-  def apply(f: (SingleProgress) => Future[SolutionTestingResult]): Future[Unit] =
-    rawlog("Started testing " + submit).flatMap { _ =>
-      f(this).flatMap(_ => rawlog("Finished testing " + submit))
-    }
+  def finish(result: SolutionTestingResult): Future[Unit] =
+    rawlog("Finished testing " + submit)
+
+  def start =
+    rawlog("Started testing " + submit).map(_ => this)
 }

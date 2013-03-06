@@ -10,4 +10,7 @@ class InvokerSimpleApi(val invoker: InvokerRegistry) {
 
   def test(key: SchedulingKey, m: Module, t: Test) =
     invoker(m.getType, key, t)(Tester(_, m, t))
+
+  def custom(key: SchedulingKey, m: Module, input: Array[Byte]) =
+    invoker(m.getType, key, "custom")(CustomTester(_, m, input))
 }
