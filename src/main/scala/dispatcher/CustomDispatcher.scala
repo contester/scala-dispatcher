@@ -1,26 +1,21 @@
 package org.stingray.contester.dispatcher
 
 import java.sql.{ResultSet, Timestamp}
-import org.stingray.contester.invokers.{TimeKey, InvokerRegistry}
+import org.stingray.contester.invokers.TimeKey
 import org.stingray.contester.common.{Blobs, SubmitWithModule}
 import com.twitter.util.Future
 import org.stingray.contester.db.{HasId, SelectDispatcher, ConnectionPool}
-import org.stingray.contester.engine.{CustomTester, CustomTestResult, Compiler}
+import org.stingray.contester.testing.{CustomTestingResult, SolutionTester}
 
 case class CustomTestObject(id: Int, moduleType: String, arrived: Timestamp, source: Array[Byte], input: Array[Byte]) extends TimeKey with HasId with SubmitWithModule {
   val timestamp = arrived
 }
 
 object Custom {
-  def test(invoker: InvokerRegistry, submit: CustomTestObject): Future[Option[CustomTestResult]] =
-    invoker(submit.sourceModule.getType, submit, "compile")(Compiler(_, submit.sourceModule))
-      .flatMap { r =>
-      if (r.success) {
-        invoker(r.module.get.getType, submit, "custom")(CustomTester(_, r.module.get, submit.input)).map(Some(_))
-      } else Future.None
-    }
+  def test(invoker: SolutionTester, submit: CustomTestObject): Future[CustomTestingResult] =
+    invoker.custom(submit, submit.sourceModule, submit.input)
 }
-class CustomTestDispatcher(db: ConnectionPool, invoker: InvokerRegistry) extends SelectDispatcher[CustomTestObject](db) {
+class CustomTestDispatcher(db: ConnectionPool, invoker: SolutionTester) extends SelectDispatcher[CustomTestObject](db) {
   def rowToSubmit(row: ResultSet) =
     CustomTestObject(
       row.getInt("ID"),
@@ -57,18 +52,19 @@ class CustomTestDispatcher(db: ConnectionPool, invoker: InvokerRegistry) extends
       |update Eval set Processed = 254 where ID = ?
     """.stripMargin
 
-  def recordResult(item: CustomTestObject, resultOpt: Option[CustomTestResult]): Future[Unit] =
-    if (resultOpt.isDefined)
+  def recordResult(item: CustomTestObject, result: CustomTestingResult): Future[Unit] =
+    if (result.test.isDefined)
       db.execute("update Eval set Output = ?, Timex = ?, Memory = ?, Info = ?, Result = ? where ID = ?",
-        resultOpt.get.output.map(Blobs.getBinary(_)).getOrElse("".getBytes),
-        resultOpt.get.run.time / 1000,
-        resultOpt.get.run.memory,
-        resultOpt.get.run.returnCode,
-        resultOpt.get.run.status,
+        result.test.get.output.map(Blobs.getBinary(_)).getOrElse("".getBytes),
+        result.test.get.run.time / 1000,
+        result.test.get.run.memory,
+        result.test.get.run.returnCode,
+        result.test.get.run.status,
         item.id
       ).unit
     else Future.Done
 
   def run(item: CustomTestObject) =
-    Custom.test(invoker, item).flatMap(recordResult(item, _))
+    invoker.custom(item, item.sourceModule, item.input)
+      .flatMap(recordResult(item, _))
 }

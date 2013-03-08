@@ -62,7 +62,7 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
   // main test entry point
   def run(m: SubmitObject) = {
     parent.getProblem(m.contestId, m.problemId).flatMap { problem =>
-      Solution.test(parent.invoker, m, problem, parent.getReporter(m))
+      parent.invoker(m, m.sourceModule, problem,parent.getReporter(m), m.schoolMode)
     }
   }
 }

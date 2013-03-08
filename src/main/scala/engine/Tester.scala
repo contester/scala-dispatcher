@@ -68,11 +68,11 @@ object Tester extends Logging {
     }
   }
 
-  def apply(instance: InvokerInstance, module: Module, test: Test): Future[(RunResult, Option[TesterRunResult])] =
-    if (test.interactive)
+  def apply(instance: InvokerInstance, module: Module, test: Test): Future[TestResult] =
+    (if (test.interactive)
       testInteractive(instance, module, test)
     else
-      testOld(instance, module, test)
+      testOld(instance, module, test)).map(x => new TestResult(x._1, x._2))
 
   def sandboxAfterExecutionResult(stats: Iterable[RemoteFile]) = {
     val m = stats.map(x => x.name -> x).toMap

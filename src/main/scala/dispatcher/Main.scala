@@ -9,10 +9,11 @@ import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
 import org.stingray.contester.invokers.InvokerRegistry
-import org.stingray.contester.messaging.AMQ
 import org.stingray.contester.polygon.{CommonPolygonDb, PolygonClient}
 import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.streum.configrity.Configuration
+import org.stingray.contester.testing.SolutionTester
+import org.stingray.contester.engine.InvokerSimpleApi
 
 object Main extends App with Logging {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
@@ -25,7 +26,7 @@ object Main extends App with Logging {
 
   val config = Configuration.load("dispatcher.conf")
   val mHost = config[String]("pdb.mhost")
-  val amqclient = AMQ.createConnection(config.detach("messaging"))
+  //val amqclient = AMQ.createConnection(config.detach("messaging"))
 
   val httpStatus = HttpStatus.bind(config[Int]("dispatcher.port"))
 
@@ -33,10 +34,11 @@ object Main extends App with Logging {
   val pdb = new CommonPolygonDb(MongoConnection(mHost).getDB("contester"))
   val invoker = new InvokerRegistry(mHost)
   StatusPageBuilder.data("invoker") = invoker
+  val tester = new SolutionTester(new InvokerSimpleApi(invoker))
 
   val problems = new ProblemData(client, pdb, invoker)
 
-  val dispatchers = new DbDispatchers(problems, new File(config[String]("reporting.base")), invoker, amqclient.createChannel())
+  val dispatchers = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester)
 
   val sf = new NioServerSocketChannelFactory(
     Executors.newCachedThreadPool(),

@@ -1,6 +1,6 @@
 package org.stingray.contester.common
 
-import org.stingray.contester.proto.Blobs.{Module, Blob}
+import org.stingray.contester.proto.Blobs.Blob
 import org.stingray.contester.proto.Local.{LocalExecutionParameters, LocalExecutionResult}
 
 trait Result {
@@ -145,38 +145,51 @@ object StepResult {
     new StepResult(name, p, r)
 }
 
-class CompileResult(val steps: Seq[StepResult], val module: Option[Module]) extends Result {
-  val success = module.isDefined
+trait CompileResult extends Result {
   val status = if (success) StatusCode.CompilationSuccessful else StatusCode.CompilationFailed
 
   override def toString =
     StatusCode(status)
 
-  lazy val time = steps.map(_.time).sum
-  lazy val memory = steps.map(_.memory).sum
+  val time: Long = 0
+  val memory: Long = 0
+
+  val stdOut = "".getBytes()
+  val stdErr = "".getBytes()
+
+  def toMap: Map[String, Any] = Map()
+}
+
+class RealCompileResult(val steps: Seq[StepResult], override val success: Boolean) extends CompileResult {
+  override val time = steps.map(_.time).sum
+  override val memory = steps.map(_.memory).sum
 
   def getStd(mapper: LocalExecutionResult => Blob) =
     steps.map(x => mapper(x.result))
       .map(Blobs.getBinary(_)).map(x => new String(x, "UTF-8")).mkString("===\n").getBytes("UTF-8")
 
-  lazy val stdOut =
+  override val stdOut =
     getStd(_.getStdOut)
 
-  lazy val stdErr =
+  override val stdErr =
     getStd(_.getStdErr)
 
-  def toMap: Map[String, Any] = Map(
+  override def toMap: Map[String, Any] = Map(
     "steps" -> steps.map(_.toMap)
   )
 }
 
-object CompileResult {
-  def apply(steps: Seq[StepResult], module: Option[Module]) = new CompileResult(steps, module)
+object NoModuleCompileResult extends CompileResult {
+  val success: Boolean = false
+}
+
+object BinaryModuleCompileResult extends CompileResult {
+  val success: Boolean = true
 }
 
 object TestResult {
-  def apply(solution: RunResult, tester: Option[TesterRunResult], testId: Int) =
-    new TestResult(solution, tester, testId)
+  def apply(solution: RunResult, tester: Option[TesterRunResult]) =
+    new TestResult(solution, tester)
 }
 
 object StatusCode {
@@ -209,7 +222,7 @@ object StatusCode {
   def apply(code: Int) = reasons.getOrElse(code, "Unknown status " + code)
 }
 
-class TestResult(val solution: RunResult, val tester: Option[TesterRunResult], val testId: Int) extends Result {
+class TestResult(val solution: RunResult, val tester: Option[TesterRunResult]) extends Result {
   lazy val solutionStatus: Option[Int] =
     if (!solution.success)
       Some(solution.status)
@@ -247,7 +260,6 @@ class TestResult(val solution: RunResult, val tester: Option[TesterRunResult], v
     tester.map(_.result.getReturnCode).getOrElse(0)
 
   override def toString =
-    "Test " + testId + ": " +
       "%s, time=%ss, memory=%s".format(StatusCode(status),
       solution.time / 1000000.0, solution.memory)
 }
