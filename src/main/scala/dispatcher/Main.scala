@@ -9,7 +9,6 @@ import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
 import org.stingray.contester.invokers.InvokerRegistry
-import org.stingray.contester.messaging.AMQ
 import org.stingray.contester.polygon.{CommonPolygonDb, PolygonClient}
 import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.streum.configrity.Configuration
@@ -27,7 +26,7 @@ object Main extends App with Logging {
 
   val config = Configuration.load("dispatcher.conf")
   val mHost = config[String]("pdb.mhost")
-  val amqclient = AMQ.createConnection(config.detach("messaging"))
+  //val amqclient = AMQ.createConnection(config.detach("messaging"))
 
   val httpStatus = HttpStatus.bind(config[Int]("dispatcher.port"))
 
