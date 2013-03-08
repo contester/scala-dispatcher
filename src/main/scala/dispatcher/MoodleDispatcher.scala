@@ -1,14 +1,15 @@
 package org.stingray.contester.dispatcher
 
-import org.stingray.contester.invokers.SchedulingKey
-import org.stingray.contester.db.{ConnectionPool, SelectDispatcher, HasId}
+import org.stingray.contester.invokers.InvokerRegistry
+import org.stingray.contester.db.{ConnectionPool, SelectDispatcher}
 import org.stingray.contester.common._
 import java.sql.{ResultSet, Timestamp}
 import com.twitter.util.Future
 import org.stingray.contester.problems.ProblemDb
 
-case class MoodleSubmit(id: Int, problemId: String, moduleType: String, arrived: Timestamp, source: Array[Byte]) extends SchedulingKey with HasId with SubmitWithModule {
-  protected def getTimestamp: Timestamp = arrived
+case class MoodleSubmit(id: Int, problemId: String, moduleType: String, arrived: Timestamp, source: Array[Byte]) extends Submit {
+  val timestamp = arrived
+  override val schoolMode = true
 
   override def toString =
     "MoodleSubmit(%d)".format(id)
@@ -63,8 +64,15 @@ class MoodleResultReporter(client: ConnectionPool, val submit: MoodleSubmit) ext
 }
 
 
-class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb) extends SelectDispatcher[MoodleSubmit](db) {
-  def rowToSubmit(row: ResultSet): MoodleSubmit = null
+class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: InvokerRegistry) extends SelectDispatcher[MoodleSubmit](db) {
+  def rowToSubmit(row: ResultSet): MoodleSubmit =
+    MoodleSubmit(
+      row.getInt("SubmitId"),
+      row.getInt("ProblemId").toString,
+      row.getString("ModuleId"),
+      row.getTimestamp("Arrived"),
+      row.getBytes("Solution")
+    )
 
   def selectAllActiveQuery: String =
     """
@@ -93,5 +101,8 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb) extends SelectDispatc
   def failedQuery: String =
     "update mdl_contester_submits set processed = 254 where id = ?"
 
-  def run(item: MoodleSubmit): Future[Unit] = null
+  def run(item: MoodleSubmit): Future[Unit] =
+    pdb.getMostRecentProblem("moodle/" + item.problemId).flatMap { problem =>
+      Solution.test(inv, item, problem.get, new MoodleResultReporter(db, item))
+    }
 }

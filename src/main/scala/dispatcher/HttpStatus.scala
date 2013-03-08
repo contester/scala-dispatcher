@@ -2,7 +2,7 @@ package org.stingray.contester.dispatcher
 
 import com.twitter.finagle.Service
 import com.twitter.finagle.builder.ServerBuilder
-import com.twitter.finagle.http.{DefaultHttpMuxService, Http}
+import com.twitter.finagle.http.{HttpMuxer, Http}
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import java.net.{URI, InetSocketAddress}
@@ -77,12 +77,12 @@ object StaticServer extends Service[HttpRequest, HttpResponse] {
 
 object HttpStatus {
   def bind(port: Int) = {
-    DefaultHttpMuxService.addHandler("assets/", StaticServer)
-    DefaultHttpMuxService.addHandler("", StatusPageBuilder)
+    HttpMuxer.addHandler("assets/", StaticServer)
+    HttpMuxer.addHandler("", StatusPageBuilder)
     ServerBuilder()
       .codec(Http())
       .bindTo(new InetSocketAddress(port))
       .name("httpserver")
-      .build(DefaultHttpMuxService)
+      .build(HttpMuxer)
   }
 }

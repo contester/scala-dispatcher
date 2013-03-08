@@ -10,10 +10,10 @@ import org.stingray.contester.problems.{Test, Problem}
 import collection.SortedMap
 
 object Solution {
-  def test(invoker: InvokerRegistry, submit: SubmitObject, problem: Problem, reporter: CombinedResultReporter) =
+  def test(invoker: InvokerRegistry, submit: Submit, problem: Problem, reporter: TestingResultReporter) =
     invoker(submit.sourceModule.getType, submit, "compile")(Compiler(_, submit.sourceModule))
       .flatMap { r =>
-        reporter.compileResult(r).flatMap { _ =>
+        reporter.report(r).flatMap { _ =>
           if (r.success) {
             if (submit.schoolMode)
               new SchoolSolution(invoker, r.module.get, problem, reporter, submit).start
@@ -27,29 +27,27 @@ object Solution {
 }
 
 trait SimpleSolution {
-  def reporter: CombinedResultReporter
+  def reporter: TestingResultReporter
   def invoker: InvokerRegistry
   def problem: Problem
   def module: Module
-  def submit: SubmitObject
+  def submit: Submit
 
   def start: Future[Unit]
 
   private def saveResult(solution: RunResult, tester: Option[TesterRunResult], testId: Int): Future[TestResult] = {
     val result = TestResult(solution, tester, testId)
-    reporter.testResult(result).map(_ => result)
+    reporter.report(result).map(_ => result)
   }
 
   def test(test: Test): Future[TestResult] =
-    reporter.getId.flatMap { testingId =>
       invoker(module.getType, submit, test)(Tester(_, module, test))
         .flatMap {
         case (solution, tester) => saveResult(solution, tester, test.testId)
-      }
     }
 }
 
-class ACMSolution(val invoker: InvokerRegistry, val module: Module, val problem: Problem, val reporter: CombinedResultReporter, val submit: SubmitObject) extends SimpleSolution with Logging {
+class ACMSolution(val invoker: InvokerRegistry, val module: Module, val problem: Problem, val reporter: TestingResultReporter, val submit: Submit) extends SimpleSolution with Logging {
   def start: Future[Unit] =
     test(problem.head._2).flatMap(testDone(_, problem.tail))
 
@@ -63,7 +61,7 @@ class ACMSolution(val invoker: InvokerRegistry, val module: Module, val problem:
 
 }
 
-class SchoolSolution(val invoker: InvokerRegistry, val module: Module, val problem: Problem, val reporter: CombinedResultReporter, val submit: SubmitObject) extends SimpleSolution with Logging {
+class SchoolSolution(val invoker: InvokerRegistry, val module: Module, val problem: Problem, val reporter: TestingResultReporter, val submit: Submit) extends SimpleSolution with Logging {
   private def first(result: TestResult): Future[Unit] =
     (if (result.success)
       Future.collect(
