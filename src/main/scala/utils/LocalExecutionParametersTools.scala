@@ -30,6 +30,9 @@ final class RichLocalExecutionParameters(val repr: LocalExecutionParameters) {
   def setSolution =
     repr.toBuilder.setCheckIdleness(true).setRestrictUi(true).setProcessLimit(1).build()
 
+  def setSanitizer =
+    repr.toBuilder.setNoJob(true).build()
+
   def setTester =
     outputToMemory.toBuilder.setTimeLimitHardMicros(120 * 1000000).setNoJob(true).build()
 
