@@ -26,6 +26,9 @@ object Solution {
 
 }
 
+// Persistence layer goes here.
+
+
 class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
   def compile(submit: SchedulingKey, sourceModule: Module, reporter: SingleProgress) =
     invoker.compile(submit, sourceModule).flatMap { cr =>

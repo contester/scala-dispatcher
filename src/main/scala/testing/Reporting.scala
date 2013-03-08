@@ -33,6 +33,22 @@ trait ProgressReporter {
 
 }
 
+class CombinedSingleProgress(reporters: Seq[SingleProgress]) extends SingleProgress {
+  def compile(r: CompileResult): Future[Unit] =
+    Future.collect(reporters.map(_.compile(r))).unit
+
+  def test(id: Int, r: TestResult): Future[Unit] =
+    Future.collect(reporters.map(_.test(id, r))).unit
+
+  def finish(r: SolutionTestingResult): Future[Unit] =
+    Future.collect(reporters.map(_.finish(r))).unit
+}
+
+class CombinedResultReporter(reporters: Seq[ProgressReporter]) extends ProgressReporter {
+  def start: Future[SingleProgress] =
+    Future.collect(reporters.map(_.start)).map(new CombinedSingleProgress(_))
+}
+
 object NullReporter extends SingleProgress {
   def compile(r: CompileResult): Future[Unit] = Future.Done
 
@@ -57,6 +73,11 @@ object CombinedResultReporter {
       case (keys, values) =>
         ("(%s) values (%s)".format(keys.mkString(", "), keys.map(_ => "?").mkString(", ")), values.toSeq)
     }
+
+  def apply(reporters: Seq[ProgressReporter]): CombinedResultReporter = new CombinedResultReporter(reporters)
+
+  def apply(submit: SubmitObject, client: ConnectionPool, base: File): CombinedResultReporter =
+    apply(new RawLogResultReporter(base, submit) :: new DBResultReporter(client, submit) :: Nil)
 }
 
 class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, val testingId: Int) extends SingleProgress {

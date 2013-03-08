@@ -1,17 +1,14 @@
 package org.stingray.contester.dispatcher
 
 import collection.mutable
-import com.codahale.jerkson.Json
-import com.rabbitmq.client.AMQP.BasicProperties
-import com.rabbitmq.client.Channel
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import java.io.File
 import org.stingray.contester.db.ConnectionPool
-import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.problems.Problem
+import org.stingray.contester.testing.{CombinedResultReporter, SolutionTester}
 
-class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, val invoker: InvokerRegistry, val amqconn: Channel, val amqid: String) extends Logging {
+class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, val invoker: SolutionTester) extends Logging {
   val pscanner = new ContestTableScanner(pdata, dbclient)
   val dispatcher = new SubmitDispatcher(this)
   val evaldispatcher = new CustomTestDispatcher(dbclient, invoker)
@@ -22,17 +19,8 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
   def getProblem(cid: Int, problem: String): Future[Problem] =
     pscanner(cid).flatMap(pdata.getProblemInfo(pscanner, _, problem))
 
-  def amqPost(id: Int) = {
-    info("Finished: %s/%d".format(amqid, id))
-    amqconn.basicPublish("", "finished",
-      new BasicProperties.Builder().deliveryMode(2)
-        .contentType("application/json").build(),
-      Json.generate(Map("db" -> amqid, "submit" -> id)).getBytes("UTF-8")
-      )
-  }
-
   def getReporter(submit: SubmitObject) =
-    new DBResultReporter(dbclient, submit)
+    CombinedResultReporter(submit, dbclient, basePath)
 
   def start =
     pscanner.rescan.join(dispatcher.scan).join(evaldispatcher.scan).unit
@@ -46,13 +34,13 @@ case class DbConfig(host: String, db: String, username: String, password: String
     "DbConfig(\"%s\", \"%s\", \"%s\", \"%s\")".format(host, db, username, "hunter2")
 }
 
-class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: InvokerRegistry, val amqconn: Channel) extends Logging {
+class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: SolutionTester) extends Logging {
   val dispatchers = new mutable.HashMap[DbConfig, DbDispatcher]()
   val scanners = new mutable.HashMap[DbDispatcher, Future[Unit]]()
 
   def add(conf: DbConfig) = {
     info(conf)
-    val d = new DbDispatcher(conf.createConnectionPool, pdata, new File(basePath, conf.db), invoker, amqconn, conf.db)
+    val d = new DbDispatcher(conf.createConnectionPool, pdata, new File(basePath, conf.db), invoker)
     scanners(d) = d.start
   }
 
