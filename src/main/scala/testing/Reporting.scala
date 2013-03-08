@@ -8,8 +8,10 @@ import org.stingray.contester.db.ConnectionPool
 import org.stingray.contester.dispatcher.SubmitObject
 import java.io.File
 import org.apache.commons.io.FileUtils
+import org.stingray.contester.engine.CustomTestResult
 
 case class SolutionTestingResult(compilation: CompileResult, tests: Seq[(Int, TestResult)])
+case class CustomTestingResult(compilation: CompileResult, test: Option[CustomTestResult])
 
 trait SingleProgress {
   def compile(r: CompileResult): Future[Unit]
@@ -28,6 +30,15 @@ trait ProgressReporter {
         .flatMap(pr.finish)
         .rescue(pr.rescue)
     }
+
+}
+
+object NullReporter extends SingleProgress {
+  def compile(r: CompileResult): Future[Unit] = Future.Done
+
+  def test(id: Int, r: TestResult): Future[Unit] = Future.Done
+
+  def finish(r: SolutionTestingResult): Future[Unit] = Future.Done
 }
 
 object CombinedResultReporter {

@@ -42,14 +42,12 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
       }
     }
 
-  def custom(submit: SchedulingKey, sourceModule: Module, input: Array[Byte], reporter: ProgressReporter) =
-    reporter { pr =>
-      compile(submit, sourceModule, pr).flatMap {
-        case (compileResult, binaryOption) =>
-          binaryOption.map { binary =>
-            invoker.custom(submit, binary, input)
-          }.getOrElse()
-      }
+  def custom(submit: SchedulingKey, sourceModule: Module, input: Array[Byte]): Future[CustomTestingResult] =
+    compile(submit, sourceModule, NullReporter).flatMap {
+      case (compileResult, binaryOption) =>
+        binaryOption.map { binary =>
+          invoker.custom(submit, binary, input).map(Some(_))
+        }.getOrElse(Future.None).map(x => CustomTestingResult(compileResult, x))
     }
 }
 
