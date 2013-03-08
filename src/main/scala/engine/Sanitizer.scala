@@ -36,7 +36,7 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFile, problem: ProblemDescr
 
   private[this] def useGenerator(gen: RemoteFile) =
     sandbox.getExecutionParameters(gen.name, Nil)
-      .map(_.setCurrentAndTemp(gen.parent))
+      .map(_.setCurrentAndTemp(gen.parent).setTester)
       .flatMap(sandbox.execute(_)).map(trace(_)).map(_ => this)
 
   private[this] def sanitize =
