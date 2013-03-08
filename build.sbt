@@ -16,7 +16,7 @@ name := "dispatcher"
 
 fork in (Compile, run) := true
 
-javaOptions in run += "-XX:+HeapDumpOnOutOfMemoryError"
+javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m", "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
 scalaVersion := "2.9.2"
 
