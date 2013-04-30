@@ -18,7 +18,7 @@ fork in (Compile, run) := true
 
 javaOptions in run += "-XX:+HeapDumpOnOutOfMemoryError"
 
-scalaVersion := "2.10.0"
+scalaVersion := "2.10.1"
 
 version := "0.1"
 
@@ -27,6 +27,8 @@ organization := "org.stingray.contester"
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 javacOptions in Compile ++= Seq("-source", "1.6",  "-target", "1.6")
+
+version in PB.protobufConfig := "2.5.0"
 
 resolvers ++= Seq(
     "twitter.com" at "http://maven.twttr.com/",
@@ -37,21 +39,21 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "io.netty" % "netty" % "3.6.2.Final",
-  "com.twitter" %% "finagle-core" % "6.1.1",
-  "com.twitter" %% "finagle-http" % "6.1.1",
+  "io.netty" % "netty" % "3.6.5.Final",
+  "com.twitter" %% "finagle-core" % "6.3.0",
+  "com.twitter" %% "finagle-http" % "6.3.0",
   "org.streum" %% "configrity-core" % "1.0.0",
-  "com.twitter" %% "util-core" % "6.2.0",
-  "org.mongodb" %% "casbah" % "2.5.0",
+  "com.twitter" %% "util-core" % "6.3.0",
+  "org.mongodb" %% "casbah" % "2.6.0",
   "org.clapper" %% "grizzled-slf4j" % "1.0.1",
   "org.clapper" %% "avsl" % "1.0.1",
-  "joda-time" % "joda-time" % "2.1",
-  "org.joda" % "joda-convert" % "1.3",
+  "joda-time" % "joda-time" % "2.2",
+  "org.joda" % "joda-convert" % "1.3.1",
   "org.fusesource.scalate" %% "scalate-core" % "1.6.1",
   "commons-io" % "commons-io" % "2.4",
-  "com.rabbitmq" % "amqp-client" % "3.0.2",
+  "com.rabbitmq" % "amqp-client" % "3.0.4",
   "com.codahale" % "jerkson_2.9.1" % "0.5.0",
-  "mysql" % "mysql-connector-java" % "5.1.23",
+  "mysql" % "mysql-connector-java" % "5.1.24",
   "org.scalatest" %% "scalatest" % "1.9" % "test"
 )
 
