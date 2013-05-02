@@ -1,11 +1,11 @@
 package org.stingray.contester.dispatcher
 
-import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.db.{ConnectionPool, SelectDispatcher}
 import org.stingray.contester.common._
 import java.sql.{ResultSet, Timestamp}
 import com.twitter.util.Future
 import org.stingray.contester.problems.ProblemDb
+import org.stingray.contester.testing.{SolutionTester, SolutionTestingResult, SingleProgress, ProgressReporter}
 
 case class MoodleSubmit(id: Int, problemId: String, moduleType: String, arrived: Timestamp, source: Array[Byte]) extends Submit {
   val timestamp = arrived
@@ -15,56 +15,33 @@ case class MoodleSubmit(id: Int, problemId: String, moduleType: String, arrived:
     "MoodleSubmit(%d)".format(id)
 }
 
-class MoodleResultReporter(client: ConnectionPool, val submit: MoodleSubmit) extends TestingResultReporter {
-  val tests = collection.mutable.Map[Int, Boolean]()
-  var compiled = false
+class MoodleSingleResult(client: ConnectionPool, val submit: MoodleSubmit, val testingId: Int) extends SingleProgress {
+  def compile(r: CompileResult): Future[Unit] =
+    client.execute(
+      "insert into mdl_contester_results (testingid, processed, result, test, timex, memory, testeroutput, testererror) values (?, NOW(), ?, ?, ?, ?, ?, ?)",
+      testingId, r.status, 0, r.time / 1000,
+      r.memory, r.stdOut, r.stdErr).unit
 
-  lazy val getId = client.execute("Insert into mdl_contester_testings (submitid, start) values (?, NOW())", submit.id)
-    .map(_.lastInsertId.get)
+  def test(id: Int, r: TestResult): Future[Unit] =
+    client.execute(
+      "Insert into mdl_contester_results (testingid, processed, result, test, timex, memory, info, testeroutput, testererror, testerexitcode) values (?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)",
+      testingId, r.status, id, r.solution.time / 1000,
+      r.solution.memory, r.solution.returnCode,
+      r.getTesterOutput, r.getTesterError,
+      r.getTesterReturnCode).unit
 
-  lazy val start =
-    getId.unit
-
-  def report(r: Result): Future[Unit] = r match {
-    case c: CompileResult => compileResult(c)
-    case t: TestResult => testResult(t)
-  }
-
-  def compileResult(result: CompileResult) =
-    getId.flatMap { testingId =>
-      compiled = result.success
-      client.execute(
-        "insert into mdl_contester_results (testingid, processed, result, test, timex, memory, testeroutput, testererror) values (?, NOW(), ?, ?, ?, ?, ?, ?)",
-        testingId, result.status, 0, result.time / 1000,
-        result.memory, result.stdOut, result.stdErr).unit
-    }
-
-  def testResult(result: TestResult) = {
-    val testId = result.testId
-    tests(testId) = result.success
-    getId.flatMap { testingId =>
-        client.execute(
-          "Insert into mdl_contester_results (testingid, processed, result, test, timex, memory, info, testeroutput, testererror, testerexitcode) values (?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)",
-          testingId, result.status, testId, result.solution.time / 1000,
-          result.solution.memory, result.solution.returnCode,
-          result.getTesterOutput, result.getTesterError,
-          result.getTesterReturnCode)
-    }.unit
-  }
-
-  def getTestTaken = tests.keys.size
-  def getTestsPassed = tests.values.count(y => y)
-
-  // TODO: fix implicit race WTF IS THIS
-  def finish(isError: Boolean): Future[Unit] =
-    getId.flatMap { testingId =>
-      client.execute("update mdl_contester_testings set finish = NOW(), compiled = ?, taken = ?, passed = ? where ID = ?",
-        if (compiled) 1 else 0, getTestTaken, getTestsPassed, testingId)
-    }.unit
+  def finish(r: SolutionTestingResult): Future[Unit] =
+    client.execute("update mdl_contester_testings set finish = NOW(), compiled = ?, taken = ?, passed = ? where ID = ?",
+      if (r.compilation.success) 1 else 0, r.tests.size, r.tests.count(_._2.success), testingId).unit
 }
 
+class MoodleResultReporter(client: ConnectionPool, val submit: MoodleSubmit) extends ProgressReporter {
+  def start: Future[SingleProgress] =
+    client.execute("Insert into mdl_contester_testings (submitid, start) values (?, NOW())", submit.id)
+      .map(_.lastInsertId.get).map(new MoodleSingleResult(client, submit, _))
+}
 
-class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: InvokerRegistry) extends SelectDispatcher[MoodleSubmit](db) {
+class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester) extends SelectDispatcher[MoodleSubmit](db) {
   def rowToSubmit(row: ResultSet): MoodleSubmit =
     MoodleSubmit(
       row.getInt("SubmitId"),
@@ -103,6 +80,6 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: InvokerRegistry)
 
   def run(item: MoodleSubmit): Future[Unit] =
     pdb.getMostRecentProblem("moodle/" + item.problemId).flatMap { problem =>
-      Solution.test(inv, item, problem.get, new MoodleResultReporter(db, item))
+      inv(item, item.sourceModule, problem.get, new MoodleResultReporter(db, item), true)
     }
 }
