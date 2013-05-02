@@ -24,7 +24,6 @@
       <sourceFolder url="file://$MODULE_DIR$/../src/main/java" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../target/scala-2.10/src_managed/main/compiled_protobuf" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../target/scala-2.10/src_managed/main/scalate" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/../target/scala-2.10/src_managed/main/compiled_protobuf/org" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../src/main/resources" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../src/test/scala" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/../src/test/java" isTestSource="true" />

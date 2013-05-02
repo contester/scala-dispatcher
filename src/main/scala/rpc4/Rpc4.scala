@@ -8,6 +8,7 @@ import org.jboss.netty.buffer.{ChannelBuffers, ChannelBuffer}
 import org.jboss.netty.channel._
 import org.jboss.netty.handler.codec.frame.FrameDecoder
 import org.stingray.contester.utils.ProtobufTools
+import org.stingray.contester.rpc4.proto.RpcFour
 
 trait Registry {
   def register(channel: Channel): ChannelHandler
