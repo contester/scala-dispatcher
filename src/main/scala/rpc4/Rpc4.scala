@@ -7,7 +7,6 @@ import com.twitter.util.Promise
 import org.jboss.netty.buffer.{ChannelBuffers, ChannelBuffer}
 import org.jboss.netty.channel._
 import org.jboss.netty.handler.codec.frame.FrameDecoder
-import proto.RpcFour
 import org.stingray.contester.utils.ProtobufTools
 
 trait Registry {
