@@ -73,7 +73,6 @@ private class RpcFramerDecoder extends SimpleChannelUpstreamHandler {
   }
 }
 
-
 private class RpcFramerEncoder extends SimpleChannelDownstreamHandler {
   private[this] class JustReturnListener(e: MessageEvent) extends ChannelFutureListener {
     def operationComplete(p1: ChannelFuture) {
@@ -89,7 +88,6 @@ private class RpcFramerEncoder extends SimpleChannelDownstreamHandler {
     header.writeInt(b.readableBytes())
     ChannelBuffers.wrappedBuffer(header, b)
   }
-
 
   override def writeRequested(ctx: ChannelHandlerContext, e: MessageEvent) {
     val rpc = e.getMessage.asInstanceOf[Rpc4Tuple]
