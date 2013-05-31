@@ -2,7 +2,7 @@ package org.stingray.contester.invokers
 
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
-import com.twitter.util.{Promise, Future}
+import com.twitter.util.{Await, Promise, Future}
 
 class FakeInvoker extends HasCaps[Int] {
   def caps: Iterable[Int] = 1 :: 2 :: Nil
@@ -23,8 +23,8 @@ class RequestStoreTests extends FlatSpec with ShouldMatchers {
     val f = new FakeInvoker
     s.addInvokers(f :: Nil)
 
-    expect(f) {
-      s.get(1, FakeKey(1), "1")(x => Future.value(x)).apply()
+    expectResult(f) {
+      Await.result(s.get(1, FakeKey(1), "1")(x => Future.value(x)))
     }
 
     val p = new Promise[Int]()
@@ -33,12 +33,12 @@ class RequestStoreTests extends FlatSpec with ShouldMatchers {
     val r2 = s.get(2, FakeKey(2), "2")(x => Future.value(2))
 
     p.setValue(5)
-    expect(5) {
-      r.apply()
+    expectResult(5) {
+      Await.result(r)
     }
 
-    expect(2) {
-      r2.apply()
+    expectResult(2) {
+      Await.result(r2)
     }
   }
 

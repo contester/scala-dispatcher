@@ -39,19 +39,19 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "io.netty" % "netty" % "3.6.5.Final",
-  "com.twitter" %% "finagle-core" % "6.3.0",
-  "com.twitter" %% "finagle-http" % "6.3.0",
+  "io.netty" % "netty" % "3.6.6.Final",
+  "com.twitter" %% "finagle-core" % "6.4.0",
+  "com.twitter" %% "finagle-http" % "6.4.0",
   "org.streum" %% "configrity-core" % "1.0.0",
-  "com.twitter" %% "util-core" % "6.3.0",
-  "org.mongodb" %% "casbah" % "2.6.0",
+  "com.twitter" %% "util-core" % "6.3.4",
+  "org.mongodb" %% "casbah" % "2.6.1",
   "org.clapper" % "avsl_2.10" % "1.0.1",
   "org.clapper" % "grizzled-slf4j_2.10" % "1.0.1",
   "joda-time" % "joda-time" % "2.2",
   "org.joda" % "joda-convert" % "1.3.1",
   "org.fusesource.scalate" %% "scalate-core" % "1.6.1",
   "commons-io" % "commons-io" % "2.4",
-  "com.rabbitmq" % "amqp-client" % "3.0.4",
+  "com.rabbitmq" % "amqp-client" % "3.1.1",
   "com.codahale" % "jerkson_2.9.1" % "0.5.0",
   "mysql" % "mysql-connector-java" % "5.1.25",
   "org.scalatest" %% "scalatest" % "1.9" % "test"
