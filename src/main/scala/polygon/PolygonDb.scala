@@ -16,7 +16,7 @@ trait PolygonDb {
 class CommonPolygonDb(mdb: MongoDB) extends CommonProblemDb(mdb) with PolygonDb {
   def get[I <: com.google.protobuf.Message](key: String)(implicit manifest: Manifest[I]) =
     Future {
-      mfs.findOne(key).map(f => ProtobufTools.createProtobufFromInputStream[I](f.inputStream)).headOption
+      mfs.findOne(key).map(f => ProtobufTools.createProtobuf[I](f.inputStream)).headOption
     }
 
   def set(key: String, value: com.google.protobuf.MessageLite) =
