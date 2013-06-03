@@ -1,14 +1,15 @@
 package org.stingray.contester.rpc4
 
 import actors.threadpool.AtomicInteger
-import collection.mutable.HashMap
 import com.google.protobuf.MessageLite
-import com.twitter.util.Promise
+import com.twitter.util.{Future, Promise}
 import org.jboss.netty.buffer.{ChannelBuffers, ChannelBuffer}
 import org.jboss.netty.channel._
 import org.jboss.netty.handler.codec.frame.FrameDecoder
-import proto.RpcFour
 import org.stingray.contester.utils.ProtobufTools
+import org.stingray.contester.rpc4.proto.RpcFour
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 trait Registry {
   def register(channel: Channel): ChannelHandler
@@ -72,7 +73,6 @@ private class RpcFramerDecoder extends SimpleChannelUpstreamHandler {
   }
 }
 
-
 private class RpcFramerEncoder extends SimpleChannelDownstreamHandler {
   private[this] class JustReturnListener(e: MessageEvent) extends ChannelFutureListener {
     def operationComplete(p1: ChannelFuture) {
@@ -88,7 +88,6 @@ private class RpcFramerEncoder extends SimpleChannelDownstreamHandler {
     header.writeInt(b.readableBytes())
     ChannelBuffers.wrappedBuffer(header, b)
   }
-
 
   override def writeRequested(ctx: ChannelHandlerContext, e: MessageEvent) {
     val rpc = e.getMessage.asInstanceOf[Rpc4Tuple]
@@ -113,34 +112,44 @@ private class RpcRegisterer(registry: Registry) extends SimpleChannelUpstreamHan
 }
 
 class RpcClient(val channel: Channel) extends SimpleChannelUpstreamHandler {
-  private[this] val requests = new HashMap[Int, Promise[Option[Array[Byte]]]]
+  private[this] val requests = {
+    import scala.collection.JavaConverters._
+    new ConcurrentHashMap[Int, Promise[Option[Array[Byte]]]]().asScala
+  }
   private[this] val sequenceNumber = new AtomicInteger
+  private[this] val disconnected = new AtomicBoolean
 
   private class WriteHandler(requestId: Int) extends ChannelFutureListener {
     def operationComplete(p1: ChannelFuture) {
       if (!p1.isSuccess) {
         // Any write exception is a channel disconnect
-        requests.synchronized { requests.remove(requestId) }.map(
+        requests.remove(requestId).map(
           _.setException(new ChannelDisconnectedException(p1.getCause))
         )
       }
     }
   }
 
-  private[this] def callUntyped(methodName: String, payload: Option[Array[Byte]]) = {
-    val result = new Promise[Option[Array[Byte]]]
-    val requestId = sequenceNumber.getAndIncrement
-    val header = RpcFour.Header.newBuilder().setMessageType(RpcFour.Header.MessageType.REQUEST)
-      .setMethod(methodName).setPayloadPresent(payload.isDefined).setSequence(requestId).build()
-    requests.synchronized { requests.put(requestId, result) }
-    try {
-      Channels.write(channel, new Rpc4Tuple(header, payload)).addListener(new WriteHandler(requestId))
-    } catch {
-      // Any write exception is a channel disconnect
-      case e: Throwable => throw new ChannelDisconnectedException(e)
-    }
+  private[this] def callUntyped(methodName: String, payload: Option[Array[Byte]]): Future[Option[Array[Byte]]] = {
+    if (disconnected.get())
+      Future.exception(new ChannelDisconnectedException)
+    else {
+      val result = new Promise[Option[Array[Byte]]]
+      val requestId = sequenceNumber.getAndIncrement
+      val header = RpcFour.Header.newBuilder().setMessageType(RpcFour.Header.MessageType.REQUEST)
+        .setMethod(methodName).setPayloadPresent(payload.isDefined).setSequence(requestId).build()
 
-    result
+      requests.put(requestId, result)
+
+      Future {
+        Channels.write(channel, new Rpc4Tuple(header, payload)).addListener(new WriteHandler(requestId))
+      }.flatMap(_ => result).rescue {
+        // Any write exception is a channel disconnect
+        case e: Throwable =>
+          requests.remove(requestId, result)
+          Future.exception(new ChannelDisconnectedException(e))
+      }
+    }
   }
 
   override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
@@ -157,9 +166,9 @@ class RpcClient(val channel: Channel) extends SimpleChannelUpstreamHandler {
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
-    requests.synchronized {
-      requests.values.foreach(_.setException(new ChannelDisconnectedException))
-      requests.clear()
+    disconnected.set(true)
+    while (requests.nonEmpty) {
+      requests.keys.flatMap(requests.remove(_)).foreach(_.setException(new ChannelDisconnectedException))
     }
     super.channelDisconnected(ctx, e)
   }

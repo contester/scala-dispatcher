@@ -16,7 +16,7 @@ import org.stingray.contester.proto.Blobs.Module
 object Solution {
   type NumberedTest = (Int, Test)
   type NumberedTestResult = (Int, TestResult)
-  type EvaluatedTestResult = (Boolean, Int, TestResult)
+  type EvaluatedTestResult = (Boolean, NumberedTestResult)
 
   type ProceedFunc = NumberedTestResult => Boolean
   type Strategy = (Seq[NumberedTest], TestFunc, ProceedFunc) => Future[Seq[EvaluatedTestResult]]
@@ -41,7 +41,7 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
         case (compileResult, binaryOption) =>
           binaryOption.map { binary =>
             new BinarySolution(invoker, submit, problem, binary, pr, schoolMode).run
-          }.getOrElse(Future.value(Nil)).map(x => SolutionTestingResult(compileResult, x.map(v => v._2 -> v._3)))
+          }.getOrElse(Future.value(Nil)).map(x => SolutionTestingResult(compileResult, x.map(v => v._2)))
       }
     }
 
@@ -94,7 +94,7 @@ class BinarySolution(invoker: InvokerSimpleApi, submit: SchedulingKey, problem: 
       .map(x => test._1 -> x)
       .flatMap { result =>
       reporter.test(result._1, result._2)
-        .map(_ => (proceed(result), result._1, result._2))
+        .map(_ => (proceed(result), result))
     }
 
   def run =
