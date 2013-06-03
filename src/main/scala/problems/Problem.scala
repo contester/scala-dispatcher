@@ -67,7 +67,8 @@ trait ProblemT {
 case class SimpleProblemT(override val id: String, override val revision: Int) extends ProblemT
 
 class PDBProblem(val pdb: ProblemDb, val id: ProblemT, val testCount: Int, val timeLimitMicros: Long,
-                 val memoryLimit: Long, val testerName: String, val answers: Set[Int], val interactorName: Option[String], val stdio: Boolean) extends Problem {
+                 val memoryLimit: Long, val testerName: String, val answers: Set[Int],
+                 val interactorName: Option[String], val stdio: Boolean) extends Problem {
 
 
   val tests: Seq[Int] = 1 to testCount
