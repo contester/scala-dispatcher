@@ -18,19 +18,16 @@ object Solution {
   type NumberedTestResult = (Int, TestResult)
   type EvaluatedTestResult = (Boolean, NumberedTestResult)
 
-  type ProceedFunc = NumberedTestResult => Boolean
-  type Strategy = (Seq[NumberedTest], TestFunc, ProceedFunc) => Future[Seq[EvaluatedTestResult]]
-  type TestFunc = NumberedTest => Future[NumberedTestResult]
+  // type ProceedFunc = NumberedTestResult => Boolean
+  // type Strategy = (Seq[NumberedTest], TestFunc, ProceedFunc) => Future[Seq[EvaluatedTestResult]]
+  // type TestFunc = NumberedTest => Future[NumberedTestResult]
 
-  type TestAll = Seq[NumberedTest] => Future[Seq[NumberedTestResult]]
+  // type TestAll = Seq[NumberedTest] => Future[Seq[NumberedTestResult]]
 
 }
 
-// Persistence layer goes here.
-
-
 class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
-  def compile(submit: SchedulingKey, sourceModule: Module, reporter: SingleProgress) =
+  private def compile(submit: SchedulingKey, sourceModule: Module, reporter: SingleProgress) =
     invoker.compile(submit, sourceModule).flatMap { cr =>
       reporter.compile(cr._1).map(_ => cr)
     }
@@ -54,39 +51,9 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
     }
 }
 
-trait TestingStrategy {
-  def test(test: Solution.NumberedTest): Future[Solution.EvaluatedTestResult]
-
-  def sequential(tests: Seq[Solution.NumberedTest]): Future[List[Solution.EvaluatedTestResult]] =
-    if (tests.nonEmpty)
-      test(tests.head).flatMap { etr =>
-        if (etr._1)
-          sequential(tests.tail).map(x => etr :: x.toList)
-        else Future.value(etr :: Nil)
-      }
-    else Future.value(Nil)
-
-  def parallel(tests: Seq[Solution.NumberedTest]): Future[List[Solution.EvaluatedTestResult]] =
-    if (tests.nonEmpty)
-      Future.collect(tests.map(test(_))).map(_.toList)
-    else Future.value(Nil)
-
-  def school(tests: Seq[Solution.NumberedTest]): Future[List[Solution.EvaluatedTestResult]] =
-    sequential(Seq(tests.head)).flatMap { first =>
-      {
-        if (first.head._1)
-          parallel(tests.tail)
-        else
-          Future.value(Nil)
-      }.map(x => first ++ x)
-    }
-}
-
-// ACM: seq
-// School: 1, parallel
-
 class BinarySolution(invoker: InvokerSimpleApi, submit: SchedulingKey, problem: Problem, binary: Module, reporter: SingleProgress, schoolMode: Boolean) extends Logging with TestingStrategy {
-  def proceed(r: Solution.NumberedTestResult): Boolean =
+
+  private def proceed(r: Solution.NumberedTestResult): Boolean =
     r._2.success || (schoolMode && r._1 != 1)
 
   def test(test: Solution.NumberedTest): Future[Solution.EvaluatedTestResult] =
