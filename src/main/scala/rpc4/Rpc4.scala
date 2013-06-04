@@ -11,17 +11,43 @@ import org.stingray.contester.rpc4.proto.RpcFour
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
+/** Connected server registry. Will be called for connected and disconnected channels.
+  *
+  */
 trait Registry {
+  /** This gets called when new server reverse-connects to the dispatcher.
+    *
+    * @param channel Connected channel.
+    * @return Channel handler to be inserted as an endpoint into pipeline.
+    */
   def register(channel: Channel): ChannelHandler
+
+  /** This gets called when channel is ejected from the dispatcher.
+    *
+    * @param channel Channel to disconnect.
+    */
   def unregister(channel: Channel): Unit
 }
 
+/** Exception to be thrown when channel is disconnected.
+  *
+  * @param reason Reason received from netty.
+  */
 class ChannelDisconnectedException(reason: scala.Throwable) extends scala.Throwable(reason) {
   def this() =
     this(new Throwable)
 }
+
+/** Error in the remote server.
+  *
+  * @param value String passed as error description.
+  */
 class RemoteError(value: String) extends RuntimeException(value)
 
+/** Dispatcher's pipeline factory. Will produce a pipeline that speaks rpc4 and connects those to the registry.
+  *
+  * @param registry Where do we register our channels.
+  */
 class ServerPipelineFactory(registry: Registry) extends ChannelPipelineFactory {
   def getPipeline = {
     val result = Channels.pipeline()
@@ -34,6 +60,9 @@ class ServerPipelineFactory(registry: Registry) extends ChannelPipelineFactory {
   }
 }
 
+/** Framer for our protocol.
+  * Reads frames prefixed by 4-byte length.
+  */
 private class SimpleFramer extends FrameDecoder {
   def decode(ctx: ChannelHandlerContext, chan: Channel, buf: ChannelBuffer) = {
     if (buf.readableBytes() > 4) {
@@ -49,8 +78,16 @@ private class SimpleFramer extends FrameDecoder {
   }
 }
 
+/** Decoded messages, contain header and optionally payload.
+  *
+  * @param header
+  * @param payload
+  */
 private class Rpc4Tuple(val header: RpcFour.Header, val payload: Option[Array[Byte]])
 
+/** Decoder. A message has a header and optionally a payload.
+  *
+  */
 private class RpcFramerDecoder extends SimpleChannelUpstreamHandler {
   private[this] var storedHeader: Option[RpcFour.Header] = None
 
@@ -73,6 +110,9 @@ private class RpcFramerDecoder extends SimpleChannelUpstreamHandler {
   }
 }
 
+/** Encoder.
+  *
+  */
 private class RpcFramerEncoder extends SimpleChannelDownstreamHandler {
   private[this] class JustReturnListener(e: MessageEvent) extends ChannelFutureListener {
     def operationComplete(p1: ChannelFuture) {
@@ -111,6 +151,10 @@ private class RpcRegisterer(registry: Registry) extends SimpleChannelUpstreamHan
   }
 }
 
+/** RPC Client over the channel given.
+  * Offers a Future-based call interface.
+  * @param channel Channel to work on.
+  */
 class RpcClient(val channel: Channel) extends SimpleChannelUpstreamHandler {
   private[this] val requests = {
     import scala.collection.JavaConverters._

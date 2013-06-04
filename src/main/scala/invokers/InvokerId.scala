@@ -7,7 +7,7 @@ import org.stingray.contester.proto.Blobs.{Blob, FileBlob}
 import grizzled.slf4j.Logging
 import org.stingray.contester.modules.ModuleFactory
 
-class InvokerId(val clientId: IdentifyResponse, val rpc: InvokerRpcClient) {
+class InvokerId(clientId: IdentifyResponse, val rpc: InvokerRpcClient) {
   import collection.JavaConversions._
 
   val channel = rpc.channel

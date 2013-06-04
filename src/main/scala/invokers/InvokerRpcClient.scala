@@ -21,13 +21,11 @@ object InvokerRpcClient {
   }
 }
 
-class InvokerRpcClient(val client: RpcClient) extends Logging {
-
+class InvokerRpcClient(client: RpcClient) extends Logging {
   import InvokerRpcClient._
 
   val channel = client.channel
 
-  // TODO: use this
   def getBinaryType(pathname: String) =
     client.call[BinaryTypeResponse]("Contester.GetBinaryType", BinaryTypeRequest.newBuilder().setPathname(pathname).build())
 
