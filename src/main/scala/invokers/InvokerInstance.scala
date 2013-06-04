@@ -6,7 +6,7 @@ import org.stingray.contester.modules.ModuleFactory
 
 trait FactoryInstance {
   def factory: ModuleFactory
-  def platform: String
+  // def platform: String
 }
 
 trait CompilerInstance extends FactoryInstance {
@@ -24,7 +24,7 @@ class InvokerInstance(val invoker: InvokerBig, val instanceId: Int) extends Logg
   val caps = invoker.caps
   val name = invoker.i.name + "." + instanceId
   val factory = invoker.moduleFactory
-  val platform = invoker.i.platform
+  //val platform = invoker.i.platform
 
   override def toString =
     name

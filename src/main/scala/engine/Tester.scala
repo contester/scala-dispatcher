@@ -33,14 +33,14 @@ object Tester extends Logging {
       case e: RemoteError => throw new TransientError(e)
     }).map(asRunResult(_, module.getType == "jar"))
 
-  def executeTester(sandbox: Sandbox, handler: BinaryHandler, name: String) =
+  private def executeTester(sandbox: Sandbox, handler: BinaryHandler, name: String) =
     handler.getTesterParameters(sandbox, name, "input.txt" :: "output.txt" :: "answer.txt" :: Nil)
       .map(_.setTester)
       .flatMap(sandbox.executeWithParams(_).handle {
       case e: RemoteError => throw new TransientError(e)
     }).map(asTesterRunResult(_))
 
-  def runInteractive(instance: InvokerInstance, handler: BinaryHandler, moduleType: String, test: Test) =
+  private def runInteractive(instance: InvokerInstance, handler: BinaryHandler, moduleType: String, test: Test) =
     test.prepareInteractorBinary(instance.comp).flatMap { interactorName =>
       val testerHandler = instance.factory.getBinary(FilenameUtils.getExtension(interactorName))
       test.prepareInput(instance.comp).flatMap(_ => test.prepareTester(instance.comp))
@@ -53,7 +53,7 @@ object Tester extends Logging {
       }
     }
 
-  def testInteractive(instance: InvokerInstance, module: Module, test: Test): Future[(RunResult, Option[TesterRunResult])] = {
+  private def testInteractive(instance: InvokerInstance, module: Module, test: Test): Future[(RunResult, Option[TesterRunResult])] = {
     val moduleHandler = instance.factory.getBinary(module.getType)
     instance.run.put(module, moduleHandler.solutionName).flatMap { _ =>
       runInteractive(instance, moduleHandler, module.getType, test)}.flatMap { runResult =>
@@ -74,7 +74,7 @@ object Tester extends Logging {
     else
       testOld(instance, module, test)).map(x => new TestResult(x._1, x._2))
 
-  def sandboxAfterExecutionResult(stats: Iterable[RemoteFile]) = {
+  private def sandboxAfterExecutionResult(stats: Iterable[RemoteFile]) = {
     val m = stats.map(x => x.name -> x).toMap
     trace("After execution result, we have: %s".format(m.mapValues(x => if (x.hasSha1) Blobs.bytesToString(x.getSha1) else "")))
     stats
