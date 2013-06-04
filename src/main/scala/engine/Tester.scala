@@ -81,7 +81,7 @@ object Tester extends Logging {
   }
 
 
-  def testOld(instance: RunnerInstance, module: Module, test: Test): Future[(RunResult, Option[TesterRunResult])] = {
+  private def testOld(instance: RunnerInstance, module: Module, test: Test): Future[(RunResult, Option[TesterRunResult])] = {
     val moduleHandler = instance.factory.getBinary(module.getType)
     test.prepareInput(instance.run)
       .flatMap { _ => executeSolution(instance.run, moduleHandler, module, test.getLimits(module.getType), test.stdio) }
