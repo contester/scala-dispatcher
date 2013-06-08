@@ -332,8 +332,3 @@ csc /out:Solution.csexe %1
 Csexe altermemlimit=None
 
  */
-
-class CSharpSourceHandler() extends SourceHandler {
-
-}
-
