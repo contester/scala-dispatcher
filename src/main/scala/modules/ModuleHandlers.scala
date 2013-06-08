@@ -61,6 +61,11 @@ class Win32Handlers(i: InvokerId) {
       withFile(i.programFiles ** "Microsoft Visual Studio*" ** "Common7" ** "Tools" ** "vsvars32.bat")(new VisualStudioSourceHandler(cmd, _))
     }
 
+  private def visualCsharp: Future[Seq[ModuleHandler]] =
+    withFile(i.disks ** "WINDOWS" ** "System32" ** "cmd.exe") { cmd =>
+      withFile(i.programFiles ** "Microsoft Visual Studio*" ** "Common7" ** "Tools" ** "vsvars32.bat")(new VisualCSharpSourceHandler(cmd, _))
+    }
+
   private def java: Future[Seq[ModuleHandler]] =
     withFile(i.programFiles ** "Java" ** "jdk*" ** "bin" ** "java.exe")(new JavaBinaryHandler(_, false)) ::
       withFile(i.programFiles ** "Java" ** "jdk*" ** "bin" ** "javac.exe") { javac =>
@@ -72,7 +77,7 @@ class Win32Handlers(i: InvokerId) {
     withFile(i.programFiles ** "7-Zip" ** "7z.exe")(x => Future.value(Seq(new SevenzipHandler(x))))
 
   def apply: Future[Seq[ModuleHandler]] =
-    win32Binary :: win16 :: win32Simple :: visualStudio :: java :: p7z :: Nil
+    win32Binary :: win16 :: win32Simple :: visualStudio :: visualCsharp :: java :: p7z :: Nil
 }
 
 class LinuxHandlers(i: InvokerId) {
@@ -227,6 +232,16 @@ class VisualStudioSourceHandler(val compiler: String, vcvars: String) extends Si
   val moduleTypes = "cxx" :: Nil
 }
 
+class VisualCSharpSourceHandler(val compiler: String, vcvars: String) extends SimpleCompileHandler {
+  val clflags = "/out:Solution.exe" :: Nil
+  val bFlags = "/S" :: "/C" :: "\"" + (
+    (CommandLineTools.quoteArgument(vcvars) :: "&&" :: "csc" :: Nil) ++
+      clflags ++ ("Solution.cs" :: Nil)).mkString(" ") + "\"" :: Nil
+  val flags: ExecutionArguments = bFlags.mkString
+  val sourceName = "Solution.cs"
+  val binary = "Solution.exe"
+  val moduleTypes = "cs" :: Nil
+}
 
 trait Win16Handler extends SimpleCompileHandler {
   override def filter(params: LocalExecutionParameters) =
@@ -308,5 +323,17 @@ class JavaSourceHandler(val javac: String, val jar: String, linux: Boolean) exte
         }.map(Seq(compiled, _))
       } else Future.value(Seq(compiled))
     }.flatMap(SourceHandler.makeCompileResult(_, sandbox, "Solution.jar", Some(binaryExt)))
+}
+
+/*
+call "C:\Program Files\Microsoft Visual Studio 8\Common7\Tools\vsvars32.bat"
+csc /out:Solution.csexe %1
+
+Csexe altermemlimit=None
+
+ */
+
+class CSharpSourceHandler() extends SourceHandler {
+
 }
 
