@@ -57,7 +57,7 @@ object Main extends App with Logging {
 
   val moodles =
     config.get[List[String]]("dispatcher.moodles").map { names =>
-      names.filter(config.contains(_)).map { name =>
+      names.filter(x => config.contains(x + ".db")).map { name =>
         new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, pdb, tester)
       }.foreach(_.scan)
     }
