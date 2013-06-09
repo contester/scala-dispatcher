@@ -36,10 +36,6 @@ object Main extends App with Logging {
   StatusPageBuilder.data("invoker") = invoker
   val tester = new SolutionTester(new InvokerSimpleApi(invoker))
 
-  val problems = new ProblemData(client, pdb, invoker)
-
-  val dispatchers = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester)
-
   val sf = new NioServerSocketChannelFactory(
     Executors.newCachedThreadPool(),
     Executors.newCachedThreadPool())
@@ -47,7 +43,22 @@ object Main extends App with Logging {
   bs.setPipelineFactory(new ServerPipelineFactory(invoker))
   bs.bind(new InetSocketAddress(9981))
 
-  dispatchers.add(createDbConfig(config.detach("db")))
-  if (config.contains("dbTest.db"))
-    dispatchers.add(createDbConfig(config.detach("dbTest")))
+  val dispatchers =
+    config.get[List[String]]("dispatcher.standard").map { names =>
+      val problems = new ProblemData(client, pdb, invoker)
+      val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester)
+
+      names.foreach { name =>
+        if (config.contains(name))
+          result.add(createDbConfig(config.detach(name)))
+      }
+      result
+    }
+
+  val moodles =
+    config.get[List[String]]("dispatcher.moodles").map { names =>
+      names.filter(config.contains(_)).map { name =>
+        new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, pdb, tester)
+      }
+    }
 }
