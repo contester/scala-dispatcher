@@ -5,6 +5,7 @@ import com.twitter.util.Future
 import org.stingray.contester.utils.Utils
 import com.mongodb.casbah.gridfs.GridFS
 import grizzled.slf4j.Logging
+import com.google.common.collect.MapMaker
 
 case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
                            stdio: Boolean, testerName: String, answers: Iterable[Int], interactorName: Option[String]) {
@@ -49,6 +50,9 @@ trait SanitizeDb extends ProblemDb with ProblemFileStore
 
 class CommonProblemDb(mdb: MongoDB) extends SanitizeDb with Logging {
   lazy val mfs = GridFS(mdb)
+
+  import collection.JavaConversions._
+  val localCache: collection.concurrent.Map[(String, Int), PDBProblem] = new MapMaker().weakValues().makeMap[(String, Int), PDBProblem]()
 
   def setProblem(problem: ProblemT, manifest: ProblemManifest) =
     Future {
@@ -98,9 +102,13 @@ class CommonProblemDb(mdb: MongoDB) extends SanitizeDb with Logging {
     Future {
       mdb("manifest").find(MongoDBObject("id" -> problemId)).sort(MongoDBObject("revision" -> -1))
         .take(1).toIterable.headOption.map { found =>
-        val pt = SimpleProblemT(problemId, found.getAsOrElse[Int]("revision", 1))
-        val m = ProblemManifest(found)
-        PDBProblem(this, pt, m)
+        val revision = found.getAsOrElse[Int]("revision", 1)
+        localCache.get((problemId, revision)).getOrElse {
+          val pt = SimpleProblemT(problemId, revision)
+          val m = ProblemManifest(found)
+          val p = PDBProblem(this, pt, m)
+          localCache.putIfAbsent((problemId, revision), p).getOrElse(p)
+        }
       }
     }
 }
