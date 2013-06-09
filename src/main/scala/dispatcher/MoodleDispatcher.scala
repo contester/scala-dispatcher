@@ -58,9 +58,9 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester) 
       |mdl_contester_languages.ext as ModuleId,
       |mdl_contester_submits.solution as Solution,
       |mdl_contester_submits.submitted as Arrived,
-      |mdl_contester_submit.problem as ProblemId
+      |mdl_contester_submits.problem as ProblemId
       |from
-      |mdl_contester_submits, mdl_contester_languages,
+      |mdl_contester_submits, mdl_contester_languages
       |where
       |mdl_contester_submits.lang = mdl_contester_languages.id and
       |mdl_contester_submits.processed = 1
