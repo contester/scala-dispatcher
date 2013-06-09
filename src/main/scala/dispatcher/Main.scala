@@ -59,6 +59,6 @@ object Main extends App with Logging {
     config.get[List[String]]("dispatcher.moodles").map { names =>
       names.filter(config.contains(_)).map { name =>
         new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, pdb, tester)
-      }
+      }.foreach(_.scan)
     }
 }
