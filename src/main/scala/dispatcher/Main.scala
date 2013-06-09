@@ -30,7 +30,6 @@ object Main extends App with Logging {
 
   val httpStatus = HttpStatus.bind(config[Int]("dispatcher.port"))
 
-  val client = PolygonClient(config.detach("polygon"))
   val pdb = new CommonPolygonDb(MongoConnection(mHost).getDB("contester"))
   val invoker = new InvokerRegistry(mHost)
   StatusPageBuilder.data("invoker") = invoker
@@ -45,6 +44,7 @@ object Main extends App with Logging {
 
   val dispatchers =
     config.get[List[String]]("dispatcher.standard").map { names =>
+      val client = PolygonClient(config.detach("polygon"))
       val problems = new ProblemData(client, pdb, invoker)
       val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester)
 
