@@ -48,9 +48,9 @@ trait ProblemT {
     case _ => super.equals(obj)
   }
 
-  lazy val destName = id.replace('/', '.').replace(':', '.') + "." + revision.toString
-  lazy val zipName = destName + ".zip"
-  lazy val prefix = Seq("problem", id, revision.toString).mkString("/")
+  def destName = id.replace('/', '.').replace(':', '.') + "." + revision.toString
+  def zipName = destName + ".zip"
+  def prefix = Seq("problem", id, revision.toString).mkString("/")
   def dbName(suffix: String) =
     prefix + "/" + suffix
 
@@ -71,7 +71,7 @@ class PDBProblem(val pdb: ProblemDb, val id: ProblemT, val testCount: Int, val t
                  val interactorName: Option[String], val stdio: Boolean) extends Problem {
 
 
-  val tests: Seq[Int] = 1 to testCount
+  def tests: Seq[Int] = 1 to testCount
 
   def getTest(key: Int): Test =
     new PDBTest(this, key)
