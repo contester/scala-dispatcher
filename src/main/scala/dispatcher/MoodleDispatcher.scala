@@ -32,7 +32,7 @@ class MoodleSingleResult(client: ConnectionPool, val submit: MoodleSubmit, val t
 
   def finish(r: SolutionTestingResult): Future[Unit] =
     client.execute("update mdl_contester_testings set finish = NOW(), compiled = ?, taken = ?, passed = ? where ID = ?",
-      if (r.compilation.success) 1 else 0, r.tests.size, r.tests.count(_._2.success), testingId).unit
+      if (r.compilation.success) "1" else "0", r.tests.size, r.tests.count(_._2.success), testingId).unit
 }
 
 class MoodleResultReporter(client: ConnectionPool, val submit: MoodleSubmit) extends ProgressReporter {
