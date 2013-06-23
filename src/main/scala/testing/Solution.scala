@@ -33,13 +33,13 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
     }
 
   def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, reporter: ProgressReporter, schoolMode: Boolean): Future[Unit] =
-    reporter { pr =>
-      compile(submit, sourceModule, pr).flatMap {
-        case (compileResult, binaryOption) =>
-          binaryOption.map { binary =>
+    invoker.compile(submit, sourceModule)
+      .flatMap { compiled =>
+        reporter { pr =>
+          compiled._2.map { binary =>
             new BinarySolution(invoker, submit, problem, binary, pr, schoolMode).run
-          }.getOrElse(Future.value(Nil)).map(x => SolutionTestingResult(compileResult, x.map(v => v._2)))
-      }
+          }.getOrElse(Future.value(Nil)).map(x => SolutionTestingResult(compiled._1, x.map(v => v._2)))
+        }
     }
 
   def custom(submit: SchedulingKey, sourceModule: Module, input: Array[Byte]): Future[CustomTestingResult] =
