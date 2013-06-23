@@ -86,7 +86,7 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
       invokers.foreach(addInvoker)
     }
 
-  private def discardEmptyQueues: Unit =
+  private def discardEmptyQueues(): Unit =
     synchronized {
       waiting.filter(_._2.isEmpty).foreach(k => waiting.remove(k._1))
     }
@@ -97,7 +97,7 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
       waiting.filterKeys(invoker.caps.toSet).values.flatMap(w => w.headOption.map(_ -> w)).toSeq
         .sortBy(_._1._1).headOption.map { candidate =>
         val result = candidate._2.dequeue()
-        discardEmptyQueues // TODO: run this asynchronously and not that often
+        discardEmptyQueues() // TODO: run this asynchronously and not that often
         uselist(invoker) = result._1 -> result._3
         result._2.setValue(invoker)
       }.getOrElse {
