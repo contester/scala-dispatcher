@@ -26,6 +26,8 @@ object Solution {
 
 }
 
+class StoredModule(val moduleType: String, val location: String)
+
 class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
   private def compile(submit: SchedulingKey, sourceModule: Module, reporter: SingleProgress) =
     invoker.compile(submit, sourceModule).flatMap { cr =>
