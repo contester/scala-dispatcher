@@ -1,7 +1,7 @@
 package org.stingray.contester.dispatcher
 
 import java.sql.{Timestamp, ResultSet}
-import org.stingray.contester.db.{HasId, SelectDispatcher}
+import org.stingray.contester.db.{ConnectionPool, HasId, SelectDispatcher}
 import org.stingray.contester.common.SubmitWithModule
 import org.stingray.contester.invokers.TimeKey
 
@@ -16,7 +16,6 @@ case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
   override def toString =
     "Submit(%d, %s)".format(id, problemId)
 }
-
 
 class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObject](parent.dbclient) {
   // startup: scan all started

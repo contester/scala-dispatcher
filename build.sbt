@@ -6,6 +6,8 @@ import sbtprotobuf.{ProtobufPlugin=>PB}
 
 assemblySettings
 
+proguardSettings
+
 seq(scalateSettings:_*)
 
 seq(PB.protobufSettings: _*)
@@ -18,7 +20,7 @@ fork in (Compile, run) := true
 
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m", "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
-scalaVersion := "2.10.1"
+scalaVersion := "2.10.2"
 
 version := "0.1"
 
@@ -30,6 +32,10 @@ javacOptions in Compile ++= Seq("-source", "1.6",  "-target", "1.6")
 
 version in PB.protobufConfig := "2.5.0"
 
+ProguardKeys.options in Proguard ++= Seq("-dontnote", "-dontwarn", "-ignorewarnings")
+
+ProguardKeys.options in Proguard += ProguardOptions.keepMain("org.stingray.contester.dispatcher.Main")
+
 resolvers ++= Seq(
     "twitter.com" at "http://maven.twttr.com/",
     "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases",
@@ -40,18 +46,18 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
   "io.netty" % "netty" % "3.6.6.Final",
-  "com.twitter" %% "finagle-core" % "6.4.0",
-  "com.twitter" %% "finagle-http" % "6.4.0",
+  "com.twitter" %% "finagle-core" % "6.5.2",
+  "com.twitter" %% "finagle-http" % "6.5.2",
   "org.streum" %% "configrity-core" % "1.0.0",
-  "com.twitter" %% "util-core" % "6.3.4",
-  "org.mongodb" %% "casbah" % "2.6.1",
+  "com.twitter" %% "util-core" % "6.3.8",
+  "org.mongodb" %% "casbah" % "2.6.2",
   "org.clapper" % "avsl_2.10" % "1.0.1",
   "org.clapper" % "grizzled-slf4j_2.10" % "1.0.1",
   "joda-time" % "joda-time" % "2.2",
   "org.joda" % "joda-convert" % "1.3.1",
   "org.fusesource.scalate" %% "scalate-core" % "1.6.1",
   "commons-io" % "commons-io" % "2.4",
-  "com.rabbitmq" % "amqp-client" % "3.1.1",
+  "com.rabbitmq" % "amqp-client" % "3.1.3",
   "com.codahale" % "jerkson_2.9.1" % "0.5.0",
   "mysql" % "mysql-connector-java" % "5.1.25",
   "org.scalatest" %% "scalatest" % "1.9" % "test"
