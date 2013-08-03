@@ -1,7 +1,7 @@
 package org.stingray.contester.engine
 
 import grizzled.slf4j.Logging
-import org.stingray.contester.proto.Local.{LocalExecutionResult, LocalExecutionParameters}
+import org.stingray.contester.proto.Local.{LocalExecutionParameters, LocalExecutionResult}
 import org.stingray.contester.common._
 import org.stingray.contester.invokers._
 import org.stingray.contester.modules.BinaryHandler
@@ -79,7 +79,6 @@ object Tester extends Logging {
     trace("After execution result, we have: %s".format(m.mapValues(x => if (x.hasSha1) Blobs.bytesToString(x.getSha1) else "")))
     stats
   }
-
 
   private def testOld(instance: RunnerInstance, module: Module, test: Test): Future[(RunResult, Option[TesterRunResult])] = {
     val moduleHandler = instance.factory.getBinary(module.getType)
