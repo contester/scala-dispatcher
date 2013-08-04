@@ -156,6 +156,8 @@ private class RpcRegisterer(registry: Registry) extends SimpleChannelUpstreamHan
   * @param channel Channel to work on.
   */
 class RpcClient(val channel: Channel) extends SimpleChannelUpstreamHandler {
+  // todo: implement org.stingray.contester.rpc4.RpcClient.exceptionCaught()
+
   private[this] val requests = {
     import scala.collection.JavaConverters._
     new ConcurrentHashMap[Int, Promise[Option[Array[Byte]]]]().asScala
