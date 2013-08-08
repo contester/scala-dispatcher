@@ -15,14 +15,32 @@ object ObjectStore {
     }
 }
 
-trait ObjectStore {
-  // Low-level operations
-  def put(name: String, content: Array[Byte], metadata: Map[String, Any]): Future[String]
-  def get(name: String): Future[Option[(InputStream, String, Map[String, Any])]]
-  def getMetaData(name: String): Future[Option[(String, Map[String, Any])]]
+class GridfsObjectStore(fs: GridFS) {
+  // Low-level direct access
+  def put(name: String, content: Array[Byte], metadata: Map[String, Any]): Future[String] =
+    Future {
+      val checksum = "sha1:" + Blobs.bytesToString(Blobs.getSha1(content))
+      fs(content) { attributes =>
+        attributes.filename = name
+        attributes.metaData = metadata + "checksum" -> checksum
+      }
+      checksum
+    }
 
-  def putFromSandbox(sandbox: Sandbox, name: String, metadata: Map[String, Any]): Future[String]
-  def putToSandbox(sandbox: Sandbox, name: String, destinationName: String): Future[Unit]
+  def get(name: String): Future[Option[(InputStream, String, Map[String, Any])]] = ???
+
+  def getMetaData(name: String): Future[Option[(String, Map[String, Any])]] =
+    Future {
+      fs.findOne(name).map { file =>
+        import com.mongodb.casbah.Implicits._
+        val metadataMap = file.metaData.toMap[String,Any]
+        (ObjectStore.getMetadataString(metadataMap, "checksum"), metadataMap.filterKeys(_ != "checksum"))
+      }
+    }
+
+  def copyFromSandbox(sandbox: Sandbox, name: String, remote: RemoteFile, metadata: Map[String, Any]): Future[String] =
+
+  def copyToSandbox(sandbox: Sandbox, name: String, destinationName: String): Future[Unit]
 
   // Module operations
   def putModule(name: String, moduleType: String, content: Array[Byte]): Future[Module] =
@@ -53,31 +71,3 @@ object Module {
 
 }
 
-class GridfsObjectStore(fs: GridFS) extends ObjectStore {
-  // Low-level operations
-  def put(name: String, content: Array[Byte], metadata: Map[String, Any]): Future[Unit] =
-    Future {
-      val checksum = "sha1:" + Blobs.bytesToString(Blobs.getSha1(content))
-      fs(content) { attributes =>
-        attributes.filename = name
-        attributes.metaData = metadata + "checksum" -> checksum
-      }
-    }
-
-
-  def get(name: String): Future[Option[(InputStream, String, Map[String, Any])]] = ???
-
-  def getMetaData(name: String): Future[Option[(String, Map[String, Any])]] =
-    Future {
-      fs.findOne(name).map { file =>
-        import com.mongodb.casbah.Implicits._
-        val metadataMap = file.metaData.toMap[String,Any]
-        (ObjectStore.getMetadataString(metadataMap, "checksum"), metadataMap.filterKeys(_ != "checksum"))
-      }
-    }
-
-  def putFromSandbox(sandbox: Sandbox, name: String, remoteName: RemoteFile, metadata: Map[String, Any]): Future[String] =
-    sandbox.getGridfs()
-
-  def putToSandbox(sandbox: Sandbox, name: String, destinationName: String): Future[Unit] = ???
-}

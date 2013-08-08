@@ -115,7 +115,7 @@ message FileStat {
     optional string name = 1;
     optional bool is_directory = 2;
     optional uint64 size = 3;
-    optional bytes sha1sum = 4;
+    optional string checksum = 4;
 };
 
 message StatRequest {

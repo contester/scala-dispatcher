@@ -3,8 +3,10 @@ package org.stingray.contester.invokers
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import org.stingray.contester.proto.Local._
-import org.stingray.contester.rpc4.{RemoteError, RpcClient}
+import org.stingray.contester.rpc4.RpcClient
 import org.stingray.contester.proto.Blobs.FileBlob
+
+class GridfsGetEntry(val local: String, val remote: String, val moduleType: Option[String])
 
 class InvokerRpcClient(client: RpcClient) extends Logging {
   val channel = client.channel
@@ -58,24 +60,24 @@ class InvokerRpcClient(client: RpcClient) extends Logging {
       case (source, destination) =>
         CopyOperation.newBuilder().setLocalFileName(destination).setRemoteLocation(source).setUpload(false).build()
     }
-    gridfsCopy(operations, sandboxId).map(_.map(_.getLocalFileName))
+    gridfsCopy(operations, sandboxId).map(_.map(item => item.getLocalFileName -> item.getChecksum))
   }
 
-  def gridfsGet(names: Iterable[(String, String)], sandboxId: String) = {
+  def gridfsGet(names: Iterable[GridfsGetEntry], sandboxId: String) = {
     val operations = names.map {
-      case (source, destination) =>
-        CopyOperation.newBuilder().setLocalFileName(source).setRemoteLocation(destination).setUpload(true).build()
+      entry =>
+        val builder = CopyOperation.newBuilder()
+          .setLocalFileName(entry.local)
+          .setRemoteLocation(entry.remote)
+          .setUpload(true)
+        entry.moduleType.foreach(builder.setModuleType(_))
+        builder.build()
     }
-    gridfsCopy(operations, sandboxId).map(_.map(_.getLocalFileName))
+    gridfsCopy(operations, sandboxId).map(_.map(item => item.getLocalFileName -> item.getChecksum))
   }
 
-  def executeConnected(first: LocalExecutionParameters, second: LocalExecutionParameters) = {
-    trace("LocalExecuteConnected:" + (first, second))
-    client.call[LocalExecuteConnectedResult]("Contester.LocalExecuteConnected", LocalExecuteConnected.newBuilder().setFirst(first).setSecond(second).build())
-      .onSuccess(x => trace("LocalExecuteConnected: " + x))
-      .onFailure(x => error("LocalExecuteConnected", x))
-      .handle {
-      case e: RemoteError => throw new TransientError(e)
-    }
-  }
+  def executeConnected(first: LocalExecutionParameters, second: LocalExecutionParameters) =
+    client.call[LocalExecuteConnectedResult]("Contester.LocalExecuteConnected",
+      LocalExecuteConnected.newBuilder().setFirst(first).setSecond(second).build())
+
 }

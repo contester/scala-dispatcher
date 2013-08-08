@@ -54,11 +54,11 @@ class InvokerId(clientId: IdentifyResponse, val rpc: InvokerRpcClient) {
   def put(file: RemoteFile, blob: Blob) =
     rpc.put(FileBlob.newBuilder().setName(file.name).setData(blob).build())
 
-  def putGridfs(items: Iterable[(String, RemoteFile)], sandboxId: String): Future[Iterable[String]] =
+  def putGridfs(items: Iterable[(String, RemoteFile)], sandboxId: String): Future[Iterable[(String, String)]] =
     rpc.gridfsPut(items.map(m => m._1 -> m._2.name), sandboxId)
 
-  def getGridfs(items: Iterable[(RemoteFile, String)], sandboxId: String): Future[Iterable[String]] =
-    rpc.gridfsGet(items.map(m => m._1.name -> m._2), sandboxId)
+  def getGridfs(items: Iterable[(RemoteFile, String, Option[String])], sandboxId: String): Future[Iterable[(String, String)]] =
+    rpc.gridfsGet(items.map(m => new GridfsGetEntry(m._2, m._1.name, m._3)), sandboxId)
 
   def executeConnected(first: LocalExecutionParameters, second: LocalExecutionParameters): Future[(LocalExecutionResult, LocalExecutionResult)] =
     rpc.executeConnected(first, second).map(x => (x.getFirst, x.getSecond))
