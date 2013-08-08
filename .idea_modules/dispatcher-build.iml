@@ -51,6 +51,7 @@
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.9.2/org.scala-sbt/sbt/0.12.4/compile-0.12.4.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.9.2/org.scala-sbt/sbt/0.12.4/testing-0.12.4.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.9.2/org.scala-sbt/sbt/0.12.4/incremental-compiler-0.12.4.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.9.2/sbt_0.12/com.github.gseitz/sbt-protobuf/jars/sbt-protobuf-0.3.0.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.9.2/org.scala-sbt/sbt/0.12.4/compiler-ivy-integration-0.12.4.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.9.2/org.scala-sbt/sbt/0.12.4/test-interface-0.5.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.9.2/lib/scala-library.jar!/" />
@@ -61,7 +62,6 @@
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.9.2/org.scala-sbt/sbt/0.12.4/io-0.12.4.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.9.2/org.scala-sbt/sbt/0.12.4/ivy-0.12.4.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.9.2/lib/jline.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.9.2/sbt_0.12/com.github.gseitz/sbt-protobuf/jars/sbt-protobuf-0.2.3.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.9.2/org.scala-sbt/sbt/0.12.4/sbinary_2.9.0-0.4.0.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.9.2/org.scala-sbt/sbt/0.12.4/task-system-0.12.4.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.9.2/org.scala-sbt/sbt/0.12.4/cache-0.12.4.jar!/" />

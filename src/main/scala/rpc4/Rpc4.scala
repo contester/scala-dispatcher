@@ -10,6 +10,7 @@ import org.stingray.contester.utils.ProtobufTools
 import org.stingray.contester.rpc4.proto.RpcFour
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import grizzled.slf4j.Logging
 
 /** Connected server registry. Will be called for connected and disconnected channels.
   *
@@ -155,7 +156,7 @@ private class RpcRegisterer(registry: Registry) extends SimpleChannelUpstreamHan
   * Offers a Future-based call interface.
   * @param channel Channel to work on.
   */
-class RpcClient(val channel: Channel) extends SimpleChannelUpstreamHandler {
+class RpcClient(val channel: Channel) extends SimpleChannelUpstreamHandler with Logging {
   // todo: implement org.stingray.contester.rpc4.RpcClient.exceptionCaught()
 
   private[this] val requests = {
@@ -219,8 +220,12 @@ class RpcClient(val channel: Channel) extends SimpleChannelUpstreamHandler {
     super.channelDisconnected(ctx, e)
   }
 
-  private[this] def callTrace[A](methodName: String, payload: Option[MessageLite])(f: Option[Array[Byte]] => A) =
+  private[this] def callTrace[A](methodName: String, payload: Option[MessageLite])(f: Option[Array[Byte]] => A) = {
+    trace("Call: %s(%s)".format(methodName, payload))
     callUntyped(methodName, payload.map(_.toByteArray)).map(f(_))
+      .onSuccess(result => trace("Result(%s): %s".format(methodName, result)))
+      .onFailure(error("Error(%s)", _))
+  }
 
   def call[I <: com.google.protobuf.Message](methodName: String, payload: MessageLite)(implicit manifest: Manifest[I]) =
     callTrace(methodName, Some(payload))(v => ProtobufTools.createProtobuf[I](v))
