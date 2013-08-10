@@ -152,6 +152,7 @@ private class RpcRegisterer(registry: Registry) extends SimpleChannelUpstreamHan
     channels.put(channel, client).foreach(registry.unregister(_))
     ctx.getPipeline.addLast("endpoint", client)
     super.channelConnected(ctx, e)
+    registry.register(client)
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
@@ -166,6 +167,8 @@ private class RpcRegisterer(registry: Registry) extends SimpleChannelUpstreamHan
   */
 class RpcClient(val channel: Channel) extends SimpleChannelUpstreamHandler with Logging {
   // todo: implement org.stingray.contester.rpc4.RpcClient.exceptionCaught()
+
+  trace("Creating new rpc client for channel %s".format(channel))
 
   private[this] val requests = {
     import scala.collection.JavaConverters._
