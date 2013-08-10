@@ -86,8 +86,9 @@ class ObjectStoreModule(name: String, val moduleType: String, val moduleHash: St
     sandbox.putGridfs(name, destinationName).unit
 }
 
-class ByteBufferModule(val moduleType: String, content: Array[Byte]) extends Module {
+class ByteBufferModule(moduleTypeRaw: String, content: Array[Byte]) extends Module {
   val moduleHash = "sha1:" + Blobs.bytesToString(Blobs.getSha1(content)).toLowerCase
+  val moduleType = Module.noDot(moduleTypeRaw)
 
   def putToSandbox(sandbox: Sandbox, destinationName: String): Future[Unit] =
     sandbox.put(Blobs.storeBinary(content), destinationName).unit
