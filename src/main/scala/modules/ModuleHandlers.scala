@@ -275,7 +275,7 @@ class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler 
 
   def getTesterParameters(sandbox: Sandbox, name: String, arguments: List[String]) =
     sandbox.getExecutionParameters(
-      java, "-Xmx256M" :: "-DONLINE_JUDGE=true" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
+      java, "-XX:-UsePerfData" :: "-Xmx256M" :: "-DONLINE_JUDGE=true" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
         "-jar" :: name :: arguments)
 
   private def getTestLimits(test: TestLimits): List[String] = {
@@ -285,7 +285,7 @@ class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler 
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     sandbox.getExecutionParameters(
-      java, getTestLimits(test) ++ ("-Xss32M" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
+      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss32M" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
         "-jar" :: "Solution.jar" :: Nil))
       .map(_.setTimeLimitMicros(test.timeLimitMicros).setSolution)
 }

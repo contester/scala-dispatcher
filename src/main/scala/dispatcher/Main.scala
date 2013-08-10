@@ -44,13 +44,15 @@ object Main extends App with Logging {
 
   val dispatchers =
     config.get[List[String]]("dispatcher.standard").map { names =>
+      println(names)
       val client = PolygonClient(config.detach("polygon"))
       val problems = new ProblemData(client, pdb, invoker)
       val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester)
 
       names.foreach { name =>
-        if (config.contains(name))
+        if (config.contains(name + ".db")) {
           result.add(createDbConfig(config.detach(name)))
+	}
       }
       result
     }
