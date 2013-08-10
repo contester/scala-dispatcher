@@ -8,7 +8,7 @@ class RemoteFileName(val components: Seq[String], pathSeparator: Option[String])
     new RemoteFileName(components.take(components.length - 1), pathSeparator)
 
   def basename =
-    FilenameUtils.getBaseName(components.last)
+    FilenameUtils.getName(components.last)
 
   def ext =
     FilenameUtils.getExtension(components.last)

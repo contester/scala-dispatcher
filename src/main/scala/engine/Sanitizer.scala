@@ -46,6 +46,7 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemD
   private[this] def findTester =
     sandbox.invoker.api.glob(base / "*" :: Nil, false)
       .map { list =>
+      trace(list.filter(_.isFile).map(_.basename.toLowerCase))
       val m = list.filter(_.isFile)
         .filter(x => testerRe.findFirstIn(x.basename.toLowerCase).nonEmpty)
         .map(x => x.ext.toLowerCase -> x).toMap
