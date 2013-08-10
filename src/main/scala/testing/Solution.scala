@@ -1,9 +1,9 @@
 package org.stingray.contester.testing
 
 import org.stingray.contester.problems.{Problem, Test}
-import org.stingray.contester.common.{GridfsObjectStore, Module, TestResult}
+import org.stingray.contester.common.{AlreadyCompiledResult, GridfsObjectStore, Module, TestResult}
 import com.twitter.util.Future
-import org.stingray.contester.engine.InvokerSimpleApi
+import org.stingray.contester.engine.{InvokerSimpleApi, Compiler}
 import grizzled.slf4j.Logging
 import org.stingray.contester.invokers.SchedulingKey
 
@@ -14,8 +14,14 @@ object Solution {
 }
 
 class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
-  def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, reporter: ProgressReporter, schoolMode: Boolean, store: GridfsObjectStore, storeBase: String, submitId: Int): Future[Unit] =
-    invoker.compile(submit, sourceModule, store, storeBase + "submit/%d/compiledModule".format(submitId))
+  def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, reporter: ProgressReporter, schoolMode: Boolean, store: GridfsObjectStore, storeBase: String, submitId: Int): Future[Unit] = {
+    val compiledModuleName = storeBase + "submit/%d/compiledModule".format(submitId)
+    Compiler.checkIfCompiled(sourceModule, store, compiledModuleName).flatMap { maybeCompiled =>
+      if (maybeCompiled.isDefined)
+        Future.value((AlreadyCompiledResult, maybeCompiled))
+      else
+        invoker.compile(submit, sourceModule, store, compiledModuleName)
+    }
       .flatMap { compiled =>
         reporter { pr =>
           compiled._2.map { binary =>
@@ -23,6 +29,7 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
           }.getOrElse(Future.value(Nil)).map(x => SolutionTestingResult(compiled._1, x.map(v => v._2)))
         }
     }
+  }
 
   def custom(submit: SchedulingKey, sourceModule: Module, input: Array[Byte], store: GridfsObjectStore, storeBase: String, testingId: Int): Future[CustomTestingResult] =
     invoker.compile(submit, sourceModule, store, storeBase + "eval/%d/compiledModule".format(testingId)).flatMap {

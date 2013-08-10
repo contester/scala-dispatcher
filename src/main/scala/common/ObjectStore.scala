@@ -22,6 +22,7 @@ class GridfsObjectStore(fs: GridFS) {
   def put(name: String, content: Array[Byte], metadata: Map[String, Any]): Future[String] =
     Future {
       val checksum = "sha1:" + Blobs.bytesToString(Blobs.getSha1(content))
+      fs.remove(name)
       fs(content) { attributes =>
         import com.mongodb.casbah.commons.Implicits._
         attributes.filename = name
@@ -38,6 +39,15 @@ class GridfsObjectStore(fs: GridFS) {
         import com.mongodb.casbah.Implicits._
         val metadataMap: Map[String, Any] = file.metaData.map(x => x._1 -> x._2).toMap
         (ObjectStore.getMetadataString(metadataMap, "checksum"), metadataMap.filterKeys(_ != "checksum"))
+      }
+    }
+
+  def setMetaData(name: String)(f: Map[String, Any] => Map[String, Any]): Future[Unit] =
+    Future {
+      fs.findOne(name).map { file =>
+        import com.mongodb.casbah.Implicits._
+        file.metaData = f(file.metaData.map(x => x._1 -> x._2).toMap)
+        file.save()
       }
     }
 
@@ -67,11 +77,14 @@ class GridfsObjectStore(fs: GridFS) {
       new ObjectStoreModule(name, moduleType, checksum)
     }
 
-  def getModule(name: String): Future[Option[Module]] =
+  def getModuleEx(name: String): Future[Option[(Module, Map[String, Any])]] =
     getMetaData(name).map(_.map {
       case (checksum, metadata) =>
-        new ObjectStoreModule(name, ObjectStore.getMetadataString(metadata, "moduleType"), checksum)
+        (new ObjectStoreModule(name, ObjectStore.getMetadataString(metadata, "moduleType"), checksum), metadata)
     })
+
+  def getModule(name: String): Future[Option[Module]] =
+    getModuleEx(name).map(_.map(_._1))
 }
 
 trait Module {

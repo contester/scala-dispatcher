@@ -16,6 +16,20 @@ object Compiler {
       case (compileResult, compiledModuleOption) =>
         Future.collect(compiledModuleOption.map { compiledModule =>
           store.putModule(instance.unrestricted, storeName, instance.unrestricted.sandboxId / compiledModule.filename, compiledModule.moduleType)
+            .flatMap { compModule =>
+            store.setMetaData(storeName) { meta =>
+              meta.updated("sourceChecksum", module.moduleHash)
+            }.map(_ => compModule)
+          }
         }.toSeq).map(compileResult -> _.headOption)
     }
+
+  def checkIfCompiled(module: Module, store: GridfsObjectStore, storeName: String): Future[Option[Module]] =
+    store.getModuleEx(storeName).map(_.flatMap {
+      case (module, metadata) =>
+        if (ObjectStore.getMetadataString(metadata, "sourceChecksum") == module.moduleHash)
+          Some(module)
+        else
+          None
+    })
 }
