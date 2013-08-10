@@ -52,7 +52,7 @@ class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) {
     client.gridfsPut(items.map(m => m._1 -> m._2.name(pathSeparator)), sandboxId).map(_.map(file))
 
   def getGridfs(items: Iterable[(RemoteFileName, String, Option[String])], sandboxId: String): Future[Iterable[InvokerRemoteFile]] =
-    client.gridfsGet(items.map(m => new GridfsGetEntry(m._2, m._1.name(pathSeparator), m._3)), sandboxId).map(_.map(file))
+    client.gridfsGet(items.map(m => new GridfsGetEntry(m._1.name(pathSeparator), m._2, m._3)), sandboxId).map(_.map(file))
 
   def executeConnected(first: LocalExecutionParameters, second: LocalExecutionParameters): Future[(LocalExecutionResult, LocalExecutionResult)] =
     client.executeConnected(first, second).map(x => (x.getFirst, x.getSecond))
