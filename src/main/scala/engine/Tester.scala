@@ -5,7 +5,6 @@ import org.stingray.contester.proto.Local.{LocalExecutionParameters, LocalExecut
 import org.stingray.contester.common._
 import org.stingray.contester.invokers._
 import org.stingray.contester.modules.BinaryHandler
-import org.stingray.contester.proto.Blobs.Module
 import org.stingray.contester.problems.{Test, TestLimits}
 import org.apache.commons.io.FilenameUtils
 import com.twitter.util.{Duration, Future}
@@ -26,12 +25,12 @@ object Tester extends Logging {
     TesterRunResult(x._1, x._2)
 
   def executeSolution(sandbox: Sandbox, handler: BinaryHandler, module: Module, testLimits: TestLimits, stdio: Boolean) =
-    sandbox.put(module, handler.solutionName)
+    module.putToSandbox(sandbox, handler.solutionName)
       .flatMap(_ => handler.getSolutionParameters(sandbox, handler.solutionName, testLimits))
       .map(_.emulateStdioIf(stdio, sandbox))
       .flatMap(sandbox.executeWithParams(_).handle {
       case e: RemoteError => throw new TransientError(e)
-    }).map(asRunResult(_, module.getType == "jar"))
+    }).map(asRunResult(_, module.moduleType == "jar"))
 
   private def executeTester(sandbox: Sandbox, handler: BinaryHandler, name: String) =
     handler.getTesterParameters(sandbox, name, "input.txt" :: "output.txt" :: "answer.txt" :: Nil)
@@ -41,12 +40,12 @@ object Tester extends Logging {
     }).map(asTesterRunResult(_))
 
   private def runInteractive(instance: InvokerInstance, handler: BinaryHandler, moduleType: String, test: Test) =
-    test.prepareInteractorBinary(instance.comp).flatMap { interactorName =>
-      val testerHandler = instance.factory.getBinary(FilenameUtils.getExtension(interactorName))
-      test.prepareInput(instance.comp).flatMap(_ => test.prepareTester(instance.comp))
-        .flatMap(_ => handler.getSolutionParameters(instance.run, handler.solutionName, test.getLimits(moduleType)).join(testerHandler.getTesterParameters(instance.comp, interactorName, "input.txt" :: "output.txt" :: "answer.txt" :: Nil).map(_.setTester)))
+    test.prepareInteractorBinary(instance.unrestricted).flatMap { interactorName =>
+      val testerHandler = instance.factory(FilenameUtils.getExtension(interactorName)).asInstanceOf[BinaryHandler]
+      test.prepareInput(instance.unrestricted).flatMap(_ => test.prepareTester(instance.unrestricted))
+        .flatMap(_ => handler.getSolutionParameters(instance.restricted, handler.solutionName, test.getLimits(moduleType)).join(testerHandler.getTesterParameters(instance.unrestricted, interactorName, "input.txt" :: "output.txt" :: "answer.txt" :: Nil).map(_.setTester)))
         .flatMap {
-        case (secondp, firstp) => instance.invoker.i.executeConnected(firstp, secondp)
+        case (secondp, firstp) => instance.invoker.api.executeConnected(firstp, secondp)
           .map {
           case (firstr, secondr) => new InteractiveRunResult(SingleRunResult(firstp, firstr), asRunResult((secondp, secondr), moduleType == "jar"))
         }
@@ -54,12 +53,12 @@ object Tester extends Logging {
     }
 
   private def testInteractive(instance: InvokerInstance, module: Module, test: Test): Future[(RunResult, Option[TesterRunResult])] = {
-    val moduleHandler = instance.factory.getBinary(module.getType)
-    instance.run.put(module, moduleHandler.solutionName).flatMap { _ =>
-      runInteractive(instance, moduleHandler, module.getType, test)}.flatMap { runResult =>
+    val moduleHandler = instance.factory(module.moduleType).asInstanceOf[BinaryHandler]
+    module.putToSandbox(instance.restricted, moduleHandler.solutionName).flatMap { _ =>
+      runInteractive(instance, moduleHandler, module.moduleType, test)}.flatMap { runResult =>
       if (runResult.success) {
-        test.prepareTesterBinary(instance.comp).flatMap { testerName =>
-          executeTester(instance.comp, instance.factory.getBinary(FilenameUtils.getExtension(testerName)), testerName)
+        test.prepareTesterBinary(instance.unrestricted).flatMap { testerName =>
+          executeTester(instance.unrestricted, instance.factory(FilenameUtils.getExtension(testerName)).asInstanceOf[BinaryHandler], testerName)
             .map { testerResult =>
             (runResult, Some(testerResult))
           }
@@ -74,34 +73,23 @@ object Tester extends Logging {
     else
       testOld(instance, module, test)).map(x => new TestResult(x._1, x._2))
 
-  private def sandboxAfterExecutionResult(stats: Iterable[RemoteFile]) = {
-    val m = stats.map(x => x.name -> x).toMap
-    trace("After execution result, we have: %s".format(m.mapValues(x => if (x.hasSha1) Blobs.bytesToString(x.getSha1) else "")))
-    stats
-  }
-
-  private def testOld(instance: RunnerInstance, module: Module, test: Test): Future[(RunResult, Option[TesterRunResult])] = {
-    val moduleHandler = instance.factory.getBinary(module.getType)
-    test.prepareInput(instance.run)
-      .flatMap { _ => executeSolution(instance.run, moduleHandler, module, test.getLimits(module.getType), test.stdio) }
+  private def testOld(instance: InvokerInstance, module: Module, test: Test): Future[(RunResult, Option[TesterRunResult])] = {
+    val moduleHandler = instance.factory(module.moduleType).asInstanceOf[BinaryHandler]
+    test.prepareInput(instance.restricted)
+      .flatMap { _ => executeSolution(instance.restricted, moduleHandler, module, test.getLimits(module.moduleType), test.stdio) }
       .flatMap { solutionResult =>
-      if (solutionResult.success) {
-        instance.run.statAll
-          .map(sandboxAfterExecutionResult(_))
-          .flatMap { _ =>
-            test.prepareInput(instance.run).flatMap { _ => test.prepareTester(instance.run)}
-            .flatMap(_ => test.prepareTesterBinary(instance.run))
+        if (solutionResult.success) {
+            test.prepareInput(instance.restricted).flatMap { _ => test.prepareTester(instance.restricted)}
+            .flatMap(_ => test.prepareTesterBinary(instance.restricted))
             .flatMap { testerName =>
               Utils.later(Duration(500, TimeUnit.MILLISECONDS))
-                .flatMap(_ => instance.run.statAll)
-                .flatMap { nstats =>
-                  executeTester(instance.run, instance.factory.getBinary(FilenameUtils.getExtension(testerName)), testerName)
+                .flatMap { _ =>
+                  executeTester(instance.restricted, instance.factory(FilenameUtils.getExtension(testerName)).asInstanceOf[BinaryHandler], testerName)
                 }
           }.map { testerResult =>
             (solutionResult, Some(testerResult))
           }
-        }
-      } else Future.value((solutionResult, None))
+        } else Future.value((solutionResult, None))
     }
   }
 }

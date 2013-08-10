@@ -2,26 +2,22 @@ package org.stingray.contester.dispatcher
 
 import java.sql.{ResultSet, Timestamp}
 import org.stingray.contester.invokers.TimeKey
-import org.stingray.contester.common.{Blobs, SubmitWithModule}
+import org.stingray.contester.common._
 import com.twitter.util.Future
 import org.stingray.contester.db.{HasId, SelectDispatcher, ConnectionPool}
-import org.stingray.contester.testing.{CustomTestingResult, SolutionTester}
+import org.stingray.contester.testing.SolutionTester
+import org.stingray.contester.testing.CustomTestingResult
 
-case class CustomTestObject(id: Int, moduleType: String, arrived: Timestamp, source: Array[Byte], input: Array[Byte]) extends TimeKey with HasId with SubmitWithModule {
+case class CustomTestObject(id: Int, arrived: Timestamp, sourceModule: Module, input: Array[Byte]) extends TimeKey with HasId with SubmitWithModule {
   val timestamp = arrived
 }
 
-object Custom {
-  def test(invoker: SolutionTester, submit: CustomTestObject): Future[CustomTestingResult] =
-    invoker.custom(submit, submit.sourceModule, submit.input)
-}
-class CustomTestDispatcher(db: ConnectionPool, invoker: SolutionTester) extends SelectDispatcher[CustomTestObject](db) {
+class CustomTestDispatcher(db: ConnectionPool, invoker: SolutionTester, store: GridfsObjectStore, storeId: String) extends SelectDispatcher[CustomTestObject](db) {
   def rowToSubmit(row: ResultSet) =
     CustomTestObject(
       row.getInt("ID"),
-      row.getString("Ext"),
       row.getTimestamp("Arrived"),
-      row.getBytes("Source"),
+      new ByteBufferModule(row.getString("Ext"), row.getBytes("Source")),
       row.getBytes("Input")
     )
 
@@ -65,6 +61,6 @@ class CustomTestDispatcher(db: ConnectionPool, invoker: SolutionTester) extends 
     else Future.Done
 
   def run(item: CustomTestObject) =
-    invoker.custom(item, item.sourceModule, item.input)
+    invoker.custom(item, item.sourceModule, item.input, store, storeId + "/eval/", item.id)
       .flatMap(recordResult(item, _))
 }

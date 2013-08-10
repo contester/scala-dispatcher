@@ -10,6 +10,7 @@ import org.stingray.contester.utils.ProtobufTools
 import org.stingray.contester.rpc4.proto.RpcFour
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import grizzled.slf4j.Logging
 
 /** Connected server registry. Will be called for connected and disconnected channels.
   *
@@ -17,16 +18,15 @@ import java.util.concurrent.atomic.AtomicBoolean
 trait Registry {
   /** This gets called when new server reverse-connects to the dispatcher.
     *
-    * @param channel Connected channel.
-    * @return Channel handler to be inserted as an endpoint into pipeline.
+    * @param client Client for connected channel.
     */
-  def register(channel: Channel): ChannelHandler
+  def register(client: RpcClient): Unit
 
   /** This gets called when channel is ejected from the dispatcher.
     *
-    * @param channel Channel to disconnect.
+    * @param client Client instance.
     */
-  def unregister(channel: Channel): Unit
+  def unregister(client: RpcClient): Unit
 }
 
 /** Exception to be thrown when channel is disconnected.
@@ -140,13 +140,22 @@ private class RpcFramerEncoder extends SimpleChannelDownstreamHandler {
 }
 
 private class RpcRegisterer(registry: Registry) extends SimpleChannelUpstreamHandler {
+  private[this] val channels = {
+    import scala.collection.JavaConverters._
+    new ConcurrentHashMap[Channel, RpcClient]().asScala
+  }
+
   override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
-    ctx.getPipeline.addLast("endpoint", registry.register(e.getChannel))
+    val channel = e.getChannel
+    val client = new RpcClient(channel)
+
+    channels.put(channel, client).foreach(registry.unregister(_))
+    ctx.getPipeline.addLast("endpoint", client)
     super.channelConnected(ctx, e)
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
-    registry.unregister(e.getChannel)
+    channels.remove(e.getChannel).foreach(registry.unregister(_))
     super.channelDisconnected(ctx, e)
   }
 }
@@ -155,7 +164,9 @@ private class RpcRegisterer(registry: Registry) extends SimpleChannelUpstreamHan
   * Offers a Future-based call interface.
   * @param channel Channel to work on.
   */
-class RpcClient(val channel: Channel) extends SimpleChannelUpstreamHandler {
+class RpcClient(val channel: Channel) extends SimpleChannelUpstreamHandler with Logging {
+  // todo: implement org.stingray.contester.rpc4.RpcClient.exceptionCaught()
+
   private[this] val requests = {
     import scala.collection.JavaConverters._
     new ConcurrentHashMap[Int, Promise[Option[Array[Byte]]]]().asScala
@@ -217,8 +228,12 @@ class RpcClient(val channel: Channel) extends SimpleChannelUpstreamHandler {
     super.channelDisconnected(ctx, e)
   }
 
-  private[this] def callTrace[A](methodName: String, payload: Option[MessageLite])(f: Option[Array[Byte]] => A) =
+  private[this] def callTrace[A](methodName: String, payload: Option[MessageLite])(f: Option[Array[Byte]] => A) = {
+    trace("Call: %s(%s)".format(methodName, payload))
     callUntyped(methodName, payload.map(_.toByteArray)).map(f(_))
+      .onSuccess(result => trace("Result(%s): %s".format(methodName, result)))
+      .onFailure(error("Error(%s)", _))
+  }
 
   def call[I <: com.google.protobuf.Message](methodName: String, payload: MessageLite)(implicit manifest: Manifest[I]) =
     callTrace(methodName, Some(payload))(v => ProtobufTools.createProtobuf[I](v))

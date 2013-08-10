@@ -28,7 +28,7 @@ organization := "org.stingray.contester"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
-javacOptions in Compile ++= Seq("-source", "1.6",  "-target", "1.6")
+javacOptions in Compile ++= Seq("-source", "1.6",  "-target", "1.7")
 
 version in PB.protobufConfig := "2.5.0"
 

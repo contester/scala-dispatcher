@@ -14,6 +14,8 @@ import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.streum.configrity.Configuration
 import org.stingray.contester.testing.SolutionTester
 import org.stingray.contester.engine.InvokerSimpleApi
+import org.stingray.contester.common.GridfsObjectStore
+import com.mongodb.casbah.gridfs.GridFS
 
 object Main extends App with Logging {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
@@ -30,7 +32,9 @@ object Main extends App with Logging {
 
   val httpStatus = HttpStatus.bind(config[Int]("dispatcher.port"))
 
-  val pdb = new CommonPolygonDb(MongoConnection(mHost).getDB("contester"))
+  val mongoDb = MongoConnection(mHost).getDB("contester")
+  val pdb = new CommonPolygonDb(mongoDb)
+  val objectStore = new GridfsObjectStore(GridFS(mongoDb))
   val invoker = new InvokerRegistry(mHost)
   StatusPageBuilder.data("invoker") = invoker
   val tester = new SolutionTester(new InvokerSimpleApi(invoker))
@@ -47,7 +51,7 @@ object Main extends App with Logging {
       println(names)
       val client = PolygonClient(config.detach("polygon"))
       val problems = new ProblemData(client, pdb, invoker)
-      val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester)
+      val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester, objectStore)
 
       names.foreach { name =>
         if (config.contains(name + ".db")) {
@@ -60,7 +64,7 @@ object Main extends App with Logging {
   val moodles =
     config.get[List[String]]("dispatcher.moodles").map { names =>
       names.filter(x => config.contains(x + ".db")).map { name =>
-        new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, pdb, tester)
+        new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, pdb, tester, objectStore)
       }.foreach(_.scan)
     }
 }

@@ -1,41 +1,21 @@
 package org.stingray.contester.testing
 
 import org.stingray.contester.problems.{Problem, Test}
-import org.stingray.contester.common.TestResult
+import org.stingray.contester.common.{GridfsObjectStore, Module, TestResult}
 import com.twitter.util.Future
 import org.stingray.contester.engine.InvokerSimpleApi
 import grizzled.slf4j.Logging
 import org.stingray.contester.invokers.SchedulingKey
-import org.stingray.contester.proto.Blobs.Module
-
-// test, report, proceed
-// - strategy
-
-// (strategy inside class/test)
 
 object Solution {
   type NumberedTest = (Int, Test)
   type NumberedTestResult = (Int, TestResult)
   type EvaluatedTestResult = (Boolean, NumberedTestResult)
-
-  // type ProceedFunc = NumberedTestResult => Boolean
-  // type Strategy = (Seq[NumberedTest], TestFunc, ProceedFunc) => Future[Seq[EvaluatedTestResult]]
-  // type TestFunc = NumberedTest => Future[NumberedTestResult]
-
-  // type TestAll = Seq[NumberedTest] => Future[Seq[NumberedTestResult]]
-
 }
 
-class StoredModule(val moduleType: String, val location: String)
-
 class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
-  private def compile(submit: SchedulingKey, sourceModule: Module, reporter: SingleProgress) =
-    invoker.compile(submit, sourceModule).flatMap { cr =>
-      reporter.compile(cr._1).map(_ => cr)
-    }
-
-  def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, reporter: ProgressReporter, schoolMode: Boolean): Future[Unit] =
-    invoker.compile(submit, sourceModule)
+  def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, reporter: ProgressReporter, schoolMode: Boolean, store: GridfsObjectStore, storeBase: String, submitId: Int): Future[Unit] =
+    invoker.compile(submit, sourceModule, store, storeBase + "submit/%d/compiledModule".format(submitId))
       .flatMap { compiled =>
         reporter { pr =>
           compiled._2.map { binary =>
@@ -44,17 +24,16 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
         }
     }
 
-  def custom(submit: SchedulingKey, sourceModule: Module, input: Array[Byte]): Future[CustomTestingResult] =
-    compile(submit, sourceModule, NullReporter).flatMap {
+  def custom(submit: SchedulingKey, sourceModule: Module, input: Array[Byte], store: GridfsObjectStore, storeBase: String, testingId: Int): Future[CustomTestingResult] =
+    invoker.compile(submit, sourceModule, store, storeBase + "eval/%d/compiledModule".format(testingId)).flatMap {
       case (compileResult, binaryOption) =>
         binaryOption.map { binary =>
-          invoker.custom(submit, binary, input).map(Some(_))
+          invoker.custom(submit, binary, input, store, storeBase + "eval/%d/output".format(testingId)).map(Some(_))
         }.getOrElse(Future.None).map(x => CustomTestingResult(compileResult, x))
     }
 }
 
 class BinarySolution(invoker: InvokerSimpleApi, submit: SchedulingKey, problem: Problem, binary: Module, reporter: SingleProgress, schoolMode: Boolean) extends Logging with TestingStrategy {
-
   private def proceed(r: Solution.NumberedTestResult): Boolean =
     r._2.success || (schoolMode && r._1 != 1)
 

@@ -19,6 +19,8 @@ trait SingleProgress {
 
   def finish(r: SolutionTestingResult): Future[Unit]
   def rescue: PartialFunction[Throwable, Future[Unit]] = Map.empty
+
+  def testingId: Int = ???
 }
 
 trait ProgressReporter {
@@ -30,7 +32,6 @@ trait ProgressReporter {
         .flatMap(pr.finish)
         .rescue(pr.rescue)
     }
-
 }
 
 class CombinedSingleProgress(reporters: Seq[SingleProgress]) extends SingleProgress {
@@ -42,6 +43,8 @@ class CombinedSingleProgress(reporters: Seq[SingleProgress]) extends SingleProgr
 
   def finish(r: SolutionTestingResult): Future[Unit] =
     Future.collect(reporters.map(_.finish(r))).unit
+
+  override def testingId: Int = reporters.map(_.testingId).max
 }
 
 class CombinedResultReporter(reporters: Seq[ProgressReporter]) extends ProgressReporter {
@@ -80,7 +83,7 @@ object CombinedResultReporter {
     apply(new RawLogResultReporter(base, submit) :: new DBResultReporter(client, submit) :: Nil)
 }
 
-class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, val testingId: Int) extends SingleProgress {
+class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, override val testingId: Int) extends SingleProgress {
   def compile(r: CompileResult): Future[Unit] =
     client.execute("insert into Results (UID, Submit, Result, Test, Timex, Memory, TesterOutput, TesterError) values (?, ?, ?, ?, ?, ?, ?, ?)",
       testingId, submit.id, r.status, 0, 0,
@@ -108,7 +111,7 @@ class DBResultReporter(client: ConnectionPool, val submit: SubmitObject) extends
       .flatMap { lastInsertId =>
       client.execute(
         "Replace Submits (Contest, Arrived, Team, Task, ID, Ext, Computer, TestingID, Touched, Finished) values (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 0)",
-        submit.contestId, submit.arrived, submit.teamId, submit.problemId, submit.id, submit.moduleType, submit.computer, lastInsertId)
+        submit.contestId, submit.arrived, submit.teamId, submit.problemId, submit.id, submit.sourceModule.moduleType, submit.computer, lastInsertId)
         .unit.map(_ => new DBSingleResultReporter(client, submit, lastInsertId))
     }
 }
