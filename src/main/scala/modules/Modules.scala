@@ -1,50 +1,39 @@
 package org.stingray.contester.modules
 
 import com.twitter.util.Future
-import grizzled.slf4j.Logging
 import org.stingray.contester.common._
 import org.stingray.contester.proto.Local.LocalExecutionParameters
 import org.stingray.contester.utils.ExecutionArguments
-import org.stingray.contester.invokers.{Sandbox, InvokerId}
+import org.stingray.contester.invokers.Sandbox
 import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.problems.TestLimits
-import org.stingray.contester.proto.Blobs.Module
 
 trait ModuleHandler {
   def moduleTypes: Iterable[String]
-  def internal: Boolean = false
 }
 
-trait SourceHandler extends ModuleHandler with Logging {
+class CompiledModule(val filename: String, val moduleType: String)
+
+trait SourceHandler extends ModuleHandler {
+  /**
+   * Source name for the module. Used to put it there.
+   * @return Source name, with extension.
+   */
   def sourceName: String
 
-  def compile(sandbox: Sandbox): Future[(CompileResult, Option[Module])]
-  def filter(params: LocalExecutionParameters) = params
+  /**
+   * Compile module which is already in the sandbox.
+   * @param sandbox Sandbox to use for compilation.
+   * @return Result and file name, if any.
+   */
+  def compile(sandbox: Sandbox): Future[(CompileResult, Option[CompiledModule])]
+}
 
-  def step(stepName: String, sandbox: Sandbox, applicationName: String, arguments: ExecutionArguments): Future[StepResult] = {
-    sandbox.getExecutionParameters(applicationName, arguments)
-      .map(_.setCompiler)
-      .map(filter(_))
-      .flatMap(sandbox.executeWithParams).map { x =>
-      trace("sandbox.executeWithParams completed")
-      StepResult(stepName, x._1, x._2)
-    }
-  }
+trait BinaryHandler extends ModuleHandler {
+  def solutionName: String
 
-  def compileAndCheck(sandbox: Sandbox, applicationName: String, arguments: ExecutionArguments, resultName: String) =
-    step("Compilation", sandbox, applicationName, arguments)
-      .flatMap { result =>
-      trace("Before statfile, result is:" + result)
-      sandbox.statFile(resultName).map(!_.isEmpty).map((result, _))
-    }
-
-  def compile0(sandbox: Sandbox, applicationName: String, arguments: ExecutionArguments,
-                    compileResult: String, resultType: Option[String]) =
-    compileAndCheck(sandbox, applicationName, arguments, compileResult)
-      .flatMap {
-      case (stepResult, isFile) =>
-          SourceHandler.makeCompileResult(Seq(stepResult), sandbox, compileResult, resultType)
-    }
+  def getTesterParameters(sandbox: Sandbox, name: String, arguments: List[String]): Future[LocalExecutionParameters]
+  def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits): Future[LocalExecutionParameters]
 }
 
 class SevenzipHandler(val p7z: String) extends ModuleHandler {
@@ -53,65 +42,42 @@ class SevenzipHandler(val p7z: String) extends ModuleHandler {
 
 // TODO: Return module name instead of the module
 object SourceHandler {
-  def makeCompileResult(steps: Seq[StepResult], sandbox: Sandbox, filename: String, moduleType: Option[String]): Future[(CompileResult, Option[Module])] =
-    (if (steps.last.success) {
-      sandbox.getModuleOption(sandbox.sandboxId ** filename).map(_.map(_.setType(moduleType)))
-    } else Future.value(None)).map(m => new RealCompileResult(steps, m.isDefined) -> m)
-}
-
-trait ModuleFactory {
-  def apply(moduleType: String): Option[ModuleHandler]
-  def moduleTypes: Seq[String]
-
-  def getSource(moduleType: String): SourceHandler =
-    apply(moduleType).get.asInstanceOf[SourceHandler]
-
-  def getBinary(moduleType: String): BinaryHandler =
-    apply(moduleType).get.asInstanceOf[BinaryHandler]
-
-  def get7z: SevenzipHandler =
-    apply("zip").get.asInstanceOf[SevenzipHandler]
-}
-
-class SimpleModuleFactory(handlers: Iterable[ModuleHandler]) extends ModuleFactory {
-  val moduleMap = handlers.flatMap(x => x.moduleTypes.map(y => y -> x)).toMap
-
-  def apply(moduleType: String) =
-    moduleMap.get(moduleType)
-
-  def moduleTypes =
-    moduleMap.filter(!_._2.internal).keys.toSeq
-}
-
-object ModuleFactoryFactory extends Logging {
-  def getHandlers(inv: InvokerId) = inv.platform match {
-    case "win32" => new Win32Handlers(inv).apply
-    case "linux" => new LinuxHandlers(inv).apply
-    case _ => Future.value(Seq())
+  def step(stepName: String, sandbox: Sandbox, applicationName: String,
+           arguments: ExecutionArguments): Future[StepResult] = {
+    sandbox.getExecutionParameters(applicationName, arguments)
+      .map(_.setCompiler)
+      .flatMap(sandbox.executeWithParams).map { x =>
+      StepResult(stepName, x._1, x._2)
+    }
   }
 
-  def apply(inv: InvokerId): Future[ModuleFactory] = {
-    info("Testing invoker " + inv)
-    getHandlers(inv).map(new SimpleModuleFactory(_))
-  }
-}
+  def checkForFile(sandbox: Sandbox, filename: String): Future[Boolean] =
+    sandbox.stat(filename, false).map(!_.isFile.isEmpty)
 
-trait BinaryHandler extends ModuleHandler {
-  def binaryExt: String
-  def solutionName: String
+  def stepAndCheck(stepName: String, sandbox: Sandbox, applicationName: String, arguments: ExecutionArguments, resultName: String): Future[(StepResult, Boolean)] =
+    step(stepName, sandbox, applicationName, arguments).flatMap { stepResult =>
+      checkForFile(sandbox, resultName).map { checkResult =>
+        (stepResult, checkResult)
+      }
+    }
 
-  def getTesterParameters(sandbox: Sandbox, name: String, arguments: List[String]): Future[LocalExecutionParameters]
-  def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits): Future[LocalExecutionParameters]
+  def makeCompileResultAndModule(steps: Seq[StepResult], success: Boolean, resultName: String, resultType: String) =
+    (new RealCompileResult(steps, success),
+      if (success) Some(new CompiledModule(resultName, resultType)) else None)
 }
 
 trait SimpleCompileHandler extends SourceHandler {
   def compiler: String
   def flags: ExecutionArguments
   def binary: String
-  def resultType: Option[String] = None
+  def binaryExt: String
 
-  def compile(sandbox: Sandbox): Future[(CompileResult, Option[Module])] =
-    compile0(sandbox, compiler, flags, binary, resultType)
+  def compile(sandbox: Sandbox): Future[(CompileResult, Option[CompiledModule])] = {
+    SourceHandler.stepAndCheck("Compilation", sandbox, compiler, flags, binary).map {
+      case (stepResult, success) =>
+        SourceHandler.makeCompileResultAndModule(Seq(stepResult), success, binary, binaryExt)
+    }
+  }
 }
 
 

@@ -3,73 +3,76 @@ package org.stingray.contester.invokers
 import org.apache.commons.io.FilenameUtils
 import org.stingray.contester.proto.Local.FileStat
 
-trait RemoteFile {
-  def **(s: String): RemoteFile
-  def **(s: Iterable[String]): Iterable[RemoteFile]
-  def name: String
-  def parent: String
-  def basename: String
-  def ext: String
-
-  def hasSha1: Boolean = false
-  def getSha1: Array[Byte] = null
-
-  def hasStat: Boolean = false
-  def isDir: Boolean = false
-  def size: Long = 0
-  def isFile = hasStat && !isDir
-
-  def i: InvokerId
-
-  override def toString = name
-}
-
-class InvokerRemoteFile(val i: InvokerId, val name: String) extends RemoteFile {
-  def **(s: String) =
-    new InvokerRemoteFile(i, (name :: i.pathSeparator :: s :: Nil).mkString)
-
-  def **(s: Iterable[String]) =
-    s.map(**(_))
+class RemoteFileName(val components: Seq[String], pathSeparator: Option[String]) {
+  def parent: RemoteFileName =
+    new RemoteFileName(components.take(components.length - 1), pathSeparator)
 
   def basename =
-    FilenameUtils.getName(name)
-
-  def parent =
-    FilenameUtils.getFullPath(name)
+    FilenameUtils.getBaseName(components.last)
 
   def ext =
-    FilenameUtils.getExtension(name)
+    FilenameUtils.getExtension(components.last)
+
+  def /(s: String): RemoteFileName =
+    new RemoteFileName(components :+ s, pathSeparator)
+
+  def /(s: Iterable[String]): Iterable[RemoteFileName] =
+    s.map(this / _)
+
+  def this(name: String, pathSeparator: Option[String]) =
+    this(RemoteFileName.parse(name), pathSeparator)
+
+  def this(components: Seq[String]) =
+    this(components, None)
+
+  def this(name: String) =
+    this(name, None)
+
+  def name(separator: String): String =
+    components.mkString(separator)
+
+  def name: String =
+    name(pathSeparator.getOrElse("\\"))
 }
 
-class InvokerRemoteWithStats(i: InvokerId, st: FileStat) extends InvokerRemoteFile(i, st.getName) {
-  override val hasStat = true
-  override val isDir = st.getIsDirectory
-  override val size = st.getSize
-
-  override val hasSha1: Boolean = st.hasSha1Sum
-  override def getSha1: Array[Byte] = st.getSha1Sum.toByteArray
+object RemoteFileName {
+  def parse(name: String) = FilenameUtils.separatorsToUnix(name).split('/')
 }
 
-object InvokerRemoteFile {
-  def apply(i: InvokerId, name: String) =
-    new InvokerRemoteFile(i, name)
+class InvokerRemoteFile(val invoker: InvokerAPI, st: FileStat)
+  extends RemoteFileName(RemoteFileName.parse(st.getName), Some(invoker.pathSeparator)) {
 
-  def apply(i: InvokerId, st: FileStat) =
-    new InvokerRemoteWithStats(i, st)
+  def isDir = st.getIsDirectory
+  def isFile = !isDir
+  def size = st.getSize
+
+  def checksum =
+    if (st.hasChecksum)
+      Some(st.getChecksum.toLowerCase)
+    else
+      None
 }
 
-final class FileListOps(val repr: Iterable[RemoteFile]) {
-  def **(d: List[String]): Iterable[RemoteFile] =
-    d.flatMap(**(_))
+final class FileListOps(val repr: Iterable[RemoteFileName]) {
+  def /(d: Iterable[String]): Iterable[RemoteFileName] =
+    d.flatMap(this / _)
 
-  def **(d: String): Iterable[RemoteFile] =
-    repr.map(_ ** d)
+  def /(d: String): Iterable[RemoteFileName] =
+    repr.map(_ / d)
+
+  private def needStat(f: InvokerRemoteFile => Boolean): Iterable[InvokerRemoteFile] =
+    repr.flatMap { item =>
+      item match {
+        case x: InvokerRemoteFile if f(x) =>
+          Some(x)
+      }
+    }
 
   def isDir =
-    repr.filter(f => f.hasStat && f.isDir)
+    needStat(_.isDir)
 
   def isFile =
-    repr.filter(f => f.hasStat && !f.isDir)
+    needStat(_.isFile)
 
   def firstFile =
     isFile.headOption

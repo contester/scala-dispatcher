@@ -3,10 +3,16 @@ package org.stingray.contester.common
 import org.stingray.contester.proto.Blobs.Blob
 import org.stingray.contester.proto.Local.{LocalExecutionParameters, LocalExecutionResult}
 
+/**
+ * Result of some run, operation, or test
+ */
 trait Result {
   def success: Boolean
 }
 
+/**
+ * Result of a single process run.
+ */
 trait RunResult extends Result {
   def status: Int
   def success = status == StatusCode.Accepted

@@ -3,47 +3,41 @@ package org.stingray.contester.invokers
 import org.stingray.contester.rpc4.{RpcClient, Registry}
 import grizzled.slf4j.Logging
 import collection.mutable
-import org.jboss.netty.channel.{ChannelHandler, Channel}
 import com.twitter.util.Future
-import scala.Some
-import org.stingray.contester.modules.ModuleFactoryFactory
+import org.stingray.contester.modules.ModuleFactory
+import java.util.concurrent.ConcurrentHashMap
 
 class InvokerRegistry(mongoHost: String) extends Registry with RequestStore[String, SchedulingKey, InvokerInstance] with Logging {
-  private[this] val channelMap = new mutable.HashMap[Channel, InvokerBig]
+  private[this] val channelMap = {
+    import scala.collection.JavaConverters._
+    new ConcurrentHashMap[RpcClient, Invoker]().asScala
+  }
 
-  private[this] def configure(client: InvokerRpcClient) =
-    client.identify("palevo", mongoHost, "contester")
-      .map(new InvokerId(_, client)).flatMap { clientId =>
-      ModuleFactoryFactory(clientId).map { moduleFactory =>
-        new InvokerBig(clientId, moduleFactory)
+  def register(client: RpcClient): Unit = {
+    val invokerClient = new InvokerRpcClient(client)
+    invokerClient.identify("palevo", mongoHost, "contester")
+      .map(new InvokerAPI(_, invokerClient))
+      .flatMap { api =>
+      ModuleFactory(api).map { factory =>
+        new Invoker(api, factory)
       }
+    }.map { invoker =>
+      channelMap.put(client, invoker)
+      addInvokers(invoker.instances)
     }
-
-  private[this] def register(invoker: InvokerBig): Unit = {
-    synchronized {
-      channelMap.put(invoker.channel, invoker)
-    }
-    addInvokers(invoker.instances)
   }
 
-  def register(channel: Channel): ChannelHandler = {
-    val result = new RpcClient(channel)
-    info("New channel: " + channel)
-    configure(new InvokerRpcClient(result)).map(register(_))
-    result
-  }
-
-  def unregister(channel: Channel): Unit = {
+  def unregister(client: RpcClient): Unit = {
     synchronized {
-      channelMap.remove(channel)
+      channelMap.remove(client)
     }.foreach { inv =>
-        info("Lost channel: " + inv.i.name)
+        info("Lost channel: " + inv.api.name)
         removeInvokers(inv.instances)
       }
     }
 
   def stillAlive(invoker: InvokerInstance) =
-    channelMap.contains(invoker.invoker.channel)
+    channelMap.contains(invoker.invoker.api.client.client)
 
   def apply[T](m: String, key: SchedulingKey, extra: AnyRef)(f: InvokerInstance => Future[T]): Future[T] =
     get[T](m, key, extra)(i => i.clear.flatMap(f(_)))
@@ -59,7 +53,7 @@ class InvokerRegistry(mongoHost: String) extends Registry with RequestStore[Stri
 
   def getInvokers =
     synchronized {
-      channelMap.values.toSeq.sortBy(_.i.name).map { i =>
+      channelMap.values.toSeq.sortBy(_.api.name).map { i =>
         (i -> i.instances.map { k =>
           k -> (if (freelist(k)) ("F", None) else if (badlist(k)) ("B", None) else uselist.get(k).map(x => ("U", Some(x))).getOrElse(("?", None)))
         })

@@ -38,8 +38,8 @@ final class RichLocalExecutionParameters(val repr: LocalExecutionParameters) {
 
   def emulateStdio(s: Sandbox) = {
     val builder = repr.toBuilder
-    builder.getStdInBuilder.setFilename((s.path ** "input.txt").name)
-    builder.getStdOutBuilder.setFilename((s.path ** "output.txt").name)
+    builder.getStdInBuilder.setFilename((s.path / "input.txt").name)
+    builder.getStdOutBuilder.setFilename((s.path / "output.txt").name)
     builder.build()
   }
 

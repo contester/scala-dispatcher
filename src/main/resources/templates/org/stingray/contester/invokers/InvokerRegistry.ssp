@@ -12,9 +12,9 @@
       <% val big = b._1 %>
       <% val instances = b._2 %>
       <tr>
-        <td><%= big.i.name %></td>
+        <td><%= big.api.name %></td>
         <td></td>
-        <td><%= big.i.platform %></td>
+        <td><%= big.api.platform %></td>
         <td><%= big.caps.mkString(" ") %></td>
       </tr>
       #for (item <- instances)
@@ -23,7 +23,7 @@
       <% val optAction = item._2._2 %>
         <tr>
           <td></td>
-          <td><%= i.instanceId %></td>
+          <td><%= i.index %></td>
           <td><%= state %></td>
           <td><%= optAction.getOrElse("") %></td>
         </tr>

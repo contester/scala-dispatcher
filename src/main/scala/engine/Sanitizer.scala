@@ -2,11 +2,12 @@ package org.stingray.contester.engine
 
 import org.stingray.contester.invokers._
 import grizzled.slf4j.Logging
-import util.matching.Regex
 import com.twitter.util.Future
 import org.stingray.contester.problems.{ProblemManifest, ProblemT}
 import org.stingray.contester.modules.SevenzipHandler
 import org.stingray.contester.ContesterImplicits._
+import scala.util.matching.Regex
+import org.stingray.contester.common.Module
 
 class TesterNotFoundException extends scala.Throwable
 class PdbStoreException(path: String) extends scala.Throwable(path)
@@ -22,28 +23,28 @@ trait ProblemDescription extends ProblemT with EarliestTimeKey {
   def memoryLimit: Long
 }
 
-class ProblemSanitizer(sandbox: Sandbox, base: RemoteFile, problem: ProblemDescription) extends Logging {
+class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemDescription) extends Logging {
   private[this] val testerRe = new Regex("^check\\.(\\S+)$")
 
   private[this] def detectGenerator =
-    sandbox.glob(
-      ("doall.*" :: ("Gen" + sandbox.i.pathSeparator + "doall.*") :: Nil).map(base ** _)
-    )
+    sandbox.invoker.api.glob(
+      base / "doall.*" ::
+      base / "Gen" / "doall.*" :: Nil, false)
       .map { g =>
       val m = g.isFile.map(v => v.ext.toLowerCase -> v).toMap
       m.get("cmd").orElse(m.get("bat")).orElse(m.values.headOption)
     }
 
-  private[this] def useGenerator(gen: RemoteFile) =
+  private[this] def useGenerator(gen: RemoteFileName) =
     sandbox.getExecutionParameters(gen.name, Nil)
-      .map(_.setCurrentAndTemp(gen.parent).setSanitizer)
+      .map(_.setCurrentAndTemp(gen.parent.name(sandbox.invoker.api.pathSeparator)).setSanitizer)
       .flatMap(sandbox.execute(_)).map(trace(_)).map(_ => this)
 
   private[this] def sanitize =
     detectGenerator.flatMap(g => g.map(useGenerator(_)).getOrElse(Future.value(this)))
 
   private[this] def findTester =
-    sandbox.glob(base ** "*" :: Nil)
+    sandbox.invoker.api.glob(base / "*" :: Nil, false)
       .map { list =>
       val m = list.filter(_.isFile)
         .filter(x => testerRe.findFirstIn(x.basename.toLowerCase).nonEmpty)
@@ -54,7 +55,7 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFile, problem: ProblemDescr
   private[this] def acceptableIds = Set("exe", "jar")
 
   private[this] def findInteractor =
-    sandbox.glob(base ** "files/interactor.*" :: Nil)
+    sandbox.invoker.api.glob(base / "files" / "interactor.*" :: Nil, false)
       .map(_.isFile.filter(x => acceptableIds(x.ext)).toSeq.sortBy(_.ext).headOption)
 
   private[this] def findInteractorOption =
@@ -63,7 +64,8 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFile, problem: ProblemDescr
     else Future.None
 
 
-  private[this] val testBase = base ** "tests"
+  private[this] val testBase = base / "tests"
+  private[this] val tests = 1 to problem.testCount
 
   private[this] def analyzeLists(x: Iterable[String]) = {
     val s = x.toSet
@@ -72,12 +74,18 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFile, problem: ProblemDescr
     (1 to problem.testCount).filter(i => s(problem.answerName(i)))
   }
 
+  private[this] def problemFileList(tester: InvokerRemoteFile, interactor: Option[InvokerRemoteFile]): Iterable[(RemoteFileName, String, Option[String])] =
+    tests.flatMap { i =>
+      (testBase / "%02d".format(i), problem.inputName(i), None) ::
+        (testBase / "%02d.a".format(i), problem.answerName(i), None) ::
+      Nil
+    } ++ interactor.map(intFile => (intFile, problem.interactorName, Some(Module.extractType(intFile.name)))) :+
+      (tester, problem.checkerName, Some(Module.extractType(tester.name)))
+
   private[this] def storeProblem =
     findTester.join(findInteractorOption).flatMap {
       case (tester, interactor) =>
-        sandbox.getGridfs((1 to problem.testCount).map(i => (testBase ** "%02d".format(i) -> problem.inputName(i))) ++
-          (1 to problem.testCount).map(i => testBase ** "%02d.a".format(i) -> problem.answerName(i)) ++
-          (tester -> problem.checkerName :: Nil) ++ interactor.map(i => i -> problem.interactorName)).map { lists =>
+        sandbox.getGridfs(problemFileList(tester, interactor)).map { lists =>
           new ProblemManifest(problem.testCount, problem.timeLimitMicros, problem.memoryLimit, problem.stdio, tester.basename, analyzeLists(lists), interactor.map(_.basename))
         }
     }
@@ -89,10 +97,10 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFile, problem: ProblemDescr
 object Sanitizer extends Logging {
   private[this] val p7zFlags = "x" :: "-y" :: Nil
 
-  private[this] def unpack(sandbox: Sandbox, problem: ProblemT, p7z: String): Future[RemoteFile] =
+  private[this] def unpack(sandbox: Sandbox, problem: ProblemT, p7z: String): Future[RemoteFileName] =
     sandbox.getExecutionParameters(p7z, p7zFlags ++ List("-o" + problem.destName, problem.zipName))
       .flatMap(sandbox.execute)
-      .flatMap(_ => sandbox.stat(sandbox.sandboxId ** problem.destName :: Nil))
+      .flatMap(_ => sandbox.stat(problem.destName, false))
       .map(_.filter(_.isDir).headOption.getOrElse(throw new UnpackError))
 
   // No need to get problem file; it will be already there - or we fail after putGridfs
@@ -102,7 +110,7 @@ object Sanitizer extends Logging {
       .flatMap(d => new ProblemSanitizer(sandbox, d, problem).sanitizeAndStore)
   }
 
-  def apply(instance: CompilerInstance, problem: ProblemDescription) =
-    sanitize(instance.comp, problem, instance.factory("zip").get.asInstanceOf[SevenzipHandler].p7z)
+  def apply(instance: InvokerInstance, problem: ProblemDescription) =
+    sanitize(instance.unrestricted, problem, instance.factory("zip").asInstanceOf[SevenzipHandler].p7z)
 }
 

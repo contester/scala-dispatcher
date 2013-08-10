@@ -4,126 +4,80 @@ import com.twitter.util.Future
 import java.util.zip.ZipInputStream
 import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.common.Blobs
-import scala.Some
 import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
-import org.stingray.contester.invokers.{RemoteFile, Sandbox, InvokerId}
+import org.stingray.contester.invokers.{RemoteFileName, Sandbox, InvokerAPI}
 import org.stingray.contester.problems.TestLimits
-import org.stingray.contester.proto.Local.LocalExecutionParameters
 
-class Win32Handlers(i: InvokerId) {
-  implicit private def f2l(x: RemoteFile) = x :: Nil
-  implicit private def fo[A](x: Option[Future[A]]) = x.getOrElse(None)
+final class ModuleHandlerOps(val repr: Future[Seq[ModuleHandler]]) {
+  def +(m: ModuleHandler): Future[Seq[ModuleHandler]] =
+    repr.map(_ :+ m)
 
-  implicit private def f2s(x: RemoteFile) = x.name
-  implicit private def m2f(x: ModuleHandler) = Future.value(x)
-  implicit private def l2f[A](x: Seq[A]) = Future.value(x)
-  implicit private def m2l(x: ModuleHandler) = Seq(x)
-
-
-  implicit private def flat2list(f: Function[RemoteFile, ModuleHandler]): Function[RemoteFile, Future[Seq[ModuleHandler]]] =
-    x => Future.value(Seq(f(x)))
-
-  implicit private def sfs2fs[A](x: Seq[Future[Seq[A]]]) = Future.collect(x).map(_.flatten)
-
-  implicit def a1(x: ModuleHandler) = Future.value(Seq(x))
-
-  private val FirstFile = (x: Iterable[RemoteFile]) => x.firstFile
-  private val FirstDir = (x: Iterable[RemoteFile]) => x.firstDir
-
-  private def withFile(x: Iterable[RemoteFile])(f: Function[RemoteFile, Future[Seq[ModuleHandler]]]): Future[Seq[ModuleHandler]] =
-    i.glob(x, false).flatMap { foundOpt =>
-      foundOpt.firstFile.map { found =>
-        f(found)
-      }.getOrElse(Future.value(Seq()))
-    }
-
-  private def win32Binary = Future.value(Seq(new Win32BinaryHandler))
-  private def win16: Future[Seq[ModuleHandler]] = withFile(i.disks ** "WINDOWS" ** "System32" ** "ntvdm.exe") { ntvdm =>
-    Future.value(Seq(new Win16BinaryHandler)) :: win16Compilers :: Nil
-  }
-
-  private def win32Simple: Future[Seq[ModuleHandler]] =
-    withFile(i.disks ** "mingw" ** "bin" ** "gcc.exe")(new GCCSourceHandler(_, false, false)) ::
-      withFile(i.disks ** "mingw" ** "bin" ** "g++.exe")(new GCCSourceHandler(_, true, false)) ::
-      withFile(i.programFiles ** "Borland" ** "Delphi7" ** "bin" ** "dcc32.exe")(new DelphiSourceHandler(_)) ::
-      withFile(i.disks ** "FPC" ** "2.6.0" ** "bin" ** "i386-win32" ** "fpc.exe")(new FPCSourceHandler(_, false)) ::
-      Nil
-
-  private def win16Compilers: Future[Seq[ModuleHandler]] =
-    withFile(i.disks ** "WINDOWS" ** "System32" ** "cmd.exe") { cmd =>
-      withFile(i.disks ** "Compiler" ** "BP" ** "Bin" ** "bpc.exe")(new BPCSourceHandler(cmd, _)) ::
-      withFile(i.disks ** "Compiler" ** "BC" ** "Bin" ** "bcc.exe")(x => new BCCSourceHandler(cmd, x, false) :: new BCCSourceHandler(cmd, x, true) :: Nil) ::
-      Nil
-    } :: Nil
-
-  private def visualStudio: Future[Seq[ModuleHandler]] =
-    withFile(i.disks ** "WINDOWS" ** "System32" ** "cmd.exe") { cmd =>
-      withFile(i.programFiles ** "Microsoft Visual Studio*" ** "Common7" ** "Tools" ** "vsvars32.bat")(new VisualStudioSourceHandler(cmd, _))
-    }
-
-  private def visualCsharp: Future[Seq[ModuleHandler]] =
-    withFile(i.disks ** "WINDOWS" ** "System32" ** "cmd.exe") { cmd =>
-      withFile(i.programFiles ** "Microsoft Visual Studio*" ** "Common7" ** "Tools" ** "vsvars32.bat")(new VisualCSharpSourceHandler(cmd, _))
-    }
-
-  private def java: Future[Seq[ModuleHandler]] =
-    withFile(i.programFiles ** "Java" ** "jdk*" ** "bin" ** "java.exe")(new JavaBinaryHandler(_, false)) ::
-      withFile(i.programFiles ** "Java" ** "jdk*" ** "bin" ** "javac.exe") { javac =>
-        withFile(i.programFiles ** "Java" ** "jdk*" ** "bin" ** "jar.exe")(new JavaSourceHandler(javac, _, false))
-      } ::
-    Nil
-
-  private def p7z: Future[Seq[ModuleHandler]] =
-    withFile(i.programFiles ** "7-Zip" ** "7z.exe")(x => Future.value(Seq(new SevenzipHandler(x))))
-
-  def apply: Future[Seq[ModuleHandler]] =
-    win32Binary :: win16 :: win32Simple :: visualStudio :: visualCsharp :: java :: p7z :: Nil
+  def +(m: Future[Seq[ModuleHandler]]): Future[Seq[ModuleHandler]] =
+    repr.join(m).map(x => x._1 ++ x._2)
 }
 
-class LinuxHandlers(i: InvokerId) {
-  implicit private def f2l(x: RemoteFile) = x :: Nil
-  implicit private def fo[A](x: Option[Future[A]]) = x.getOrElse(None)
+abstract class ModuleFactory(api: InvokerAPI) {
+  implicit def f2sf(x: Future[ModuleHandler]): Future[Seq[ModuleHandler]] =
+    x.map(Seq(_))
 
-  implicit private def f2s(x: RemoteFile) = x.name
-  implicit private def m2f(x: ModuleHandler) = Future.value(x)
-  // implicit private def l2f(x: Seq[ModuleHandler]) = x.map(Future.value(_))
-  implicit private def l2f[A](x: Seq[A]) = Future.value(x)
-  implicit private def m2l(x: ModuleHandler) = Seq(x)
+  implicit def m2sf(x: ModuleHandler): Future[Seq[ModuleHandler]] =
+    Future.value(Seq(x))
 
-  implicit private def flat2list(f: Function[RemoteFile, ModuleHandler]): Function[RemoteFile, Future[Seq[ModuleHandler]]] =
-    x => Future.value(Seq(f(x)))
+  implicit def s2sf(x: Seq[ModuleHandler]): Future[Seq[ModuleHandler]] =
+    Future.value(x)
 
-  implicit private def sfs2fs[A](x: Seq[Future[Seq[A]]]) = Future.collect(x).map(_.flatten)
+  implicit def m2f(x: (String) => ModuleHandler): ((String) => Future[Seq[ModuleHandler]]) =
+    (s: String) => Future.value(Seq(x(s)))
 
-  implicit def a1(x: ModuleHandler) = Future.value(Seq(x))
+  implicit def s2f(x: (String) => Seq[ModuleHandler]): ((String) => Future[Seq[ModuleHandler]]) =
+    (s: String) => Future.value(x(s))
 
-  private val FirstFile = (x: Iterable[RemoteFile]) => x.firstFile
-  private val FirstDir = (x: Iterable[RemoteFile]) => x.firstDir
+  def add(x: Iterable[RemoteFileName], f: (String) => Future[Seq[ModuleHandler]]): Future[Seq[ModuleHandler]] =
+    api.glob(x, false).flatMap(found => Future.collect(found.map(_.name).headOption.toSeq.map(f)).map(_.flatten))
+}
 
-  private def withFile(x: Iterable[RemoteFile])(f: Function[RemoteFile, Future[Seq[ModuleHandler]]]): Future[Seq[ModuleHandler]] =
-    i.glob(x, false).flatMap { foundOpt =>
-      foundOpt.firstFile.map { found =>
-        f(found)
-      }.getOrElse(Future.value(Seq()))
-    }
+object ModuleFactory {
+  def apply(api: InvokerAPI) =
+    new Win32ModuleFactory(api).generate.map(x => x.flatMap(y => y.moduleTypes.map(_ -> y)).toMap)
+}
 
-  private def linuxBinary = Future.value(Seq(new LinuxBinaryHandler))
-  private def wineBinary = Future.value(Seq(new WineWin32Handler))
+class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
+  def fvs(m: ModuleHandler): Future[Seq[ModuleHandler]] = Future.value(Seq(m))
+  def fcf(s: Seq[Future[Seq[ModuleHandler]]]): Future[Seq[ModuleHandler]] = Future.collect(s).map(_.flatten)
 
-  private def linuxSimple: Future[Seq[ModuleHandler]] =
-    withFile(i.programFiles ** "fpc")(new FPCSourceHandler(_, true)) ::
-    withFile(i.programFiles ** "gcc")(new GCCSourceHandler(_, false, true)) ::
-    withFile(i.programFiles ** "g++")(new GCCSourceHandler(_, true, true)) :: Nil
+  implicit def plain2rich(x: Future[Seq[ModuleHandler]]) = new ModuleHandlerOps(x)
+  implicit def rich2plain(x: ModuleHandlerOps) = x.repr
 
-  private def linuxJava: Future[Seq[ModuleHandler]] =
-    withFile(i.programFiles ** "java")(new JavaBinaryHandler(_, true)) ::
-      withFile(i.programFiles ** "javac") { javac =>
-        withFile(i.programFiles ** "jar")(new JavaSourceHandler(javac, _, true))
-      } ::
-      Nil
+  private def win16(ntvdm: String) =
+    add(api.disks / "WINDOWS" / "System32" / "cmd.exe", win16Compilers(_)) +
+    new Win16BinaryHandler
 
-  def apply: Future[Seq[ModuleHandler]] =
-    linuxBinary :: wineBinary :: linuxSimple :: linuxJava :: Nil
+  def generate: Future[Seq[ModuleHandler]] =
+    add(api.disks / "mingw" / "bin" / "gcc.exe", (x: String) => new GCCSourceHandler(x, false, false)) +
+    add(api.disks / "mingw" / "bin" / "g++.exe", (x: String) => new GCCSourceHandler(x, true, false)) +
+    add(api.programFiles / "Borland" / "Delphi7" / "bin" / "dcc32.exe", (x: String) => new DelphiSourceHandler(x)) +
+    add(api.disks / "FPC" / "*" / "bin" / "i386-win32" / "fpc.exe", (x: String) => new FPCSourceHandler(x, false)) +
+    add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
+    add(api.disks / "WINDOWS" / "System32" / "cmd.exe", visualStudio(_)) +
+    java + p7z + new Win32BinaryHandler
+
+  private def win16Compilers(cmd: String): Future[Seq[ModuleHandler]] =
+    add(api.disks / "Compiler" / "BP" / "Bin" / "bpc.exe", (x: String) => new BPCSourceHandler(cmd, x)) +
+    add(api.disks / "Compiler" / "BC" / "Bin" / "bcc.exe",
+      (x: String) => Seq(new BCCSourceHandler(cmd, x, false), new BCCSourceHandler(cmd, x, true)))
+
+  private def visualStudio(cmd: String): Future[Seq[ModuleHandler]] =
+    add(api.programFiles / "Microsoft Visual Studio*" / "Common7" / "Tools" / "vsvars32.bat",
+      (x: String) => Seq(new VisualStudioSourceHandler(cmd, x), new VisualCSharpSourceHandler(cmd, x)))
+
+  private def java: Future[Seq[ModuleHandler]] =
+    add(api.programFiles / "Java" / "jdk*" / "bin" / "java.exe", (x: String) => new JavaBinaryHandler(x, false)) +
+    add(api.programFiles / "Java" / "jdk*" / "bin" / "javac.exe",
+      (javac: String) =>
+        add(api.programFiles / "Java" / "jdk*" / "bin" / "jar.exe", (x: String) => new JavaSourceHandler(javac, x, false)))
+
+  private def p7z: Future[Seq[ModuleHandler]] =
+    add(api.programFiles / "7-Zip" / "7z.exe", new SevenzipHandler(_))
 }
 
 class LinuxBinaryHandler extends BinaryHandler {
@@ -132,14 +86,13 @@ class LinuxBinaryHandler extends BinaryHandler {
   val solutionName = "Solution.bin"
 
   def getTesterParameters(sandbox: Sandbox, name: String, arguments: List[String]) =
-    sandbox.getExecutionParameters((sandbox.path ** name).name, arguments)
+    sandbox.getExecutionParameters((sandbox.path / name).name, arguments)
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
-    sandbox.getExecutionParameters((sandbox.path **"Solution.bin").name, Nil)
+    sandbox.getExecutionParameters((sandbox.path / "Solution.bin").name, Nil)
       .map(_.setSolution.setMemoryLimit(test.memoryLimit)
       .setTimeLimitMicros(test.timeLimitMicros))
 }
-
 
 class Win16BinaryHandler extends BinaryHandler {
   val moduleTypes = "com" :: Nil
@@ -153,10 +106,10 @@ class Win16BinaryHandler extends BinaryHandler {
     //sandbox.getExecutionParameters(cmd, "/S /C \"" + name + "\"")
 
   def getTesterParameters(sandbox: Sandbox, name: String, arguments: List[String]) =
-    sandbox.getExecutionParameters((sandbox.path ** name).name, arguments).map(_.win16)
+    sandbox.getExecutionParameters((sandbox.path / name).name, arguments).map(_.win16)
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
-    w16(sandbox, (sandbox.path **"Solution.exe").name)
+    w16(sandbox, (sandbox.path / "Solution.exe").name)
       .map(_.setSolution.setTimeLimitMicros(test.timeLimitMicros))
 }
 
@@ -166,25 +119,25 @@ class Win32BinaryHandler extends BinaryHandler {
   val solutionName = "Solution.exe"
 
   def getTesterParameters(sandbox: Sandbox, name: String, arguments: List[String]) =
-    sandbox.getExecutionParameters((sandbox.path ** name).name, arguments)
+    sandbox.getExecutionParameters((sandbox.path / name).name, arguments)
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
-    sandbox.getExecutionParameters((sandbox.path **"Solution.exe").name, Nil)
+    sandbox.getExecutionParameters((sandbox.path / "Solution.exe").name, Nil)
       .map(_.setSolution.setMemoryLimit(test.memoryLimit)
       .setTimeLimitMicros(test.timeLimitMicros))
 }
 
 class WineWin32Handler extends BinaryHandler {
   val moduleTypes = "exe" ::  Nil
-  override def internal = true
+  //override def internal = true
   val binaryExt = "exe"
   val solutionName = "Solution.exe"
 
   def getTesterParameters(sandbox: Sandbox, name: String, arguments: List[String]) =
-    sandbox.getExecutionParameters("/usr/bin/wine", (sandbox.path ** name).name :: arguments)
+    sandbox.getExecutionParameters("/usr/bin/wine", (sandbox.path / name).name :: arguments)
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
-    sandbox.getExecutionParameters((sandbox.path **"Solution.exe").name, Nil)
+    sandbox.getExecutionParameters((sandbox.path / "Solution.exe").name, Nil)
       .map(_.setSolution.setMemoryLimit(test.memoryLimit)
       .setTimeLimitMicros(test.timeLimitMicros))
 }
@@ -207,7 +160,7 @@ class DelphiSourceHandler(val compiler: String) extends SimpleCompileHandler {
   val flags: ExecutionArguments = "-DONLINE_JUDGE" :: "-$M33554432,33554432" :: "-cc" :: "Solution.dpr" :: Nil
   val sourceName = "Solution.dpr"
   val binary = "Solution.exe"
-  override val resultType = Some("delphibin")
+  val binaryExt = "delphibin"
   val moduleTypes = "dpr" :: Nil
 }
 
@@ -217,7 +170,7 @@ class FPCSourceHandler(val compiler: String, linux: Boolean) extends SimpleCompi
   def moduleTypes = (linuxPrefix + "pp") :: Nil
   def flags: ExecutionArguments = "-dONLINE_JUDGE" :: "-Cs33554432" :: "-Mdelphi" :: "-O2" :: "-XS" :: "Solution.pp" :: "-oSolution.exe" :: Nil
   def sourceName = "Solution.pp"
-  def binary = "Solution." + binaryExt
+  def binary = "Solution.exe"
 }
 
 
@@ -230,6 +183,7 @@ class VisualStudioSourceHandler(val compiler: String, vcvars: String) extends Si
   val sourceName = "Solution.cxx"
   val binary = "Solution.exe"
   val moduleTypes = "cxx" :: Nil
+  val binaryExt = "exe"
 }
 
 class VisualCSharpSourceHandler(val compiler: String, vcvars: String) extends SimpleCompileHandler {
@@ -241,11 +195,7 @@ class VisualCSharpSourceHandler(val compiler: String, vcvars: String) extends Si
   val sourceName = "Solution.cs"
   val binary = "Solution.exe"
   val moduleTypes = "cs" :: Nil
-}
-
-trait Win16Handler extends SimpleCompileHandler {
-  override def filter(params: LocalExecutionParameters) =
-    params.win16
+  val binaryExt = "exe"
 }
 
 class BPCSourceHandler(val compiler: String, bpc: String) extends SimpleCompileHandler {
@@ -253,7 +203,7 @@ class BPCSourceHandler(val compiler: String, bpc: String) extends SimpleCompileH
   val flags: ExecutionArguments = "/S /C \"" + bpc + " " + CommandLineTools.quoteArguments(bpcflags) + "\""
   val sourceName = "Solution.pas"
   val binary = "Solution.exe"
-  override val resultType = Some("com")
+  val binaryExt = "com"
   val moduleTypes = "pas" :: Nil
 }
 
@@ -264,7 +214,7 @@ class BCCSourceHandler(val compiler: String, bcc: String, cplusplus: Boolean) ex
   val flags: ExecutionArguments = "/S /C \"" + bcc + " " + CommandLineTools.quoteArguments(bccflags) + "\""
   val sourceName = "Solution." + ext
   val binary = "Solution.exe"
-  override val resultType = Some("com")
+  val binaryExt = "com"
 }
 
 class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler {
@@ -306,23 +256,31 @@ class JavaSourceHandler(val javac: String, val jar: String, linux: Boolean) exte
       val buffer = new Array[Byte](entry.getSize.toInt)
       addon.read(buffer)
       sandbox.put(Blobs.storeBinary(buffer), entry.getName)
-    })
+    }).unit
   }
 
   def compile(sandbox: Sandbox) =
-    compileAndCheck(sandbox, javac, javacFlags, "Solution.class")
+    SourceHandler.stepAndCheck("Compilation", sandbox, javac, javacFlags, "Solution.class")
       .flatMap {
-      case (compiled, classPresent) =>
-        if (compiled.success && classPresent) {
-        unpackAddon(sandbox).unit.flatMap { _ =>
-          if (linux) {
-            sandbox.glob(sandbox.sandboxId ** "*.class" :: Nil).map(_.isFile.map(_.basename))
-          } else Future.value("*.class" :: Nil)
-        }.flatMap { classlist =>
-          step("JAR Creation", sandbox, jar, jarFlags ++ classlist)
-        }.map(Seq(compiled, _))
-      } else Future.value(Seq(compiled))
-    }.flatMap(SourceHandler.makeCompileResult(_, sandbox, "Solution.jar", Some(binaryExt)))
+      case (compileStepResult, success) =>
+        if (compileStepResult.success && success) {
+          unpackAddon(sandbox).flatMap { _ =>
+            if (linux) {
+              sandbox.glob("*.class", false).map(_.isFile.map(_.basename))
+            } else Future.value("*.class" :: Nil)
+          }.flatMap { classlist =>
+            SourceHandler.stepAndCheck("JAR Creation", sandbox, jar, jarFlags ++ classlist, "Solution.jar")
+              .map {
+              case (jarResult, success) =>
+                Seq(compileStepResult, jarResult) -> success
+            }
+          }
+        } else
+          Future.value(Seq(compileStepResult), false)
+    }.map {
+      case (steps, success) =>
+        SourceHandler.makeCompileResultAndModule(steps, success, "Solution.jar", binaryExt)
+    }
 }
 
 /*

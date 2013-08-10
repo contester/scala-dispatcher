@@ -7,7 +7,7 @@ import com.twitter.util.Future
 import org.stingray.contester.problems.ProblemDb
 import org.stingray.contester.testing.{SolutionTester, SolutionTestingResult, SingleProgress, ProgressReporter}
 
-case class MoodleSubmit(id: Int, problemId: String, moduleType: String, arrived: Timestamp, source: Array[Byte]) extends Submit {
+case class MoodleSubmit(id: Int, problemId: String, arrived: Timestamp, sourceModule: Module) extends Submit {
   val timestamp = arrived
   override val schoolMode = true
 
@@ -15,7 +15,7 @@ case class MoodleSubmit(id: Int, problemId: String, moduleType: String, arrived:
     "MoodleSubmit(%d)".format(id)
 }
 
-class MoodleSingleResult(client: ConnectionPool, val submit: MoodleSubmit, val testingId: Int) extends SingleProgress {
+class MoodleSingleResult(client: ConnectionPool, val submit: MoodleSubmit, override val testingId: Int) extends SingleProgress {
   def compile(r: CompileResult): Future[Unit] =
     client.execute(
       "insert into mdl_contester_results (testingid, processed, result, test, timex, memory, testeroutput, testererror) values (?, NOW(), ?, ?, ?, ?, ?, ?)",
@@ -41,14 +41,13 @@ class MoodleResultReporter(client: ConnectionPool, val submit: MoodleSubmit) ext
       .map(_.lastInsertId.get).map(new MoodleSingleResult(client, submit, _))
 }
 
-class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester) extends SelectDispatcher[MoodleSubmit](db) {
+class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester, store: GridfsObjectStore) extends SelectDispatcher[MoodleSubmit](db) {
   def rowToSubmit(row: ResultSet): MoodleSubmit =
     MoodleSubmit(
       row.getInt("SubmitId"),
       row.getInt("ProblemId").toString,
-      row.getString("ModuleId"),
       row.getTimestamp("Arrived"),
-      row.getBytes("Solution")
+      new ByteBufferModule(row.getString("ModuleId"), row.getBytes("Solution"))
     )
 
   def selectAllActiveQuery: String =
@@ -80,6 +79,6 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester) 
 
   def run(item: MoodleSubmit): Future[Unit] =
     pdb.getMostRecentProblem("moodle/" + item.problemId).flatMap { problem =>
-      inv(item, item.sourceModule, problem.get, new MoodleResultReporter(db, item), true)
+      inv(item, item.sourceModule, problem.get, new MoodleResultReporter(db, item), true, store, "moodle/", item.id)
     }
 }

@@ -18,16 +18,15 @@ import grizzled.slf4j.Logging
 trait Registry {
   /** This gets called when new server reverse-connects to the dispatcher.
     *
-    * @param channel Connected channel.
-    * @return Channel handler to be inserted as an endpoint into pipeline.
+    * @param client Client for connected channel.
     */
-  def register(channel: Channel): ChannelHandler
+  def register(client: RpcClient): Unit
 
   /** This gets called when channel is ejected from the dispatcher.
     *
-    * @param channel Channel to disconnect.
+    * @param client Client instance.
     */
-  def unregister(channel: Channel): Unit
+  def unregister(client: RpcClient): Unit
 }
 
 /** Exception to be thrown when channel is disconnected.
@@ -141,13 +140,22 @@ private class RpcFramerEncoder extends SimpleChannelDownstreamHandler {
 }
 
 private class RpcRegisterer(registry: Registry) extends SimpleChannelUpstreamHandler {
+  private[this] val channels = {
+    import scala.collection.JavaConverters._
+    new ConcurrentHashMap[Channel, RpcClient]().asScala
+  }
+
   override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
-    ctx.getPipeline.addLast("endpoint", registry.register(e.getChannel))
+    val channel = e.getChannel
+    val client = new RpcClient(channel)
+
+    channels.put(channel, client).foreach(registry.unregister(_))
+    ctx.getPipeline.addLast("endpoint", client)
     super.channelConnected(ctx, e)
   }
 
   override def channelDisconnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
-    registry.unregister(e.getChannel)
+    channels.remove(e.getChannel).foreach(registry.unregister(_))
     super.channelDisconnected(ctx, e)
   }
 }

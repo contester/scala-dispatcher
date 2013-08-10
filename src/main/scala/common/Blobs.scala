@@ -2,12 +2,11 @@ package org.stingray.contester.common
 
 import com.google.protobuf.ByteString
 import com.twitter.util.Future
-import grizzled.slf4j.Logging
 import java.io.File
 import java.security.MessageDigest
 import java.util.zip.{Deflater, Inflater}
-import org.apache.commons.io.{FilenameUtils, FileUtils}
-import org.stingray.contester.proto.Blobs.{Module, Blob}
+import org.apache.commons.io.FileUtils
+import org.stingray.contester.proto.Blobs.Blob
 
 class BlobChecksumMismatch(oldChecksum: String, newChecksum: String) extends Throwable("%s vs. %s".format(oldChecksum, newChecksum))
 
@@ -64,58 +63,6 @@ object Blobs {
     Future(if (file.isFile) Some(storeBinary(FileUtils.readFileToByteArray(file))) else None)
 }
 
-final class ModuleOps(val repr: Module) extends Logging {
-  def getBinary =
-    Blobs.getBinary(repr.getData)
-
-  def setName(name: String) =
-    repr.toBuilder.setName(name).build()
-
-  def clearName =
-    repr.toBuilder.clearName().build()
-
-  def setType(name: String) =
-    repr.toBuilder.setType(name).build()
-
-  def setType(name: Option[String]) =
-    name.map(repr.toBuilder.setType(_).build()).getOrElse(repr)
-
-  def getT =
-    if (repr.getType.isEmpty)
-      Modules.extractType(repr.getName)
-    else
-      repr.getType
-
-  def setTypeFromName = {
-    val t = Modules.extractType(repr.getName)
-    if (t.nonEmpty) {
-      setType(t)
-    } else {
-      repr
-    }
-  }
-}
-
-object Modules {
-  def apply(moduleType: String, moduleData: Array[Byte], moduleName: Option[String] = None) = {
-    val b = Module.newBuilder().setType(moduleType).setData(Blobs.storeBinary(moduleData))
-    moduleName.foreach(b.setName(_))
-    b.build()
-  }
-
-  def apply(blob: Blob): Module =
-    Module.newBuilder().setData(blob).build()
-
-  def extractType(name: String) = FilenameUtils.getExtension(name)
-}
-
 trait SubmitWithModule {
-  def moduleType: String
-  def source: Array[Byte]
-
-  def moduleTypeNoDot =
-    if (moduleType(0) == '.') moduleType.substring(1)
-    else moduleType
-
-  lazy val sourceModule = Modules(moduleTypeNoDot, source)
+  def sourceModule: Module
 }
