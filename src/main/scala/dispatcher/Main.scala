@@ -16,6 +16,7 @@ import org.stingray.contester.testing.SolutionTester
 import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.common.GridfsObjectStore
 import com.mongodb.casbah.gridfs.GridFS
+import com.twitter.util.Await
 
 object Main extends App with Logging {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
@@ -34,6 +35,7 @@ object Main extends App with Logging {
 
   val mongoDb = MongoConnection(mHost).getDB("contester")
   val pdb = new CommonPolygonDb(mongoDb)
+  Await.result(pdb.buildIndexes)
   val objectStore = new GridfsObjectStore(GridFS(mongoDb))
   val invoker = new InvokerRegistry(mHost)
   StatusPageBuilder.data("invoker") = invoker

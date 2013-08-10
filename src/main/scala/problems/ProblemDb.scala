@@ -54,6 +54,12 @@ class CommonProblemDb(mdb: MongoDB) extends SanitizeDb with Logging {
   import collection.JavaConversions._
   val localCache: collection.concurrent.Map[(String, Int), PDBProblem] = new MapMaker().weakValues().makeMap[(String, Int), PDBProblem]()
 
+  def buildIndexes: Future[Unit] =
+    Future {
+      trace("Ensuring indexes on problem db")
+      mdb("manifest").ensureIndex(Map("id" -> 1, "revision" -> 1), "uniqueProblem", true)
+    }
+
   def setProblem(problem: ProblemT, manifest: ProblemManifest) =
     Future {
       trace("Inserting manifest: " + (problem :: manifest))

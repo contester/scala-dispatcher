@@ -14,6 +14,12 @@ trait PolygonDb {
 }
 
 class CommonPolygonDb(mdb: MongoDB) extends CommonProblemDb(mdb) with PolygonDb {
+  override def buildIndexes: Future[Unit] =
+    Future {
+      trace("Ensuring indexes on polygon db")
+      mdb("problem").ensureIndex(Map("id" -> 1, "revision" -> 1), "uniqueProblem", true)
+    }.join(super.buildIndexes).unit
+
   def get[I <: com.google.protobuf.Message](key: String)(implicit manifest: Manifest[I]) =
     Future {
       mfs.findOne(key).map(f => ProtobufTools.createProtobuf[I](f.inputStream)).headOption
