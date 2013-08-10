@@ -68,11 +68,18 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemD
   private[this] val testBase = base / "tests"
   private[this] val tests = 1 to problem.testCount
 
-  private[this] def analyzeLists(x: Iterable[String]) = {
-    val s = x.toSet
-    val m = (((1 to problem.testCount).map(problem.inputName)) ++ List(problem.checkerName)).toSet -- s
-    if (m.nonEmpty) throw new PdbStoreException(m.head)
-    (1 to problem.testCount).filter(i => s(problem.answerName(i)))
+  def statAndSave(sandbox: Sandbox, tester: InvokerRemoteFile, interactor: Option[InvokerRemoteFile]) = {
+    val problemFiles = problemFileList(tester, interactor).map(x => x._1.name(sandbox.invoker.api.pathSeparator) -> x).toMap
+    sandbox.invoker.api.stat(problemFiles.values.map(_._1), true).flatMap { filesToStore =>
+      val shrunkFileList = filesToStore.map(x => problemFiles(x.name))
+      sandbox.getGridfs(shrunkFileList).map { putResult =>
+        val resultSet = putResult.map(x => problemFiles(x.name)).map(_._2).toSet
+        val missing = ((((1 to problem.testCount).map(problem.inputName)) ++ List(problem.checkerName)).toSet -- resultSet)
+        if (missing.nonEmpty)
+          throw new PdbStoreException(missing.head)
+        (1 to problem.testCount).filter(i => resultSet(problem.answerName(i)))
+      }
+    }
   }
 
   private[this] def problemFileList(tester: InvokerRemoteFile, interactor: Option[InvokerRemoteFile]): Iterable[(RemoteFileName, String, Option[String])] =
@@ -83,11 +90,13 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemD
     } ++ interactor.map(intFile => (intFile, problem.interactorName, Some(Module.extractType(intFile.name)))) :+
       (tester, problem.checkerName, Some(Module.extractType(tester.name)))
 
+
+
   private[this] def storeProblem =
     findTester.join(findInteractorOption).flatMap {
       case (tester, interactor) =>
-        sandbox.getGridfs(problemFileList(tester, interactor)).map { lists =>
-          new ProblemManifest(problem.testCount, problem.timeLimitMicros, problem.memoryLimit, problem.stdio, tester.basename, analyzeLists(lists), interactor.map(_.basename))
+        statAndSave(sandbox, tester, interactor).map { answers =>
+          new ProblemManifest(problem.testCount, problem.timeLimitMicros, problem.memoryLimit, problem.stdio, tester.basename, answers, interactor.map(_.basename))
         }
     }
 
