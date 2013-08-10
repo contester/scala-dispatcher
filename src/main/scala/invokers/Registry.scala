@@ -14,6 +14,7 @@ class InvokerRegistry(mongoHost: String) extends Registry with RequestStore[Stri
   }
 
   def register(client: RpcClient): Unit = {
+    trace("Registering client: %s".format(client))
     val invokerClient = new InvokerRpcClient(client)
     invokerClient.identify("palevo", mongoHost, "contester")
       .map(new InvokerAPI(_, invokerClient))
