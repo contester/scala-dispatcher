@@ -53,8 +53,8 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     new Win16BinaryHandler
 
   def generate: Future[Seq[ModuleHandler]] =
-    add(api.disks / "mingw" / "bin" / "gcc.exe", (x: String) => new GCCSourceHandler(x, false, false)) +
-    add(api.disks / "mingw" / "bin" / "g++.exe", (x: String) => new GCCSourceHandler(x, true, false)) +
+    add(api.disks / "mingw32" / "bin" / "gcc.exe", (x: String) => new GCCSourceHandler(x, false, false)) +
+    add(api.disks / "mingw32" / "bin" / "g++.exe", (x: String) => new GCCSourceHandler(x, true, false)) +
     add(api.programFiles / "Borland" / "Delphi7" / "bin" / "dcc32.exe", (x: String) => new DelphiSourceHandler(x)) +
     add(api.disks / "FPC" / "*" / "bin" / "i386-win32" / "fpc.exe", (x: String) => new FPCSourceHandler(x, false)) +
     add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
