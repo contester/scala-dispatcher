@@ -5,6 +5,7 @@ import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.problems
 import problems._
 import org.stingray.contester.utils.ScannerCache
+import java.net.URL
 
 class ProblemByPid(client: SpecializedClient, pdb: PolygonDb) extends ScannerCache[ProblemURL, PolygonProblem, PolygonProblem] {
   def nearGet(key: ProblemURL): Future[Option[PolygonProblem]] =
@@ -19,15 +20,15 @@ class ProblemByPid(client: SpecializedClient, pdb: PolygonDb) extends ScannerCac
   override val farScan: Boolean = true
 }
 
-class ContestByPid(client: SpecializedClient, pdb: PolygonDb) extends ScannerCache[Int, ContestDescription, ContestDescription] {
-  def nearGet(key: Int): Future[Option[ContestDescription]] =
-    pdb.getContestDescription(key)
+class ContestScanner(pdb: PolygonDb) extends ScannerCache[URL, ContestDescription, ContestDescription] {
+  def nearGet(key: URL): Future[Option[ContestDescription]] =
+    pdb.getContestDescription(URL)
 
   def nearPut(key: Int, value: ContestDescription): Future[ContestDescription] =
     pdb.setContestDescription(key, value).map(_ => value)
 
   def farGet(key: Int): Future[ContestDescription] =
-    client.getContest(key)
+    PolygonClient.getContest(key)
 
   override val farScan: Boolean = true
 }

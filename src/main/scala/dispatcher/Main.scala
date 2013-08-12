@@ -9,7 +9,7 @@ import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
 import org.stingray.contester.invokers.InvokerRegistry
-import org.stingray.contester.polygon.{CommonPolygonDb, PolygonClient}
+import org.stingray.contester.polygon.CommonPolygonDb
 import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.streum.configrity.Configuration
 import org.stingray.contester.testing.SolutionTester
@@ -17,6 +17,7 @@ import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.common.GridfsObjectStore
 import com.mongodb.casbah.gridfs.GridFS
 import com.twitter.util.Await
+import com.mongodb.casbah.commons.MongoDBObject
 
 object Main extends App with Logging {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
@@ -34,6 +35,7 @@ object Main extends App with Logging {
   val httpStatus = HttpStatus.bind(config[Int]("dispatcher.port"))
 
   val mongoDb = MongoConnection(mHost).getDB("contester")
+  mongoDb.getCollection("submits").ensureIndex(MongoDBObject("namespace" -> 1, "id" -> 1), "namespaceId", true)
   val pdb = new CommonPolygonDb(mongoDb)
   Await.result(pdb.buildIndexes)
   val objectStore = new GridfsObjectStore(GridFS(mongoDb))
@@ -52,7 +54,7 @@ object Main extends App with Logging {
     config.get[List[String]]("dispatcher.standard").map { names =>
       val client = PolygonClient(config.detach("polygon"))
       val problems = new ProblemData(client, pdb, invoker)
-      val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester, objectStore)
+      val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester, objectStore, mongoDb)
 
       names.foreach { name =>
         if (config.contains(name + ".db")) {

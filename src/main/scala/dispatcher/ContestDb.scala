@@ -8,9 +8,10 @@ import org.stingray.contester.db.ConnectionPool
 import org.stingray.contester.problems.Problem
 import org.stingray.contester.testing.{CombinedResultReporter, SolutionTester}
 import org.stingray.contester.common.GridfsObjectStore
+import com.mongodb.casbah.MongoDB
 
 class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
-                   val store: GridfsObjectStore, val storeId: String) extends Logging {
+                   val store: GridfsObjectStore, val storeId: String, val mongoDb: MongoDB) extends Logging {
   val pscanner = new ContestTableScanner(pdata, dbclient)
   val dispatcher = new SubmitDispatcher(this)
   val evaldispatcher = new CustomTestDispatcher(dbclient, invoker, store, storeId)
@@ -36,13 +37,13 @@ case class DbConfig(host: String, db: String, username: String, password: String
     "DbConfig(\"%s\", \"%s\", \"%s\", \"%s\")".format(host, db, username, "hunter2")
 }
 
-class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: SolutionTester, val store: GridfsObjectStore) extends Logging {
+class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: SolutionTester, val store: GridfsObjectStore, val mongoDb: MongoDB) extends Logging {
   val dispatchers = new mutable.HashMap[DbConfig, DbDispatcher]()
   val scanners = new mutable.HashMap[DbDispatcher, Future[Unit]]()
 
   def add(conf: DbConfig) = {
     info(conf)
-    val d = new DbDispatcher(conf.createConnectionPool, pdata, new File(basePath, conf.db), invoker, store, conf.db)
+    val d = new DbDispatcher(conf.createConnectionPool, pdata, new File(basePath, conf.db), invoker, store, conf.db, mongoDb)
     scanners(d) = d.start
   }
 

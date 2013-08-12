@@ -35,22 +35,21 @@ trait Problem extends immutable.SortedMap[Int, Test] {
 }
 
 trait ProblemT {
-  def id: String
-  def revision: Int
+  def pdbId: String
 
-  override def toString = "ProblemT(%s, %d)".format(id, revision)
+  override def toString = "ProblemT(%s)".format(pdbId)
 
   override def hashCode() =
-    id.hashCode() + revision.hashCode()
+    pdbId.hashCode
 
   override def equals(obj: Any): Boolean = obj match {
-    case other: ProblemT => (id == other.id) && (revision == other.revision)
+    case other: ProblemT => pdbId == other.pdbId
     case _ => super.equals(obj)
   }
 
-  def destName = id.replace('/', '.').replace(':', '.') + "." + revision.toString
+  def destName = pdbId.replace('/', '.').replace(':', '.')
   def zipName = destName + ".zip"
-  def prefix = Seq("problem", id, revision.toString).mkString("/")
+  def prefix = Seq("problem", pdbId).mkString("/")
   def dbName(suffix: String) =
     prefix + "/" + suffix
 
@@ -64,7 +63,7 @@ trait ProblemT {
   def interactorName = dbName("interactor")
 }
 
-case class SimpleProblemT(override val id: String, override val revision: Int) extends ProblemT
+case class SimpleProblemT(override val pdbId: String) extends ProblemT
 
 class PDBProblem(val pdb: ProblemDb, val id: ProblemT, val testCount: Int, val timeLimitMicros: Long,
                  val memoryLimit: Long, val testerName: String, val answers: Set[Int],
@@ -78,7 +77,7 @@ class PDBProblem(val pdb: ProblemDb, val id: ProblemT, val testCount: Int, val t
 
   def interactive = interactorName.isDefined
 
-  override def toString = "PDBProblem(%s, %d)".format(id.id, id.revision)
+  override def toString = "PDBProblem(%s, %d)".format(id.pdbId)
 }
 
 object PDBProblem {
@@ -122,3 +121,17 @@ class PDBTest(val problem: PDBProblem, val testId: Int) extends Test with TestLi
 
   def stdio: Boolean = problem.stdio
 }
+
+// New problem handle system
+// polygon+http(s)://....[?revision=X]
+// (will handle contests as well)
+
+trait ProblemHandle {
+  def toProblemURI: String
+}
+/*
+object ProblemHandle {
+  def apply(uri: String): Option[ProblemHandle] =
+    if (uri.startsWith("polygon+"))
+
+}*/

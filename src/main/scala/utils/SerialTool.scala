@@ -1,7 +1,9 @@
 package org.stingray.contester.utils
 
 import com.twitter.util.{Try, Future}
-import collection.mutable
+import com.google.common.cache.{CacheLoader, Cache, CacheBuilder}
+import java.util.concurrent.Callable
+import com.google.common.util.concurrent.{SettableFuture, ListenableFuture}
 
 /** Memoizator/serializator makes sure there's only one outstanding async operation per key.
   *
@@ -11,10 +13,7 @@ import collection.mutable
   * @tparam ValueType Type of the value
   */
 class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[ValueType], Future[ValueType]] {
-  /** Map with outstanding requests. Synchronized.
-    * It's better to use ConcurrentMap, of course. But how I'm going to do that?
-    */
-  private val data = new mutable.HashMap[KeyType, Future[ValueType]]()
+  private val data: Cache[KeyType, Future[ValueType]] = CacheBuilder.newBuilder().build()
 
   /** Removes the key and returns the value.
     *
@@ -23,9 +22,7 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[Val
     * @return v.
     */
   private[this] def removeKey(key: KeyType, v: Try[ValueType]) = {
-    synchronized {
-      data.remove(key)
-    }
+    data.invalidate(key)
     Future.const(v)
   }
 
@@ -36,12 +33,50 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[Val
     * @return Result of the async op.
     */
   def apply(key: KeyType, get: () => Future[ValueType]): Future[ValueType] =
-    synchronized {
-      if (data.contains(key)) {
-        data(key)
-      } else
-        data(key) = get()
-        data(key).transform(removeKey(key, _))
+    data.get(key, new Callable[Future[ValueType]] {
+      def call(): Future[ValueType] = {
+        val result = get()
+        result.transform(removeKey(key, _))
+      }
+    })
+}
+
+class SimpleCache[KeyType, ValueType](underlying: (KeyType) => Future[ValueType]) extends CacheLoader[KeyType, Future[ValueType]] {
+  def load(key: KeyType): Future[ValueType] =
+    underlying(key)
+
+  override def reload(key: KeyType, oldValue: Future[ValueType]): ListenableFuture[Future[ValueType]] = {
+    val result = new SettableFuture[Future[ValueType]]
+    underlying(key)
+      .onSuccess(v => result.set(Future.value(v)))
+      .onFailure(e => result.setException(e))
+    result
+  }
+}
+
+// CachingLayer
+//   - get
+//   - farGet
+//   - put
+//   - reload
+
+abstract class CachingLayer[KeyType, NearType, FarType] extends Function[KeyType, Future[NearType]] {
+  def nearGet(key: KeyType): Future[Option[NearType]]
+  def nearPut(key: KeyType, value: FarType): Future[NearType]
+  def farGet(key: KeyType): Future[FarType]
+
+  /** This gets called to fetch value from storage and put it to L2.
+    *
+    * @param key Key to fetch
+    * @return Value, converted after putting to L2.
+    */
+  def refresh(key: KeyType): Future[NearType] =
+    farGet(key).flatMap(x => nearPut(key, x))
+
+  def apply(key: KeyType): Future[NearType] =
+    nearGet(key).flatMap { optValue =>
+      optValue.map(Future.value(_))
+        .getOrElse(refresh(key))
     }
 }
 
@@ -54,7 +89,7 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[Val
   * @tparam ValueType Values that we return.
   * @tparam SomeType Type of data in the data source
   */
-abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyType, Future[ValueType]] {
+abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyType, Future[ValueType]] with CacheLoader[KeyType, Future[ValueType]] {
   /** Get data from L2, or return None if there's nothing.
     *
     * @param key Key to look up.
@@ -85,12 +120,18 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
   /** L1 cache.
     *
     */
-  private val localCache = new mutable.HashMap[KeyType, ValueType]()
+  private val localCache = CacheBuilder.newBuilder().build(this)
 
-  /** Serializer for gets.
-    *
-    */
-  private val serialHash = new SerialHash[KeyType, ValueType]()
+  def load(key: KeyType): Future[ValueType] =
+    getValue(key)
+
+  override def reload(key: KeyType, oldValue: Future[ValueType]): ListenableFuture[Future[ValueType]] = {
+    val result = new SettableFuture[Future[ValueType]]
+    fetchValue(key)
+      .onSuccess(v => result.set(Future.value(v)))
+      .onFailure(e => result.setException(e))
+    result
+  }
 
   /** This gets called to fetch value from storage and put it to L2.
     *
@@ -113,16 +154,6 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
       }.getOrElse(fetchValue(key))
     }
 
-  /** Set value in local cache.
-    *
-    * @param key Key.
-    * @param value Value.
-    */
-  private[this] def setLocal(key: KeyType, value: ValueType): Unit =
-    synchronized {
-      localCache(key) = value
-    }
-
   /** Throw everything away from local cache, except for keyset.
     *
     * @param keyset Keys to keep
@@ -132,26 +163,13 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
       localCache.retain((k, v) => keyset(k))
     }
 
-  /** Use given function to fetch a value for a given key, use serialHash with it.
-    *
-    * @param kv Fetch function to use.
-    * @param key Key.
-    * @return Fetched value.
-    */
-  private[this] def fetchAndSet(kv: KeyType => Future[ValueType], key: KeyType) =
-    serialHash(key, () => kv(key).onSuccess(setLocal(key, _)))
-
   /** Transparent fetch value function.
     *
     * @param key Key to fetch.
     * @return Value.
     */
   def apply(key: KeyType): Future[ValueType] =
-    synchronized {
-      localCache.get(key).map { v =>
-        Future.value(v)
-      }.getOrElse(fetchAndSet(getValue, key))
-    }
+    localCache.get(key)
 
   /** Fetch values for a set of keys, discarding those not in the set.
     *
@@ -159,6 +177,7 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
     * @return Values.
     */
   def scan(keys: Iterable[KeyType]) =
+    localCache.
     Future.collect(keys.map(fetchAndSet(if (farScan) fetchValue else getValue, _)).toSeq).onSuccess { vals =>
       setKeys(keys.toSet)
     }

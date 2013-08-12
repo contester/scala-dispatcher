@@ -10,7 +10,7 @@ trait PolygonDb {
   def getContestDescription(contestId: Int): Future[Option[ContestDescription]]
 
   def setProblemDescription(problem: PolygonProblem): Future[Unit]
-  def getProblemDescription(problem: ProblemURL): Future[Option[PolygonProblem]]
+  def getProblemDescription(problem: PolygonProblemHandle): Future[Option[PolygonProblem]]
 }
 
 class CommonPolygonDb(mdb: MongoDB) extends CommonProblemDb(mdb) with PolygonDb {
@@ -40,24 +40,24 @@ class CommonPolygonDb(mdb: MongoDB) extends CommonProblemDb(mdb) with PolygonDb 
   def getContestDescription(contestId: Int) =
     Future {
       mdb("contest").findOne(MongoDBObject("_id" -> contestId))
-        .map(i => i.getAs[String]("raw").map(s => PolygonContest(PolygonClient.asXml(s)))).flatten.headOption
+        .map(i => i.getAs[String]("raw").map(s => new ContestDescription(PolygonClient.asXml(s)))).flatten.headOption
     }
 
   def setProblemDescription(problem: PolygonProblem) =
     Future {
       mdb("problem").insert(
         MongoDBObject(
-          "id" -> problem.shortUrl,
+          "id" -> problem.url.toString,
           "revision" -> problem.revision,
           "raw" -> problem.source.buildString(false)
         )
       )
     }
 
-  def getProblemDescription(problem: ProblemURL) =
+  def getProblemDescription(problem: PolygonProblemHandle) =
     Future {
-      mdb("problem").find(MongoDBObject("id" -> problem.shortId)).sort(MongoDBObject("revision" -> -1))
+      mdb("problem").find(MongoDBObject("id" -> problem.url.toString)).sort(MongoDBObject("revision" -> -1))
         .take(1).toIterable.headOption
-        .map(i => i.getAs[String]("raw").map(s => PolygonProblem(PolygonClient.asXml(s), problem))).flatten.headOption
+        .map(i => i.getAs[String]("raw").map(s => PolygonProblem(PolygonClient.asXml(s), problem.url))).flatten.headOption
     }
 }
