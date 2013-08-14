@@ -7,6 +7,10 @@ import problems._
 import org.stingray.contester.utils.ScannerCache
 import java.net.URL
 
+
+
+
+
 class ProblemByPid(client: SpecializedClient, pdb: PolygonDb) extends ScannerCache[ProblemURL, PolygonProblem, PolygonProblem] {
   def nearGet(key: ProblemURL): Future[Option[PolygonProblem]] =
     pdb.getProblemDescription(key)

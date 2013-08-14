@@ -7,44 +7,7 @@ import org.apache.http.NameValuePair
 import org.apache.http.message.BasicNameValuePair
 import com.google.common.base.Charsets
 
-class PolygonAuthInfo(val username: String, val password: String) {
-  def asMap = Map(
-    "username" -> username,
-    "password" -> password
-  )
-}
-
-trait PolygonURL {
-  def url: URL
-  def authInfo: Option[PolygonAuthInfo]
-
-  def params: Map[String, String]
-
-  def withUrl(newUrl: URL) =
-    new SimplePolygonURI(newUrl, authInfo, params)
-}
-
-class PolygonBase(val shortName: String, val url: URL, username: String, password: String) extends PolygonURL {
-  val authInfo: Option[PolygonAuthInfo] = Some(new PolygonAuthInfo(username, password))
-  def params: Map[String, String] = Map.empty
-}
-
 object PolygonURL {
-  private def getAuthUserInfo(url: URL) =
-    Option(url.getUserInfo).flatMap { userInfo =>
-      val splits = userInfo.split(':')
-      if (splits.length == 2)
-        Some(new PolygonAuthInfo(splits(0), splits(1)))
-      else
-        None
-    }
-
-  private def getParamUserInfo(params: Map[String, String]) =
-    if (params.contains("username") && params.contains("password"))
-      Some(new PolygonAuthInfo(params("username"), params("password")))
-    else
-      None
-
   def getParams(url: URL) = {
     import collection.JavaConversions._
     URLEncodedUtils.parse(url.toURI, "UTF-8").map(x => x.getName -> x.getValue).toMap
@@ -65,20 +28,26 @@ object PolygonURL {
 
   def apply(url: URL) = {
     val params = getParams(url)
-    val authInfo = getAuthUserInfo(url).orElse(getParamUserInfo(params))
     val revision = params.get("revision").map(_.toInt)
 
-    new PolygonProblemHandle(stripQuery(url), revision, authInfo)
+    new PolygonProblemHandle(stripQuery(url), revision, None)
   }
 
   def shortId(url: URL) =
    url.getPath.split("/").takeRight(2).mkString("/")
 }
 
-class SimplePolygonURI(val url: URL, val authInfo: Option[PolygonAuthInfo], val params: Map[String, String]) extends PolygonURL
+class PolygonProblemFile(problem: PolygonProblemHandle) extends PolygonClientRequest {
+  def objectUrl: URL = problem.url
 
-class PolygonProblemHandle(val url: URL, val revision: Option[Int], val authInfo: Option[PolygonAuthInfo]) extends ProblemHandle with PolygonURL {
+  def params: Iterable[(String, String)] = problem.params
+}
+
+class PolygonProblemHandle(val url: URL, val revision: Option[Int]) extends ProblemHandle with PolygonClientRequest with PolygonContestKey {
+  val objectUrl = new URL(url, "problem.xml")
   val params = revision.map("revision" -> _.toString)
+
+  def file = new PolygonProblemFile(this)
 
   def toProblemURI: String = (Seq("polygon+", url.toString) ++ revision.map("?revision=%d".format(_)).toSeq).mkString
 }

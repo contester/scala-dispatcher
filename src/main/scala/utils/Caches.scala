@@ -2,6 +2,8 @@ package org.stingray.contester.utils
 
 import com.twitter.util.{Future, Time}
 import com.twitter.finagle.{Service, Filter}
+import com.google.common.cache.CacheLoader
+import com.google.common.collect.MapMaker
 
 trait CachableRequest {
   def isRefresh: Boolean
@@ -27,4 +29,28 @@ class CachingFilter[K <: CachableRequest, V <: CachableValue](cache: Cache[K, V]
       refresh(request, service)
     else
       cache.get(request).flatMap(_.map(Future.value).getOrElse(refresh(request, service)))
+}
+
+abstract class ScannerCache2[KeyType, LocalValueType, RemoteValueType] {
+  val localMap = {
+    import scala.collection.JavaConverters._
+    new MapMaker().makeMap[KeyType, (LocalValueType, Time)].asScala
+  }
+
+  def nearGet(key: KeyType): Future[(LocalValueType, Time)]
+
+  object LocalLoader extends CacheLoader[KeyType, Future[(LocalValueType, Time)]] {
+    def load(key: KeyType): Future[(LocalValueType, Time)] = ???
+
+  }
+
+}
+
+trait WatcherReceiver[KeyType, ValueType] {
+  def receive(values: Iterable[(KeyType, ValueType)]): Future[Unit]
+}
+
+trait Watcher[KeyType, ValueType] {
+  def get(key: KeyType): Future[ValueType]
+  def watch(receiver: WatcherReceiver[KeyType, ValueType], keys: Iterable[KeyType])
 }

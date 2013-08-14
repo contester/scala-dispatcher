@@ -2,62 +2,56 @@ package org.stingray.contester.polygon
 
 import com.twitter.util.Future
 import com.mongodb.casbah.Imports._
-import org.stingray.contester.problems.CommonProblemDb
-import org.stingray.contester.utils.ProtobufTools
+import java.net.URL
 
-trait PolygonDb {
-  def setContestDescription(contestId: Int, contest: ContestDescription): Future[Unit]
-  def getContestDescription(contestId: Int): Future[Option[ContestDescription]]
-
-  def setProblemDescription(problem: PolygonProblem): Future[Unit]
-  def getProblemDescription(problem: PolygonProblemHandle): Future[Option[PolygonProblem]]
+trait PolygonCacheKey {
+  def url: URL
 }
 
-class CommonPolygonDb(mdb: MongoDB) extends CommonProblemDb(mdb) with PolygonDb {
-  override def buildIndexes: Future[Unit] =
-    Future {
-      trace("Ensuring indexes on polygon db")
-      mdb("problem").ensureIndex(Map("id" -> 1, "revision" -> 1), "uniqueProblem", true)
-    }.join(super.buildIndexes).unit
+trait PolygonContestKey extends PolygonCacheKey
+trait PolygonProblemKey extends PolygonCacheKey {
+  def revision: Option[Int]
+}
 
-  def get[I <: com.google.protobuf.Message](key: String)(implicit manifest: Manifest[I]) =
-    Future {
-      mfs.findOne(key).map(f => ProtobufTools.createProtobuf[I](f.inputStream)).headOption
+class PolygonCache(mdb: MongoDB) {
+  private def findProblem(problem: PolygonProblemKey) =
+    if (problem.revision.isDefined)
+      mdb("problem").findOne("id" -> problem.url.toString, "revision" -> problem.revision.get)
+    else
+      mdb("problem").find("id" -> problem.url.toString).sort("revision" -> -1).take(1).toIterable.headOption
+
+  def get(key: PolygonCacheKey): Future[Option[String]] =
+    key match {
+      case contest: PolygonContestKey =>
+        Future {
+          mdb("contest").findOne("_id" -> contest.url.toString)
+            .flatMap(_.getAs[String]("raw"))
+        }
+      case problem: PolygonProblemKey =>
+        Future {
+          findProblem(problem)
+            .flatMap(_.getAs[String]("raw"))
+        }
+      case _ =>
+        Future.None
     }
-
-  def set(key: String, value: com.google.protobuf.MessageLite) =
-    Future {
-      mfs(value.toByteArray) { fh =>
-        fh.filename = key
-      }
-    }
-
-  def setContestDescription(contestId: Int, contest: ContestDescription) =
-    Future {
-      mdb("contest").save(MongoDBObject("_id" -> contestId, "raw" -> contest.source.buildString(false)))
-    }
-
-  def getContestDescription(contestId: Int) =
-    Future {
-      mdb("contest").findOne(MongoDBObject("_id" -> contestId))
-        .map(i => i.getAs[String]("raw").map(s => new ContestDescription(PolygonClient.asXml(s)))).flatten.headOption
-    }
-
-  def setProblemDescription(problem: PolygonProblem) =
-    Future {
-      mdb("problem").insert(
-        MongoDBObject(
-          "id" -> problem.url.toString,
-          "revision" -> problem.revision,
-          "raw" -> problem.source.buildString(false)
-        )
-      )
-    }
-
-  def getProblemDescription(problem: PolygonProblemHandle) =
-    Future {
-      mdb("problem").find(MongoDBObject("id" -> problem.url.toString)).sort(MongoDBObject("revision" -> -1))
-        .take(1).toIterable.headOption
-        .map(i => i.getAs[String]("raw").map(s => PolygonProblem(PolygonClient.asXml(s), problem.url))).flatten.headOption
+  def put(key: PolygonCacheKey, value: String): Future[Unit] =
+    key match {
+      case contest: PolygonContestKey =>
+        Future {
+          mdb("contest").save(Map("_id" -> contest.url.toString, "raw" -> value))
+        }
+      case problem: PolygonProblemKey if problem.revision.isDefined =>
+        Future {
+          mdb("problem").insert(
+            Map(
+              "id" -> problem.url.toString,
+              "revision" -> problem.revision.get,
+              "raw" -> value
+            )
+          )
+        }
+      case _ =>
+        Future.Done
     }
 }

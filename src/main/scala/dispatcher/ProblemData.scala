@@ -8,7 +8,7 @@ import org.stingray.contester.utils.Utils
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.problems.Problem
 
-class ProblemData(pclient: SpecializedClient, pdb: CommonPolygonDb, invoker: InvokerRegistry) extends Logging {
+class ContesterProblemData(invoker: InvokerRegistry) extends Logging {
   private val contestByPid = new ContestByPid(pclient, pdb)
   private val problemByPid = new ProblemByPid(pclient, pdb)
   private val sanitizer = PolygonSanitizer(pdb, pclient, invoker)
