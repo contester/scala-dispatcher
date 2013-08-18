@@ -1,6 +1,5 @@
 package org.stingray.contester.polygon
 
-import collection.mutable.HashMap
 import com.google.common.base.Charsets
 import com.twitter.finagle.{Filter, Service}
 import com.twitter.finagle.builder.ClientBuilder
@@ -11,7 +10,7 @@ import java.net.{URLEncoder, InetSocketAddress, URL}
 import java.util.concurrent.TimeUnit
 import org.jboss.netty.buffer.ChannelBuffers._
 import org.jboss.netty.handler.codec.http.{HttpResponseStatus, HttpResponse, HttpRequest}
-import xml.{XML, Elem}
+import xml.Elem
 import org.stingray.contester.engine.ProblemDescription
 import com.google.common.cache.{CacheLoader, CacheBuilder}
 import scala.util.matching.Regex
@@ -63,70 +62,11 @@ class ContestHandle(val url: URL) extends PolygonClientRequest with PolygonConte
 }
 
 object PolygonClient extends Logging {
-  private val polygonBaseRe = new Regex("^(.*/)(c/\\d+/?.*|p/[^/]+/[^/]/?.*)$")
-
-  private object PolygonClientCacheLoader extends CacheLoader[InetSocketAddress, Service[HttpRequest, HttpResponse]] {
-    def load(key: InetSocketAddress): Service[HttpRequest, HttpResponse] = ClientBuilder()
-      .codec(Http().maxResponseSize(new StorageUnit(64*1024*1024)))
-      .hosts(key)
-      .hostConnectionLimit(1)
-      .tcpConnectTimeout(Duration(5, TimeUnit.SECONDS))
-      .build()
-  }
-
-  private val connCache = CacheBuilder.newBuilder()
-    .expireAfterAccess(30, TimeUnit.MINUTES)
-    .build(PolygonClientCacheLoader)
-
-  val bases = new HashMap[String, PolygonBase]()
-
-  def addPolygon(base: PolygonBase) =
-    bases.put(base.url.toString, base)
-
-  def extractPolygonBase(url: URL) =
-    polygonBaseRe.findFirstMatchIn(url.getPath).map(_.group(1)).map(new URL(url.getProtocol, url.getHost, url.getPort, _))
-
-  private def encodeFormData(data: Iterable[(String, String)]) =
-    (for ((k, v) <- data) yield URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8") ).mkString("&")
-
-  private def handleHttpResponse(response: HttpResponse): HttpResponse =
-    if (response.getStatus == HttpResponseStatus.OK)
-      response
-    else
-      throw new PolygonClientHttpException(response.getStatus.getReasonPhrase)
-
-  private def get(url: URL, formData: Iterable[(String, String)]) = {
-    val postData = encodeFormData(formData)
-    val addr = new InetSocketAddress(url.getHost, if (url.getPort == -1) url.getDefaultPort else url.getPort)
-    val clientService = connCache(addr)
-
-    trace("Sending request for url %s".format(url.toString))
-
-    val request = RequestBuilder()
-      .url(url)
-      .setHeader("Content-Type", MediaType.WwwForm)
-      .setHeader("Content-Length", postData.length().toString)
-      .buildPost(wrappedBuffer(postData.getBytes(Charsets.UTF_8)))
-
-    clientService(request).map(handleHttpResponse(_))
-  }
-
-  def getOnly(url: URL, authInfo: Option[PolygonAuthInfo], params: Iterable[(String, String)]) =
-    get(url, params ++ authInfo.flatMap(_.asMap))
-
-  def get(url: URL, authInfo: Option[PolygonAuthInfo], params: Map[String, String]): Future[(HttpResponse, Option[PolygonBase])] = {
-    val baseOpt = extractPolygonBase(url).flatMap(x => bases.get(x.toString))
-    getOnly(url, authInfo.orElse(baseOpt.flatMap(_.authInfo)), params).map(_ -> baseOpt)
-  }
-
   def asPage(x: ChannelBuffer) =
     x.toString(Charsets.UTF_8)
 
   def asFile(x: HttpResponse) =
     x.getContent
-
-  def asXml(x: String) =
-    XML.loadString(x)
 
   def asByteArray(buffer: ChannelBuffer) = {
     val bufferBytes = new Array[Byte](buffer.readableBytes())
