@@ -49,5 +49,12 @@ class PolygonProblemHandle(val url: URL, val revision: Option[Int]) extends Prob
 
   def file = new PolygonProblemFile(this)
 
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case other: PolygonProblemHandle =>
+        url.equals(other.url) && revision == other.revision
+      case _ => super.equals(obj)
+    }
+
   def toProblemURI: String = (Seq("polygon+", url.toString) ++ revision.map("?revision=%d".format(_)).toSeq).mkString
 }

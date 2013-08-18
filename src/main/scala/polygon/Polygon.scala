@@ -36,6 +36,14 @@ class PolygonAuthException(url: URL) extends Throwable(url.toString)
 trait PolygonClientRequest {
   def objectUrl: URL
   def params: Iterable[(String, String)]
+
+  override def equals(obj: scala.Any): Boolean =
+    obj match {
+      case other: PolygonClientRequest =>
+        objectUrl.equals(other.objectUrl) && params.sameElements(other.params)
+      case _ =>
+        super.equals(obj)
+    }
 }
 
 class PolygonAuthenticatedRequest(val url: URL, sourceParams: Iterable[(String, String)], authInfo: PolygonAuthInfo) {
@@ -45,6 +53,13 @@ class PolygonAuthenticatedRequest(val url: URL, sourceParams: Iterable[(String, 
 class ContestHandle(val url: URL) extends PolygonClientRequest with PolygonContestKey {
   val objectUrl = new URL(url, "contest.xml")
   val params = Nil
+
+  override def equals(obj: scala.Any): Boolean =
+    obj match {
+      case other: ContestHandle =>
+        objectUrl.equals(other)
+      case _ => super.equals(obj)
+    }
 }
 
 object PolygonClient extends Logging {
@@ -104,11 +119,8 @@ object PolygonClient extends Logging {
     getOnly(url, authInfo.orElse(baseOpt.flatMap(_.authInfo)), params).map(_ -> baseOpt)
   }
 
-  def get(url: PolygonURL) =
-    get(url.url, url.authInfo, url.params)
-
-  def asPage(x: HttpResponse) =
-    x.getContent.toString(Charsets.UTF_8)
+  def asPage(x: ChannelBuffer) =
+    x.toString(Charsets.UTF_8)
 
   def asFile(x: HttpResponse) =
     x.getContent
@@ -116,25 +128,11 @@ object PolygonClient extends Logging {
   def asXml(x: String) =
     XML.loadString(x)
 
-  def getXml(url: PolygonURL) =
-    get(url).map(x => asXml(asPage(x._1)) -> x._2)
-
-  def getProblem(url: PolygonProblemHandle) =
-    getXml(url.withUrl(new URL(url.url, "problem.xml"))).map(x => PolygonProblem(x._1, url))
-
-  def getContest(url: PolygonURL) =
-    getXml(url.withUrl(new URL(url.url, "contest.xml"))).map(x => new ContestDescription(x._1))
-
-  def getProblemFile(url: PolygonProblemHandle) =
-    get(url).map(x => asFile(x._1)).map { buffer =>
-      val bufferBytes = new Array[Byte](buffer.readableBytes())
-      buffer.getBytes(buffer.readerIndex(), bufferBytes)
-      trace("Download of " + url + " finished.")
-      bufferBytes
-    }
-
-//  def apply(conf: Configuration): SpecializedClient =
-//    apply(conf[String]("url", ""), conf[String]("login"), conf[String]("password"))
+  def asByteArray(buffer: ChannelBuffer) = {
+    val bufferBytes = new Array[Byte](buffer.readableBytes())
+    buffer.getBytes(buffer.readerIndex(), bufferBytes)
+    bufferBytes
+  }
 }
 
 object CachedConnectionHttpService extends Service[HttpRequest, HttpResponse] {
@@ -158,28 +156,7 @@ object CachedConnectionHttpService extends Service[HttpRequest, HttpResponse] {
   }
 }
 
-trait ChannelBufferOrString {
-  def asString: String
-  def asFile: Array[Byte]
-}
-
-class ChannelBufferWrapped(buffer: ChannelBuffer) extends ChannelBufferOrString {
-  def asString: String = buffer.toString(Charsets.UTF_8)
-
-  def asFile: Array[Byte] = {
-    val bufferBytes = new Array[Byte](buffer.readableBytes())
-    buffer.getBytes(buffer.readerIndex(), bufferBytes)
-    bufferBytes
-  }
-}
-
-class StringEntryWrapped(text: String) extends ChannelBufferOrString {
-  def asString: String = text
-
-  def asFile: Array[Byte] = ???
-}
-
-class BasicPolygonFilter extends Filter[PolygonAuthenticatedRequest, ChannelBufferOrString, HttpRequest, HttpResponse] {
+class BasicPolygonFilter extends Filter[PolygonAuthenticatedRequest, ChannelBuffer, HttpRequest, HttpResponse] {
   private def encodeFormData(data: Iterable[(String, String)]) =
     (for ((k, v) <- data) yield URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8") ).mkString("&")
 
@@ -189,7 +166,7 @@ class BasicPolygonFilter extends Filter[PolygonAuthenticatedRequest, ChannelBuff
     else
       throw new PolygonClientHttpException(response.getStatus.getReasonPhrase)
 
-  def apply(request: PolygonAuthenticatedRequest, service: Service[HttpRequest, HttpResponse]): Future[ChannelBufferOrString] = {
+  def apply(request: PolygonAuthenticatedRequest, service: Service[HttpRequest, HttpResponse]): Future[ChannelBuffer] = {
     val postData = encodeFormData(request.params)
     val httpRequest = RequestBuilder()
       .url(request.url)
@@ -197,11 +174,11 @@ class BasicPolygonFilter extends Filter[PolygonAuthenticatedRequest, ChannelBuff
       .setHeader("Content-Length", postData.length().toString)
       .buildPost(wrappedBuffer(postData.getBytes(Charsets.UTF_8)))
 
-    service(httpRequest).map(handleHttpResponse(_)).map(new ChannelBufferWrapped(_))
+    service(httpRequest).map(handleHttpResponse(_))
   }
 }
 
-class AuthPolygonFilter extends Filter[PolygonClientRequest, ChannelBufferOrString, PolygonAuthenticatedRequest, ChannelBufferOrString] {
+class AuthPolygonFilter extends Filter[PolygonClientRequest, ChannelBuffer, PolygonAuthenticatedRequest, ChannelBuffer] {
   private val polygonBaseRe = new Regex("^(.*/)(c/\\d+/?.*|p/[^/]+/[^/]/?.*)$")
   val bases = new mutable.HashMap[String, PolygonBase]()
 
@@ -211,7 +188,7 @@ class AuthPolygonFilter extends Filter[PolygonClientRequest, ChannelBufferOrStri
   def extractPolygonBase(url: URL) =
     polygonBaseRe.findFirstMatchIn(url.getPath).map(_.group(1)).map(new URL(url.getProtocol, url.getHost, url.getPort, _))
 
-  def apply(request: PolygonClientRequest, service: Service[PolygonAuthenticatedRequest, ChannelBufferOrString]): Future[ChannelBufferOrString] = {
+  def apply(request: PolygonClientRequest, service: Service[PolygonAuthenticatedRequest, ChannelBuffer]): Future[ChannelBuffer] = {
     val baseOpt = extractPolygonBase(request.objectUrl).flatMap(x => bases.get(x.toString))
     if (baseOpt.isDefined)
       service(new PolygonAuthenticatedRequest(request.objectUrl, request.params, baseOpt.get.authInfo))
@@ -219,18 +196,6 @@ class AuthPolygonFilter extends Filter[PolygonClientRequest, ChannelBufferOrStri
       Future.exception(new PolygonAuthException(request.objectUrl))
   }
 }
-
-class PolygonRichClient(service: Service[PolygonClientRequest, ChannelBufferOrString]) {
-  def getProblem(problem: PolygonProblemHandle) =
-    service(problem).map(v => new PolygonProblem(XML.loadString(v.asString), Some(problem.url)))
-
-  def getContest(contest: ContestHandle) =
-    service(contest).map(v => new ContestDescription(XML.loadString(v.asString)))
-
-  def getProblemFile(problem: PolygonProblemHandle) =
-    service(problem.file).map(v => v.asFile)
-}
-
 
 class ContestDescription(val source: Elem) {
   lazy val names =
@@ -246,23 +211,44 @@ class ContestDescription(val source: Elem) {
     (source \ "problems" \ "problem").map(entry =>
       ((entry \ "@index").text.toUpperCase, (entry \ "@url").text)).toMap
       .mapValues { str =>
-      new PolygonProblemHandle(new URL(str), None, None)
+      new PolygonProblemHandle(new URL(str), None)
+    }
+
+  override def equals(obj: scala.Any): Boolean =
+    obj match {
+      case other: ContestDescription =>
+        source.equals(other.source)
+      case _ => super.equals(obj)
     }
 
   override def toString = source.toString()
 }
 
-class ContestWithProblems(contest: ContestDescription, val problems: Map[String, PolygonProblem]) {
+class ContestWithProblems(val contest: ContestDescription, val problems: Map[String, PolygonProblem]) {
   lazy val names = contest.names
   override def toString = contest.toString
   lazy val defaultName = contest.defaultName
   def getName(language: String) =
     contest.getName(language)
+
+  override def equals(obj: scala.Any): Boolean =
+    obj match {
+      case other: ContestWithProblems =>
+        contest.equals(other.contest) && problems.sameElements(other.problems)
+      case _ => super.equals(obj)
+    }
 }
 
 class PolygonProblem(val source: Elem, val externalUrl: Option[URL]) extends ProblemDescription {
   override def toString = "PolygonProblem(%s, %d)".format(url, revision)
   val pdbId: String = (url.getProtocol :: url.getHost :: url.getPath :: Nil).mkString("/")
+
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case other: PolygonProblem =>
+        source.equals(other.source) && externalUrl == other.externalUrl
+      case _ => super.equals(obj)
+    }
 
   lazy val internalUrl =
     new URL((source \ "@url").text)

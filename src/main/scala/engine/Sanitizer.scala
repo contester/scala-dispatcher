@@ -15,7 +15,7 @@ class UnpackError extends scala.Throwable
 class SanitizerError extends Throwable
 class ProblemFileNotFound extends SanitizerError
 
-trait ProblemDescription extends ProblemT with EarliestTimeKey {
+trait ProblemDescription extends ProblemT {
   def interactive: Boolean
   def stdio: Boolean
   def testCount: Int
