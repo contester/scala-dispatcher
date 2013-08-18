@@ -4,6 +4,7 @@ import com.twitter.util.{Try, Future}
 import com.google.common.cache.{CacheLoader, Cache, CacheBuilder}
 import java.util.concurrent.Callable
 import com.google.common.util.concurrent.{SettableFuture, ListenableFuture}
+import scala.collection.mutable
 
 /** Memoizator/serializator makes sure there's only one outstanding async operation per key.
   *
@@ -89,7 +90,7 @@ abstract class CachingLayer[KeyType, NearType, FarType] extends Function[KeyType
   * @tparam ValueType Values that we return.
   * @tparam SomeType Type of data in the data source
   */
-abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyType, Future[ValueType]] with CacheLoader[KeyType, Future[ValueType]] {
+abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyType, Future[ValueType]] {
   /** Get data from L2, or return None if there's nothing.
     *
     * @param key Key to look up.
@@ -120,18 +121,12 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
   /** L1 cache.
     *
     */
-  private val localCache = CacheBuilder.newBuilder().build(this)
+  private val localCache = new mutable.HashMap[KeyType, ValueType]()
 
-  def load(key: KeyType): Future[ValueType] =
-    getValue(key)
-
-  override def reload(key: KeyType, oldValue: Future[ValueType]): ListenableFuture[Future[ValueType]] = {
-    val result = new SettableFuture[Future[ValueType]]
-    fetchValue(key)
-      .onSuccess(v => result.set(Future.value(v)))
-      .onFailure(e => result.setException(e))
-    result
-  }
+  /** Serializer for gets.
+    *
+    */
+  private val serialHash = new SerialHash[KeyType, ValueType]()
 
   /** This gets called to fetch value from storage and put it to L2.
     *
@@ -154,6 +149,16 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
       }.getOrElse(fetchValue(key))
     }
 
+  /** Set value in local cache.
+    *
+    * @param key Key.
+    * @param value Value.
+    */
+  private[this] def setLocal(key: KeyType, value: ValueType): Unit =
+    synchronized {
+      localCache(key) = value
+    }
+
   /** Throw everything away from local cache, except for keyset.
     *
     * @param keyset Keys to keep
@@ -163,13 +168,26 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
       localCache.retain((k, v) => keyset(k))
     }
 
+  /** Use given function to fetch a value for a given key, use serialHash with it.
+    *
+    * @param kv Fetch function to use.
+    * @param key Key.
+    * @return Fetched value.
+    */
+  private[this] def fetchAndSet(kv: KeyType => Future[ValueType], key: KeyType) =
+    serialHash(key, () => kv(key).onSuccess(setLocal(key, _)))
+
   /** Transparent fetch value function.
     *
     * @param key Key to fetch.
     * @return Value.
     */
   def apply(key: KeyType): Future[ValueType] =
-    localCache.get(key)
+    synchronized {
+      localCache.get(key).map { v =>
+        Future.value(v)
+      }.getOrElse(fetchAndSet(getValue, key))
+    }
 
   /** Fetch values for a set of keys, discarding those not in the set.
     *
@@ -177,7 +195,6 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
     * @return Values.
     */
   def scan(keys: Iterable[KeyType]) =
-    localCache.
     Future.collect(keys.map(fetchAndSet(if (farScan) fetchValue else getValue, _)).toSeq).onSuccess { vals =>
       setKeys(keys.toSet)
     }
