@@ -1,7 +1,7 @@
 package org.stingray.contester.utils
 
 import com.twitter.util.{Try, Future}
-import com.google.common.cache.{CacheLoader, Cache, CacheBuilder}
+import com.google.common.cache.{CacheLoader, CacheBuilder}
 import java.util.concurrent.Callable
 import com.google.common.util.concurrent.{SettableFuture, ListenableFuture}
 import scala.collection.mutable
@@ -13,8 +13,8 @@ import scala.collection.mutable
   * @tparam KeyType Type of the key
   * @tparam ValueType Type of the value
   */
-class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[ValueType], Future[ValueType]] {
-  private val data: Cache[KeyType, Future[ValueType]] = CacheBuilder.newBuilder().build()
+class SerialHash[KeyType <: Object, ValueType <: Object] extends Function2[KeyType, () => Future[ValueType], Future[ValueType]] {
+  private val data = CacheBuilder.newBuilder().build[KeyType, Future[ValueType]]()
 
   /** Removes the key and returns the value.
     *
@@ -52,7 +52,7 @@ class SimpleCache[KeyType, ValueType](underlying: (KeyType) => Future[ValueType]
     underlying(key)
 
   override def reload(key: KeyType, oldValue: Future[ValueType]): ListenableFuture[Future[ValueType]] = {
-    val result = new SettableFuture[Future[ValueType]]
+    val result = SettableFuture.create[Future[ValueType]]()
     underlying(key)
       .onSuccess(v => result.set(Future.value(v)))
       .onFailure(e => result.setException(e))
