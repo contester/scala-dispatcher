@@ -16,7 +16,7 @@ trait ValueCache[KeyType, ValueType] {
   def put(key: KeyType, value: ValueType): Future[Unit]
 }
 
-abstract class ScannerCache2[KeyType, ValueType, RemoteType] {
+abstract class ScannerCache2[KeyType <: AnyRef, ValueType, RemoteType] {
   def cache: ValueCache[KeyType, RemoteType]
 
   def fetch(key: KeyType): Future[RemoteType]

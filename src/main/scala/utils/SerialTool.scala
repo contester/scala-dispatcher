@@ -13,7 +13,7 @@ import scala.collection.mutable
   * @tparam KeyType Type of the key
   * @tparam ValueType Type of the value
   */
-class SerialHash[KeyType <: Object, ValueType <: Object] extends Function2[KeyType, () => Future[ValueType], Future[ValueType]] {
+class SerialHash[KeyType <: AnyRef, ValueType <: AnyRef] extends Function2[KeyType, () => Future[ValueType], Future[ValueType]] {
   private val data = CacheBuilder.newBuilder().build[KeyType, Future[ValueType]]()
 
   /** Removes the key and returns the value.
@@ -40,11 +40,6 @@ class SerialHash[KeyType <: Object, ValueType <: Object] extends Function2[KeyTy
         result.transform(removeKey(key, _))
       }
     })
-}
-
-class SimpleSerialHash[KeyType, ValueType](underlying: (KeyType) => Future[ValueType]) extends CacheLoader[KeyType, Future[ValueType]] {
-  def load(key: KeyType): Future[ValueType] =
-    underlying(key)
 }
 
 class SimpleCache[KeyType, ValueType](underlying: (KeyType) => Future[ValueType]) extends CacheLoader[KeyType, Future[ValueType]] {
