@@ -28,7 +28,7 @@ abstract class ScannerCache2[KeyType <: AnyRef, ValueType, RemoteType] {
     override def reload(key: KeyType, oldValue: Future[ValueType]): ListenableFuture[Future[ValueType]] = {
       val result = SettableFuture.create[Future[ValueType]]()
       if (oldValue.isDefined) {
-        fetchSingleFlight(key).map(transform)
+        fetchSingleFlight(key).map(transform(key, _))
           .onSuccess {
           v =>
             result.set(if (v == Await.result(oldValue)) oldValue else Future.value(v))
@@ -46,11 +46,11 @@ abstract class ScannerCache2[KeyType <: AnyRef, ValueType, RemoteType] {
 
   private def nearFetch(key: KeyType) =
     cache.get(key).flatMap { v =>
-      v.map(x => Future.value(transform(x)))
-        .getOrElse(fetchSingleFlight(key).map(transform))
+      v.map(x => Future.value(transform(key, x)))
+        .getOrElse(fetchSingleFlight(key).map(transform(key, _)))
     }
 
-  def transform(x: RemoteType): ValueType
+  def transform(key: KeyType, x: RemoteType): ValueType
 
   private val nearFutureCache = CacheBuilder.newBuilder()
     .expireAfterAccess(300, TimeUnit.SECONDS)
