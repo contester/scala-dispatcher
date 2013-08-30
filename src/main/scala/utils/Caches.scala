@@ -2,14 +2,18 @@ package org.stingray.contester.utils
 
 import com.twitter.util.{Await, Future}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
-import org.stingray.contester.polygon.{PolygonClient, ContestDescription, ContestHandle}
 import com.google.common.util.concurrent.{SettableFuture, ListenableFuture}
-import scala.xml.XML
 import java.util.concurrent.TimeUnit
 
+/**
+ * Interface for asynchronous caches.
+ *
+ * @tparam KeyType Type for keys.
+ * @tparam ValueType Type for values.
+ */
 trait ValueCache[KeyType, ValueType] {
   def get(key: KeyType): Future[Option[ValueType]]
-  def put(key: KeyType, value: ValueType)
+  def put(key: KeyType, value: ValueType): Future[Unit]
 }
 
 abstract class ScannerCache2[KeyType, ValueType, RemoteType] {
@@ -17,14 +21,14 @@ abstract class ScannerCache2[KeyType, ValueType, RemoteType] {
 
   def fetch(key: KeyType): Future[RemoteType]
 
-  object NearCacheReloader extends CacheLoader[KeyType, Future[ValueType]] {
+  private object NearCacheReloader extends CacheLoader[KeyType, Future[ValueType]] {
     def load(key: KeyType): Future[ValueType] =
       nearFetch(key)
 
     override def reload(key: KeyType, oldValue: Future[ValueType]): ListenableFuture[Future[ValueType]] = {
-      val result = new SettableFuture[Future[ContestDescription]]
+      val result = new SettableFuture[Future[ValueType]]
       if (oldValue.isDefined) {
-        farFetch(key).map(transform)
+        fetch(key).map(transform)
           .onSuccess {
           v =>
             result.set(if (v == Await.result(oldValue)) oldValue else Future.value(v))
@@ -40,14 +44,13 @@ abstract class ScannerCache2[KeyType, ValueType, RemoteType] {
   private def fetchSingleFlight(key: KeyType) =
     farSerial(key, () => fetch(key))
 
-  private def nearFetch(key: ContestHandle) =
+  private def nearFetch(key: KeyType) =
     cache.get(key).flatMap { v =>
       v.map(x => Future.value(transform(x)))
-        .getOrElse(farFetch(key).map(transform))
+        .getOrElse(fetch(key).map(transform))
     }
 
-  private def transform(x: String) =
-    (new ContestDescription(XML.loadString(x)))
+  def transform(x: RemoteType): ValueType
 
   private val nearFutureCache = CacheBuilder.newBuilder()
     .expireAfterAccess(300, TimeUnit.SECONDS)
@@ -56,8 +59,7 @@ abstract class ScannerCache2[KeyType, ValueType, RemoteType] {
 
   private val farSerial = new SerialHash[KeyType, RemoteType]
 
-  def apply(key: ContestHandle) =
+  def apply(key: KeyType) =
     nearFutureCache.get(key)
-
 }
 

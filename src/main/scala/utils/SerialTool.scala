@@ -43,7 +43,8 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[Val
 }
 
 class SimpleSerialHash[KeyType, ValueType](underlying: (KeyType) => Future[ValueType]) extends CacheLoader[KeyType, Future[ValueType]] {
-  def load(key: KeyType): Future[ValueType] = ???
+  def load(key: KeyType): Future[ValueType] =
+    underlying(key)
 }
 
 class SimpleCache[KeyType, ValueType](underlying: (KeyType) => Future[ValueType]) extends CacheLoader[KeyType, Future[ValueType]] {
