@@ -4,12 +4,30 @@ import org.stingray.contester.invokers.Sandbox
 import com.twitter.util.Future
 import collection.immutable
 
-class ProblemProxy(parent: Problem, protected val tests: Seq[Int]) extends Problem {
+/**
+ * A subset of tests for a problem.
+ * @param parent Problem with tests.
+ * @param tests Subset we export.
+ */
+private class ProblemProxy(parent: Problem, protected val tests: Seq[Int]) extends Problem {
   def getTest(key: Int): Test = parent.getTest(key)
 }
 
+/**
+ * A problem trait, used by testing engine. testId -> Test, essentially.
+ */
 trait Problem extends immutable.SortedMap[Int, Test] {
+  /**
+   * Override this with list of tests, in testing order.
+   * @return List of tests we have.
+   */
   protected def tests: Seq[Int]
+
+  /**
+   * Override this with getter for test, by its id.
+   * @param key Test ID.
+   * @return Test with given ID.
+   */
   def getTest(key: Int): Test
 
   implicit def ordering: Ordering[Int] = Ordering.Int
@@ -34,16 +52,23 @@ trait Problem extends immutable.SortedMap[Int, Test] {
       None
 }
 
-trait ProblemT {
+/**
+ * A problem handle, from the data point of view. Names, suffixes, etc.
+ */
+trait ProblemID {
+  /**
+   * Defines the id in problem db.
+   * @return Problem DB ID.
+   */
   def pdbId: String
 
-  override def toString = "ProblemT(%s)".format(pdbId)
+  override def toString = "ProblemID(%s)".format(pdbId)
 
   override def hashCode() =
     pdbId.hashCode
 
   override def equals(obj: Any): Boolean = obj match {
-    case other: ProblemT => pdbId == other.pdbId
+    case other: ProblemID => pdbId == other.pdbId
     case _ => super.equals(obj)
   }
 
@@ -63,13 +88,27 @@ trait ProblemT {
   def interactorName = dbName("interactor")
 }
 
-case class SimpleProblemT(override val pdbId: String) extends ProblemT
+/**
+ * A simplest case of problem handle. Created when manifest already exists and there's no need to sanitize.
+ * @param pdbId ID for the problem.
+ */
+case class SimpleProblemID(override val pdbId: String) extends ProblemID
 
-class PDBProblem(val pdb: ProblemDb, val id: ProblemT, val testCount: Int, val timeLimitMicros: Long,
+/**
+ * A problem from Problem DB.
+ * @param pdb
+ * @param id
+ * @param testCount
+ * @param timeLimitMicros
+ * @param memoryLimit
+ * @param testerName
+ * @param answers
+ * @param interactorName
+ * @param stdio
+ */
+class PDBProblem(val pdb: ProblemDb, val id: ProblemID, val testCount: Int, val timeLimitMicros: Long,
                  val memoryLimit: Long, val testerName: String, val answers: Set[Int],
                  val interactorName: Option[String], val stdio: Boolean) extends Problem {
-
-
   def tests: Seq[Int] = 1 to testCount
 
   def getTest(key: Int): Test =
@@ -81,12 +120,24 @@ class PDBProblem(val pdb: ProblemDb, val id: ProblemT, val testCount: Int, val t
 }
 
 object PDBProblem {
-  def apply(pdb: ProblemDb, id: ProblemT, m: ProblemManifest) =
+  /**
+   * Creates PDBProblem from pdb and id.
+   * @param pdb
+   * @param id
+   * @param m
+   * @return
+   */
+  def apply(pdb: ProblemDb, id: ProblemID, m: ProblemManifest) =
     new PDBProblem(pdb, id, m.testCount, m.timeLimitMicros, m.memoryLimit, m.testerName, m.answers.toSet,
       m.interactorName, m.stdio)
 }
 
-class PDBTest(val problem: PDBProblem, val testId: Int) extends Test with TestLimits {
+/**
+ * A test for PDBProblem.
+ * @param problem Problem.
+ * @param testId Test ID.
+ */
+private class PDBTest(val problem: PDBProblem, val testId: Int) extends Test with TestLimits {
   override def toString = "PDBTest(%s, %d)".format(problem, testId)
 
   def memoryLimit: Long = problem.memoryLimit
@@ -122,16 +173,14 @@ class PDBTest(val problem: PDBProblem, val testId: Int) extends Test with TestLi
   def stdio: Boolean = problem.stdio
 }
 
-// New problem handle system
-// polygon+http(s)://....[?revision=X]
-// (will handle contests as well)
-
+/**
+ * New-style problem handle. This is a source handle, which will be resolved into ProblemID
+ * Example: polygon+https://foo/bar/xxx
+ */
 trait ProblemHandle {
+  /**
+   * Return external problem URI.
+   * @return
+   */
   def toProblemURI: String
 }
-/*
-object ProblemHandle {
-  def apply(uri: String): Option[ProblemHandle] =
-    if (uri.startsWith("polygon+"))
-
-}*/
