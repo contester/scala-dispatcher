@@ -9,10 +9,18 @@ import org.stingray.contester.problems.Problem
 import org.stingray.contester.testing.{CombinedResultReporter, SolutionTester}
 import org.stingray.contester.common.GridfsObjectStore
 import com.mongodb.casbah.MongoDB
+import org.stingray.contester.polygon.PolygonService
+import org.streum.configrity.Configuration
+import java.net.URL
+
+class DispatcherConfig(conf: Configuration, val storeId: String, val basePath: File) {
+  val polygonBase = conf[URL]("polygonBase")
+}
 
 class DbDispatcher(val dbclient: ConnectionPool, val basePath: File, val invoker: SolutionTester,
-                   val store: GridfsObjectStore, val storeId: String, val mongoDb: MongoDB) extends Logging {
-  val pscanner = new ContestTableScanner(pdata, dbclient)
+                   val store: GridfsObjectStore, val storeId: String, val mongoDb: MongoDB,
+                   val polygonService: PolygonService) extends Logging {
+  val pscanner = new ContestTableScanner(polygonService, mongoDb, dbclient)
   val dispatcher = new SubmitDispatcher(this)
   val evaldispatcher = new CustomTestDispatcher(dbclient, invoker, store, storeId)
 
@@ -29,15 +37,12 @@ class DbDispatcher(val dbclient: ConnectionPool, val basePath: File, val invoker
     pscanner.rescan.join(dispatcher.scan).join(evaldispatcher.scan).unit
 }
 
-case class DbConfig(host: String, db: String, username: String, password: String) {
+class DbConfig(conf: Configuration) {
   def createConnectionPool =
-    new ConnectionPool(host, db, username, password)
-
-  override def toString =
-    "DbConfig(\"%s\", \"%s\", \"%s\", \"%s\")".format(host, db, username, "hunter2")
+    new ConnectionPool(conf[String]("host"), conf[String]("db"), conf[String]("username"), conf[String]("password"))
 }
 
-class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: SolutionTester, val store: GridfsObjectStore, val mongoDb: MongoDB) extends Logging {
+class DbDispatchers(val basePath: File, val invoker: SolutionTester, val store: GridfsObjectStore, val mongoDb: MongoDB) extends Logging {
   val dispatchers = new mutable.HashMap[DbConfig, DbDispatcher]()
   val scanners = new mutable.HashMap[DbDispatcher, Future[Unit]]()
 

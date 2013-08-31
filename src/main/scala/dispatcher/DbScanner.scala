@@ -5,7 +5,7 @@ import com.twitter.util.{Promise, Future}
 import com.twitter.util.TimeConversions._
 import grizzled.slf4j.Logging
 import org.stingray.contester.db.ConnectionPool
-import org.stingray.contester.polygon.{ContestDescription, ContestHandle, PolygonService}
+import org.stingray.contester.polygon.{ContestWithProblems, ContestDescription, ContestHandle, PolygonService}
 import org.stingray.contester.utils.Utils
 import java.net.URL
 
@@ -35,7 +35,23 @@ class ContestTableScanner(polygonService: PolygonService, polygonBase: URL, db: 
     else
       None
 
-  private def singleContest(r: ContestRow, c: ContestDescription, oldp: Seq[ProblemRow]): Future[Unit] = {
+  private def getContestDescriptions(contestList: Iterable[ContestRow]) =
+    Future.collect(contestList.map(contestId => polygonService.contests(new ContestHandle(new URL(polygonBase, "c/" + contestId))).map(contestId -> _)).toSeq).map(_.toMap)
+
+  private def getProblemsForContest(contest: ContestDescription) =
+    Future.collect(contest.problems.map {
+      case (k, v) => polygonService.problems(v).map(k -> _)
+    }.toSeq).map(_.toMap)
+
+  private def getContestsWithProblems(contestList: Iterable[ContestRow]) =
+    getContestDescriptions(contestList).flatMap { contests =>
+      Future.collect(contests.map {
+        case (contestId, contestDescription) =>
+          getProblemsForContest(contestDescription).map(problems => contestId -> new ContestWithProblems(contestDescription, problems))
+      }.toSeq)
+    }.map(_.toMap)
+
+  private def singleContest(r: ContestRow, c: ContestWithProblems, oldp: Seq[ProblemRow]): Future[Unit] = {
     val m = oldp.filter(_.contest == r.id).map(v => v.id.toUpperCase -> v).toMap
 
     Future.collect(maybeUpdateContestName(r.id, r.name, c.getName(r.Language)).toSeq ++
@@ -54,7 +70,7 @@ class ContestTableScanner(polygonService: PolygonService, polygonBase: URL, db: 
   }
 
   private def updateContests(contestList: Iterable[ContestRow]): Future[Unit] = {
-    Future.collect(contestList.map(contestId => polygonService.contests(new ContestHandle(new URL(polygonBase, "c/" + contestId))).map(contestId -> _)).toSeq)
+    getContestsWithProblems(contestList)
       .join(getProblemsFromDb)
       .flatMap {
       case (contests, problems) =>
