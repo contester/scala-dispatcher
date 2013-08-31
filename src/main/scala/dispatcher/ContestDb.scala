@@ -10,7 +10,7 @@ import org.stingray.contester.testing.{CombinedResultReporter, SolutionTester}
 import org.stingray.contester.common.GridfsObjectStore
 import com.mongodb.casbah.MongoDB
 
-class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
+class DbDispatcher(val dbclient: ConnectionPool, val basePath: File, val invoker: SolutionTester,
                    val store: GridfsObjectStore, val storeId: String, val mongoDb: MongoDB) extends Logging {
   val pscanner = new ContestTableScanner(pdata, dbclient)
   val dispatcher = new SubmitDispatcher(this)

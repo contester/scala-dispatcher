@@ -28,6 +28,20 @@ class ProblemRepository(client: Service[PolygonClientRequest, ChannelBuffer],
     new PolygonProblem(XML.loadString(x), Some(key.url))
 }
 
+class PolygonService(client: Service[PolygonClientRequest, ChannelBuffer], cache: PolygonCache) {
+  val contests = new ContestRepository(client, new ValueCache[ContestHandle, String] {
+    def get(key: ContestHandle): Future[Option[String]] = cache.get(key)
+
+    def put(key: ContestHandle, value: String): Future[Unit] = cache.put(key, value)
+  })
+
+  val problems = new ProblemRepository(client, new ValueCache[PolygonProblemHandle, String] {
+    def get(key: PolygonProblemHandle): Future[Option[String]] = cache.get(key)
+
+    def put(key: PolygonProblemHandle, value: String): Future[Unit] = cache.put(key, value)
+  })
+}
+
 class PolygonSanitizer(db: SanitizeDb, client: SpecializedClient, invoker: InvokerRegistry)
   extends ProblemDBSanitizer[PolygonProblem](db, new SimpleSanitizer(invoker)) {
   def getProblemFile(key: PolygonProblem): Future[Array[Byte]] =

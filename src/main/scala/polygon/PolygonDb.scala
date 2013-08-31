@@ -3,6 +3,7 @@ package org.stingray.contester.polygon
 import com.twitter.util.Future
 import com.mongodb.casbah.Imports._
 import java.net.URL
+import org.stingray.contester.utils.ValueCache
 
 trait PolygonCacheKey {
   def url: URL
@@ -13,7 +14,7 @@ trait PolygonProblemKey extends PolygonCacheKey {
   def revision: Option[Int]
 }
 
-class PolygonCache(mdb: MongoDB) {
+class PolygonCache(mdb: MongoDB) extends ValueCache[PolygonCacheKey, String] {
   private def findProblem(problem: PolygonProblemKey) =
     if (problem.revision.isDefined)
       mdb("problem").findOne("id" -> problem.url.toString, "revision" -> problem.revision.get)
@@ -35,6 +36,7 @@ class PolygonCache(mdb: MongoDB) {
       case _ =>
         Future.None
     }
+
   def put(key: PolygonCacheKey, value: String): Future[Unit] =
     key match {
       case contest: PolygonContestKey =>
