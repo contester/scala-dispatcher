@@ -199,25 +199,3 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
       setKeys(keys.toSet)
     }
 }
-
-object ScannerCache {
-  /** Construct a ScannerCache with get/put functions defined.
-    *
-    * @param nearGetFn Function to get value from L2 cache.
-    * @param nearPutFn Function to put value to L2 cache.
-    * @param farGetFn Function to get value from source.
-    * @tparam KeyType Key type.
-    * @tparam ValueType Value type.
-    * @return ScannerCache instance.
-    */
-  def apply[KeyType, ValueType](nearGetFn: KeyType => Future[Option[ValueType]],
-                                nearPutFn: (KeyType, ValueType) => Future[Unit],
-                                farGetFn: KeyType => Future[ValueType]): ScannerCache[KeyType, ValueType, ValueType] =
-    new ScannerCache[KeyType, ValueType, ValueType] {
-      def nearGet(key: KeyType): Future[Option[ValueType]] = nearGetFn(key)
-
-      def nearPut(key: KeyType, value: ValueType): Future[ValueType] = nearPutFn(key, value).map(_ => value)
-
-      def farGet(key: KeyType): Future[ValueType] = farGetFn(key)
-    }
-}
