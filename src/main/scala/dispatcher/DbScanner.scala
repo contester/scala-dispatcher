@@ -16,7 +16,7 @@ class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
 class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) extends Function[Int, Future[ContestHandle]] with Logging {
   private def getContestHandle(id: Int): ContestHandle =
-    new ContestHandle(new URL(polygonBase, "contest/" + id))
+    new ContestHandle(new URL(polygonBase, "c/" + id))
 
   private def getContestsFromDb: Future[Seq[ContestRow]] =
     db.select("select ID, Name, SchoolMode, PolygonID, Language from Contests where PolygonID != 0") { row =>
