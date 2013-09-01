@@ -43,7 +43,7 @@ class PolygonProblemFile(problem: PolygonProblemHandle) extends PolygonClientReq
   def params: Iterable[(String, String)] = problem.params
 }
 
-class PolygonProblemHandle(val url: URL, val revision: Option[Int]) extends ProblemHandle with PolygonClientRequest with PolygonContestKey {
+class PolygonProblemHandle(val url: URL, val revision: Option[Int]) extends ProblemHandle with PolygonClientRequest with PolygonProblemKey {
   val objectUrl = new URL(url, "problem.xml")
   val params = revision.map("revision" -> _.toString).toIterable
 
