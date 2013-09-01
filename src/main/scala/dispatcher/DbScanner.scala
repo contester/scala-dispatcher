@@ -41,9 +41,6 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) 
       None
 
   private def singleContest(r: ContestRow, c: ContestWithProblems, oldp: Seq[ProblemRow]): Future[Unit] = {
-    trace(r)
-    trace(c.problems)
-
     val m = oldp.filter(_.contest == r.id).map(v => v.id.toUpperCase -> v).toMap
 
     Future.collect(maybeUpdateContestName(r.id, r.name, c.getName(r.Language)).toSeq ++
@@ -62,7 +59,7 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) 
   }
 
   private def updateContests(contestList: Iterable[ContestRow]): Future[Unit] = {
-    d.getContests(this, contestList.map(_.polygonId).toSet.toSeq.map(getContestHandle)).join(getProblemsFromDb)
+    d.getContests(contestList.map(_.polygonId).toSet.toSeq.map(getContestHandle)).join(getProblemsFromDb)
       .flatMap {
       case (contests, problems) =>
         Future.collect(contests.flatMap(x => contestList.filter(h => getContestHandle(h.polygonId) == x._1).map(singleContest(_, x._2, problems))).toSeq)

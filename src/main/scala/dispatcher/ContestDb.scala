@@ -51,6 +51,7 @@ class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: Sol
     scanners(d) = d.start
   }
 
+/*
   def remove(conf: DbConfig) = {
     dispatchers.remove(conf).foreach {
       d =>
@@ -58,4 +59,5 @@ class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: Sol
         pdata.remove(d.pscanner)
     }
   }
+*/
 }
