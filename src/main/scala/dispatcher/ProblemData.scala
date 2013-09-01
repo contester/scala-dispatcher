@@ -36,7 +36,7 @@ class ProblemData(pclient: Service[PolygonClientRequest, ChannelBuffer], pdb: Va
     Future.collect(contests.map { contestPid =>
       polygonService.contests(contestPid).flatMap { contest =>
         Future.collect(contest.problems.map(p => polygonService.problems(p._2).map(p._1 -> _)).toSeq)
-          .map(v => contestPid -> new ContestWithProblems(contest, v.toMap))
+          .map { v => contestPid -> new ContestWithProblems(contest, v.toMap) }
       }
     }).map(_.toMap)
   }

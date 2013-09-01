@@ -17,7 +17,6 @@ class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) extends Function[Int, Future[ContestHandle]] with Logging {
   private def getContestHandle(id: Int): ContestHandle = {
     val result = new ContestHandle(new URL(polygonBase, "c/" + id + "/"))
-    trace("H: " + result.url)
     result
   }
 
@@ -42,6 +41,9 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) 
       None
 
   private def singleContest(r: ContestRow, c: ContestWithProblems, oldp: Seq[ProblemRow]): Future[Unit] = {
+    trace(r)
+    trace(c.problems)
+
     val m = oldp.filter(_.contest == r.id).map(v => v.id.toUpperCase -> v).toMap
 
     Future.collect(maybeUpdateContestName(r.id, r.name, c.getName(r.Language)).toSeq ++
@@ -63,7 +65,7 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) 
     d.getContests(this, contestList.map(_.polygonId).toSet.toSeq.map(getContestHandle)).join(getProblemsFromDb)
       .flatMap {
       case (contests, problems) =>
-        Future.collect(contests.flatMap(x => contestList.filter(_.polygonId == x._1).map(singleContest(_, x._2, problems))).toSeq)
+        Future.collect(contests.flatMap(x => contestList.filter(h => getContestHandle(h.polygonId) == x._1).map(singleContest(_, x._2, problems))).toSeq)
     }.unit
   }
 
