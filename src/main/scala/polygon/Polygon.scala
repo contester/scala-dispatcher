@@ -204,6 +204,7 @@ class PolygonProblem(val source: Elem, val externalUrl: Option[URL]) extends Pro
   override def toString = "PolygonProblem(%s, %d)".format(url, revision)
   val pdbId: String = (url.getProtocol :: url.getHost :: url.getPath :: Nil).mkString("/")
   val id = pdbId
+  val handle = new PolygonProblemHandle(url, Some(revision))
 
   override def equals(obj: Any): Boolean =
     obj match {

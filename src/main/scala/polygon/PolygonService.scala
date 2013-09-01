@@ -13,7 +13,9 @@ class ProblemByPid(client: Service[PolygonClientRequest, ChannelBuffer], pdb: Va
   val cache: ValueCache[PolygonProblemHandle, String] = new ValueCache[PolygonProblemHandle, String] {
     def get(key: PolygonProblemHandle): Future[Option[String]] = pdb.get(key)
 
-    def put(key: PolygonProblemHandle, value: String): Future[Unit] = pdb.put(key, value)
+    def put(key: PolygonProblemHandle, value: String): Future[Unit] = {
+      pdb.put(transform(key, value).handle, value)
+    }
   }
 
   def fetch(key: PolygonProblemHandle): Future[String] = client(key).map(PolygonClient.asPage)
