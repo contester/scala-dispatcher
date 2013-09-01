@@ -172,7 +172,7 @@ class ContestDescription(val source: Elem) {
     (source \ "problems" \ "problem").map(entry =>
       ((entry \ "@index").text.toUpperCase, (entry \ "@url").text)).toMap
       .mapValues { str =>
-      new PolygonProblemHandle(new URL(str), None)
+      new PolygonProblemHandle(new URL(str + "/"), None)
     }
 
   override def equals(obj: scala.Any): Boolean =
