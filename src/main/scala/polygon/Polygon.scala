@@ -77,24 +77,39 @@ object PolygonClient extends Logging {
   }
 }
 
-object CachedConnectionHttpService extends Service[HttpRequest, HttpResponse] {
-  private object PolygonClientCacheLoader extends CacheLoader[InetSocketAddress, Service[HttpRequest, HttpResponse]] {
-    def load(key: InetSocketAddress): Service[HttpRequest, HttpResponse] = ClientBuilder()
-      .codec(Http().maxResponseSize(new StorageUnit(64*1024*1024)))
-      .hosts(key)
-      .hostConnectionLimit(1)
-      .tcpConnectTimeout(Duration(5, TimeUnit.SECONDS))
-      .build()
+object CachedConnectionHttpService extends Service[(URL, HttpRequest), HttpResponse] {
+  private object PolygonClientCacheLoader extends CacheLoader[(Option[String], InetSocketAddress), Service[HttpRequest, HttpResponse]] {
+    private def createSSL(addr: InetSocketAddress, hostname: String) = ClientBuilder()
+        .codec(Http().maxResponseSize(new StorageUnit(64*1024*1024)))
+        .tls(hostname)
+        .hosts(addr)
+        .hostConnectionLimit(1)
+        .tcpConnectTimeout(Duration(5, TimeUnit.SECONDS))
+        .build()
+
+    private def create(addr: InetSocketAddress) = ClientBuilder()
+        .codec(Http().maxResponseSize(new StorageUnit(64*1024*1024)))
+        .hosts(addr)
+        .hostConnectionLimit(1)
+        .tcpConnectTimeout(Duration(5, TimeUnit.SECONDS))
+        .build()
+
+    def load(key: (Option[String], InetSocketAddress)): Service[HttpRequest, HttpResponse] =
+      if (key._1.isDefined)
+        createSSL(key._2, key._1.get)
+      else
+        create(key._2)
   }
 
   private val connCache = CacheBuilder.newBuilder()
     .expireAfterAccess(30, TimeUnit.MINUTES)
     .build(PolygonClientCacheLoader)
 
-  def apply(request: HttpRequest): Future[HttpResponse] = {
-    val url = new URL(request.getUri)
+  def apply(request: (URL, HttpRequest)): Future[HttpResponse] = {
+    val url = request._1
     val addr = new InetSocketAddress(url.getHost, if (url.getPort == -1) url.getDefaultPort else url.getPort)
-    connCache.get(addr)(request)
+    val tlsHost = if (url.getProtocol == "https") Some(url.getHost) else None
+    connCache.get((tlsHost, addr))(request._2)
   }
 }
 
