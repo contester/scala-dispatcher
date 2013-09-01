@@ -113,7 +113,7 @@ object CachedConnectionHttpService extends Service[(URL, HttpRequest), HttpRespo
   }
 }
 
-object BasicPolygonFilter extends Filter[PolygonAuthenticatedRequest, ChannelBuffer, HttpRequest, HttpResponse] {
+object BasicPolygonFilter extends Filter[PolygonAuthenticatedRequest, ChannelBuffer, (URL, HttpRequest), HttpResponse] {
   private def encodeFormData(data: Iterable[(String, String)]) =
     (for ((k, v) <- data) yield URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8") ).mkString("&")
 
@@ -123,7 +123,7 @@ object BasicPolygonFilter extends Filter[PolygonAuthenticatedRequest, ChannelBuf
     else
       throw new PolygonClientHttpException(response.getStatus.getReasonPhrase)
 
-  def apply(request: PolygonAuthenticatedRequest, service: Service[HttpRequest, HttpResponse]): Future[ChannelBuffer] = {
+  def apply(request: PolygonAuthenticatedRequest, service: Service[(URL, HttpRequest), HttpResponse]): Future[ChannelBuffer] = {
     val postData = encodeFormData(request.params)
     val httpRequest = RequestBuilder()
       .url(request.url)
@@ -131,7 +131,7 @@ object BasicPolygonFilter extends Filter[PolygonAuthenticatedRequest, ChannelBuf
       .setHeader("Content-Length", postData.length().toString)
       .buildPost(wrappedBuffer(postData.getBytes(Charsets.UTF_8)))
 
-    service(httpRequest).map(handleHttpResponse(_))
+    service((request.url, httpRequest)).map(handleHttpResponse(_))
   }
 }
 
