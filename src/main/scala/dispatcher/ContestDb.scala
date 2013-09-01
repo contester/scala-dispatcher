@@ -33,6 +33,7 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
 class DbConfig(conf: Configuration) {
   val short = conf.get[String]("short").getOrElse(conf[String]("db"))
   val polygonBase = new URL(conf[String]("polygon"))
+
   def createConnectionPool =
     new ConnectionPool(conf[String]("host"),
       conf[String]("db"),
@@ -51,9 +52,10 @@ class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: Sol
   }
 
   def remove(conf: DbConfig) = {
-    dispatchers.remove(conf).foreach { d =>
-      scanners.remove(d).foreach(_.cancel())
-      pdata.remove(d.pscanner)
+    dispatchers.remove(conf).foreach {
+      d =>
+        scanners.remove(d).foreach(_.cancel())
+        pdata.remove(d.pscanner)
     }
   }
 }
