@@ -185,3 +185,14 @@ object ScannerCache {
       def farGet(key: KeyType): Future[ValueType] = farGetFn(key)
     }
 }
+
+/**
+ * Interface for asynchronous caches.
+ *
+ * @tparam KeyType Type for keys.
+ * @tparam ValueType Type for values.
+ */
+trait ValueCache[KeyType, ValueType] {
+  def get(key: KeyType): Future[Option[ValueType]]
+  def put(key: KeyType, value: ValueType): Future[Unit]
+}

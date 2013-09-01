@@ -4,37 +4,38 @@ import collection.mutable
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import org.stingray.contester.polygon._
-import org.stingray.contester.utils.Utils
+import org.stingray.contester.utils.{ValueCache, Utils}
 import org.stingray.contester.invokers.InvokerRegistry
-import org.stingray.contester.problems.Problem
+import org.stingray.contester.problems.{SanitizeDb, Problem}
+import com.twitter.finagle.Service
+import org.jboss.netty.buffer.ChannelBuffer
 
-class ProblemData(pclient: SpecializedClient, pdb: CommonPolygonDb, invoker: InvokerRegistry) extends Logging {
-  private val contestByPid = new ContestByPid(pclient, pdb)
-  private val problemByPid = new ProblemByPid(pclient, pdb)
-  private val sanitizer = PolygonSanitizer(pdb, pclient, invoker)
+class ProblemData(pclient: Service[PolygonClientRequest, ChannelBuffer], pdb: ValueCache[PolygonCacheKey, String], sdb: SanitizeDb, invoker: InvokerRegistry) extends Logging {
+  private val polygonService = new PolygonService(pclient, pdb)
+  private val sanitizer = new PolygonSanitizer(sdb, pclient, invoker)
 
-  private val activeContests = new mutable.HashMap[Any, mutable.Set[Int]]()
+  private val activeContests = new mutable.HashMap[Any, mutable.Set[ContestHandle]]()
 
   var rescanFuture = rescan
 
-  private def getActiveContests: Seq[Int] =
+  private def getActiveContests: Seq[ContestHandle] =
     activeContests.values.fold(Set())(_ ++ _).toSeq
 
-  private def setContests(ref: Any, contests: Seq[Int]) =
+  private def setContests(ref: Any, contests: Seq[ContestHandle]) =
     activeContests.synchronized {
       activeContests(ref) = mutable.Set(contests:_*)
     }
 
-  private def addContest(ref: Any, contest: Int) =
+  private def addContest(ref: Any, contest: ContestHandle) =
     activeContests.synchronized {
-      activeContests.getOrElseUpdate(ref, mutable.Set[Int]()) += contest
+      activeContests.getOrElseUpdate(ref, mutable.Set[ContestHandle]()) += contest
     }
 
-  def getContests(ref: Any, contests: Seq[Int]): Future[Map[Int, ContestWithProblems]] = {
+  def getContests(ref: Any, contests: Seq[ContestHandle]): Future[Map[ContestHandle, ContestWithProblems]] = {
     setContests(ref, contests)
     Future.collect(contests.map { contestPid =>
-      contestByPid(contestPid).flatMap { contest =>
-        Future.collect(contest.problems.map(p => problemByPid(p._2).map(p._1 -> _)).toSeq)
+      polygonService.contests(contestPid).flatMap { contest =>
+        Future.collect(contest.problems.map(p => polygonService.problems(p._2).map(p._1 -> _)).toSeq)
           .map(v => contestPid -> new ContestWithProblems(contest, v.toMap))
       }
     }).map(_.toMap)
@@ -45,9 +46,9 @@ class ProblemData(pclient: SpecializedClient, pdb: CommonPolygonDb, invoker: Inv
       activeContests.remove(ref)
     }
 
-  private def scan(contests: Seq[Int]): Future[Unit] =
-    contestByPid.scan(contests).map(_.flatMap(_.problems.values))
-      .flatMap(problemByPid.scan(_))
+  private def scan(contests: Seq[ContestHandle]): Future[Unit] =
+    polygonService.contests.scan(contests).map(_.flatMap(_.problems.values))
+      .flatMap(polygonService.problems.scan(_))
       .flatMap(sanitizer.scan(_)).unit
 
   import com.twitter.util.TimeConversions._
@@ -57,13 +58,12 @@ class ProblemData(pclient: SpecializedClient, pdb: CommonPolygonDb, invoker: Inv
       case _ => Future.Done
     }.flatMap(_ => Utils.later(1.minute).onSuccess(_ => rescan))
 
-  def getProblemInfo(ref: Any, contestPid: Int, problemId: String): Future[Problem] = {
+  def getProblemInfo(ref: Any, contestPid: ContestHandle, problemId: String): Future[Problem] = {
     addContest(ref, contestPid)
-      contestByPid(contestPid).flatMap { contest =>
-        problemByPid(contest.problems(problemId.toUpperCase)).flatMap { problem =>
+      polygonService.contests(contestPid).flatMap { contest =>
+        polygonService.problems(contest.problems(problemId.toUpperCase)).flatMap { problem =>
           sanitizer(problem)
         }
       }
   }
-
 }

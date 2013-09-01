@@ -34,17 +34,17 @@ trait Problem extends immutable.SortedMap[Int, Test] {
       None
 }
 
-trait ProblemT {
+trait ProblemID {
   def id: String
   def revision: Int
 
-  override def toString = "ProblemT(%s, %d)".format(id, revision)
+  override def toString = "ProblemID(%s, %d)".format(id, revision)
 
   override def hashCode() =
     id.hashCode() + revision.hashCode()
 
   override def equals(obj: Any): Boolean = obj match {
-    case other: ProblemT => (id == other.id) && (revision == other.revision)
+    case other: ProblemID => (id == other.id) && (revision == other.revision)
     case _ => super.equals(obj)
   }
 
@@ -64,9 +64,9 @@ trait ProblemT {
   def interactorName = dbName("interactor")
 }
 
-case class SimpleProblemT(override val id: String, override val revision: Int) extends ProblemT
+case class SimpleProblemID(override val id: String, override val revision: Int) extends ProblemID
 
-class PDBProblem(val pdb: ProblemDb, val id: ProblemT, val testCount: Int, val timeLimitMicros: Long,
+class PDBProblem(val pdb: ProblemDb, val id: ProblemID, val testCount: Int, val timeLimitMicros: Long,
                  val memoryLimit: Long, val testerName: String, val answers: Set[Int],
                  val interactorName: Option[String], val stdio: Boolean) extends Problem {
 
@@ -82,7 +82,7 @@ class PDBProblem(val pdb: ProblemDb, val id: ProblemT, val testCount: Int, val t
 }
 
 object PDBProblem {
-  def apply(pdb: ProblemDb, id: ProblemT, m: ProblemManifest) =
+  def apply(pdb: ProblemDb, id: ProblemID, m: ProblemManifest) =
     new PDBProblem(pdb, id, m.testCount, m.timeLimitMicros, m.memoryLimit, m.testerName, m.answers.toSet,
       m.interactorName, m.stdio)
 }
@@ -122,3 +122,5 @@ class PDBTest(val problem: PDBProblem, val testId: Int) extends Test with TestLi
 
   def stdio: Boolean = problem.stdio
 }
+
+trait ProblemHandle
