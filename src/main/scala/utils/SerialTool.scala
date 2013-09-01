@@ -209,7 +209,7 @@ abstract class RefresherCache[KeyType <: AnyRef, ValueType, RemoteType] {
   }
 
   private def fetchSingleFlight(key: KeyType) =
-    farSerial(key, () => fetch(key))
+    farSerial(key, () => fetch(key).flatMap(result => cache.put(key, result).map(_ => result)))
 
   private def nearFetch(key: KeyType) =
     cache.get(key).flatMap { v =>
