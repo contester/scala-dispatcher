@@ -23,7 +23,7 @@ class PolygonAuthException(url: URL) extends Throwable(url.toString)
 
 class PolygonAuthInfo(val username: String, val password: String) {
   def asMap = Map(
-    "username" -> username,
+    "login" -> username,
     "password" -> password
   )
 }
@@ -77,7 +77,7 @@ object PolygonClient extends Logging {
   }
 }
 
-object CachedConnectionHttpService extends Service[(URL, HttpRequest), HttpResponse] {
+object CachedConnectionHttpService extends Service[(URL, HttpRequest), HttpResponse] with Logging {
   private object PolygonClientCacheLoader extends CacheLoader[(Option[String], InetSocketAddress), Service[HttpRequest, HttpResponse]] {
     private def createSSL(addr: InetSocketAddress, hostname: String) = ClientBuilder()
         .codec(Http().maxResponseSize(new StorageUnit(64*1024*1024)))
@@ -109,6 +109,8 @@ object CachedConnectionHttpService extends Service[(URL, HttpRequest), HttpRespo
     val url = request._1
     val addr = new InetSocketAddress(url.getHost, if (url.getPort == -1) url.getDefaultPort else url.getPort)
     val tlsHost = if (url.getProtocol == "https") Some(url.getHost) else None
+    trace(request)
+    trace(request._2.getContent.toString(Charsets.UTF_8))
     connCache.get((tlsHost, addr))(request._2)
   }
 }
@@ -135,7 +137,7 @@ object BasicPolygonFilter extends Filter[PolygonAuthenticatedRequest, ChannelBuf
   }
 }
 
-class AuthPolygonFilter extends Filter[PolygonClientRequest, ChannelBuffer, PolygonAuthenticatedRequest, ChannelBuffer] {
+class AuthPolygonFilter extends Filter[PolygonClientRequest, ChannelBuffer, PolygonAuthenticatedRequest, ChannelBuffer] with Logging {
   private val polygonBaseRe = new Regex("^(.*/)(c/\\d+/?.*|p/[^/]+/[^/]/?.*)$")
   val bases = new HashMap[String, PolygonBase]()
 
@@ -147,6 +149,8 @@ class AuthPolygonFilter extends Filter[PolygonClientRequest, ChannelBuffer, Poly
 
   def apply(request: PolygonClientRequest, service: Service[PolygonAuthenticatedRequest, ChannelBuffer]): Future[ChannelBuffer] = {
     val baseOpt = extractPolygonBase(request.objectUrl).flatMap(x => bases.get(x.toString))
+    trace(request)
+    trace(baseOpt)
     if (baseOpt.isDefined)
       service(new PolygonAuthenticatedRequest(request.objectUrl, request.params, baseOpt.get.authInfo))
     else

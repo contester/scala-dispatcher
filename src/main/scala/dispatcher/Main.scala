@@ -50,8 +50,9 @@ object Main extends App with Logging {
     config.get[List[String]]("dispatcher.standard").map { names =>
 
       val authFilter = new AuthPolygonFilter
-      config.detachAll.foreach {
+      config.detach("polygons").detachAll.foreach {
         case (shortName, polygonConf) =>
+	println(polygonConf)
         authFilter.addPolygon(new PolygonBase(shortName, new URL(polygonConf[String]("url")), polygonConf[String]("username"), polygonConf[String]("password")))
       }
 
