@@ -62,7 +62,12 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) 
     d.getContests(contestList.map(_.polygonId).toSet.toSeq.map(getContestHandle)).join(getProblemsFromDb)
       .flatMap {
       case (contests, problems) =>
-        Future.collect(contests.flatMap(x => contestList.filter(h => getContestHandle(h.polygonId) == x._1).map(singleContest(_, x._2, problems))).toSeq)
+        Future.collect(contests.flatMap(x => contestList.filter {
+          h =>
+            val ch = getContestHandle(h.polygonId)
+            trace((ch, x._1, ch == x._1))
+            ch == x._1
+        }.map { v => trace(v); v }.map(singleContest(_, x._2, problems))).toSeq)
     }.unit
   }
 

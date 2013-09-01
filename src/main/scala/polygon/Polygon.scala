@@ -53,10 +53,13 @@ class ContestHandle(val url: URL) extends PolygonClientRequest with PolygonConte
   val objectUrl = new URL(url, "contest.xml")
   val params = Nil
 
+  override def toString =
+    "ContestHandle(\"%s\")".format(url)
+
   override def equals(obj: scala.Any): Boolean =
     obj match {
       case other: ContestHandle =>
-        objectUrl.equals(other)
+        url.equals(other.url)
       case _ => super.equals(obj)
     }
 }
