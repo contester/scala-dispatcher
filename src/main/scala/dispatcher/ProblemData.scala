@@ -11,7 +11,7 @@ import org.jboss.netty.buffer.ChannelBuffer
 
 class ProblemData(pclient: Service[PolygonClientRequest, ChannelBuffer], pdb: ValueCache[PolygonCacheKey, String], sdb: SanitizeDb, invoker: InvokerRegistry) extends Logging {
   private val polygonService = new PolygonService(pclient, pdb)
-  private val sanitizer = new PolygonSanitizer(sdb, pclient, invoker)
+  val sanitizer = new PolygonSanitizer(sdb, pclient, invoker)
 
   def getContests(contests: Seq[ContestHandle]): Future[Map[ContestHandle, ContestWithProblems]] = {
     Future.collect(contests.map { contestPid =>
@@ -22,7 +22,7 @@ class ProblemData(pclient: Service[PolygonClientRequest, ChannelBuffer], pdb: Va
     }).map(_.toMap)
   }
 
-  def getProblemInfo(ref: Any, contestPid: ContestHandle, problemId: String): Future[Problem] = {
+  def getProblemInfo(contestPid: ContestHandle, problemId: String): Future[Problem] = {
       polygonService.contests(contestPid).flatMap { contest =>
         polygonService.problems(contest.problems(problemId.toUpperCase)).flatMap { problem =>
           sanitizer(problem)

@@ -21,7 +21,7 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
     Future.collect(x.toSeq).map(_.headOption)
 
   def getProblem(cid: Int, problem: String): Future[Problem] =
-    pscanner(cid).flatMap(pdata.getProblemInfo(pscanner, _, problem))
+    pscanner(cid).flatMap(pdata.getProblemInfo(_, problem))
 
   def getReporter(submit: SubmitObject) =
     CombinedResultReporter(submit, dbclient, basePath)

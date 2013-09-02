@@ -43,6 +43,8 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) 
   private def singleContest(r: ContestRow, c: ContestWithProblems, oldp: Seq[ProblemRow]): Future[Unit] = {
     val m = oldp.filter(_.contest == r.id).map(v => v.id.toUpperCase -> v).toMap
 
+    c.problems.values.foreach(d.sanitizer)
+
     Future.collect(maybeUpdateContestName(r.id, r.name, c.getName(r.Language)).toSeq ++
     (m.keySet -- c.problems.keySet).toSeq.map { contestId =>
       db.execute("delete from Problems where Contest = ? and ID = ?", r.id, contestId).unit
