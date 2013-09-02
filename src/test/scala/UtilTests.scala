@@ -5,6 +5,9 @@ import org.scalatest.FlatSpec
 
 import java.util.concurrent.TimeUnit
 import com.twitter.util.{Await, Future, Promise, Duration}
+import com.google.common.cache.{CacheLoader, CacheBuilder}
+import com.google.common.util.concurrent.{SettableFuture, ListenableFuture}
+import com.google.common.base.Ticker
 
 class SerialHashTests extends FlatSpec with ShouldMatchers {
   "HashQueue" should "return the same future for long-running request" in {
@@ -192,4 +195,29 @@ class ScannerCacheTests extends FlatSpec with ShouldMatchers {
     }
   }
 
+}
+
+class RefreshCacheTests extends FlatSpec with ShouldMatchers {
+  "CacheLoader" should "refresh" in {
+    object Loader extends CacheLoader[String, String] {
+      def load(key: String): String = key
+
+      override def reload(key: String, oldValue: String): ListenableFuture[String] = {
+        val result = SettableFuture.create[String]()
+        result.set(key + 100)
+        result
+      }
+    }
+
+    object Tick extends Ticker {
+      var value: Long = 0
+      def read(): Long = value
+    }
+
+    val c = CacheBuilder.newBuilder().refreshAfterWrite(5, TimeUnit.NANOSECONDS).expireAfterAccess(15, TimeUnit.NANOSECONDS).ticker(Tick).build(Loader)
+
+    expectResult("foo")(c.get("foo"))
+    Tick.value = 10
+    expectResult("foo100")(c.get("foo"))
+  }
 }
