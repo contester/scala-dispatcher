@@ -190,8 +190,10 @@ abstract class RefresherCache[KeyType <: AnyRef, ValueType, RemoteType] extends 
   def fetch(key: KeyType): Future[RemoteType]
 
   object NearCacheReloader extends CacheLoader[KeyType, Future[ValueType]] {
-    def load(key: KeyType): Future[ValueType] =
+    def load(key: KeyType): Future[ValueType] = {
+      trace(key)
       nearFetch(key)
+    }
 
     override def reload(key: KeyType, oldValue: Future[ValueType]): ListenableFuture[Future[ValueType]] = {
       trace((key, oldValue))
