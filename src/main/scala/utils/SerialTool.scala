@@ -5,6 +5,7 @@ import collection.mutable
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.{ListenableFuture, SettableFuture}
 import java.util.concurrent.TimeUnit
+import grizzled.slf4j.Logging
 
 /** Memoizator/serializator makes sure there's only one outstanding async operation per key.
   *
@@ -183,7 +184,7 @@ trait ValueCache[KeyType, ValueType] {
   def put(key: KeyType, value: ValueType): Future[Unit]
 }
 
-abstract class RefresherCache[KeyType <: AnyRef, ValueType, RemoteType] {
+abstract class RefresherCache[KeyType <: AnyRef, ValueType, RemoteType] extends Logging {
   def cache: ValueCache[KeyType, RemoteType]
 
   def fetch(key: KeyType): Future[RemoteType]
@@ -193,6 +194,7 @@ abstract class RefresherCache[KeyType <: AnyRef, ValueType, RemoteType] {
       nearFetch(key)
 
     override def reload(key: KeyType, oldValue: Future[ValueType]): ListenableFuture[Future[ValueType]] = {
+      trace((key, oldValue))
       val result = SettableFuture.create[Future[ValueType]]()
       if (oldValue.isDefined) {
         fetchSingleFlight(key).map(transform(key, _))
