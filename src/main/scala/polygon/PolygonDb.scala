@@ -25,13 +25,13 @@ class PolygonCache(mdb: MongoDB) extends ValueCache[PolygonCacheKey, String] wit
   def get(key: PolygonCacheKey): Future[Option[String]] =
     key match {
       case contest: PolygonContestKey =>
-        trace("getContest(%s)".format(contest))
+        //trace("getContest(%s)".format(contest))
         Future {
           mdb("contest").findOne(MongoDBObject("_id" -> contest.url.toString))
             .flatMap(_.getAs[String]("raw"))
         }
       case problem: PolygonProblemKey =>
-        trace("getProblem(%s)".format(problem))
+        //trace("getProblem(%s)".format(problem))
         Future {
           findProblem(problem)
             .flatMap(_.getAs[String]("raw"))
