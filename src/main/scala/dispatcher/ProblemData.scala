@@ -10,7 +10,7 @@ import com.twitter.finagle.Service
 import org.jboss.netty.buffer.ChannelBuffer
 
 class ProblemData(pclient: Service[PolygonClientRequest, ChannelBuffer], pdb: ValueCache[PolygonCacheKey, String], sdb: SanitizeDb, invoker: InvokerRegistry) extends Logging {
-  private val polygonService = new PolygonService(pclient, pdb)
+  val polygonService = new PolygonService(pclient, pdb)
   val sanitizer = new PolygonSanitizer(sdb, pclient, invoker)
 
   def getContests(contests: Seq[ContestHandle]): Future[Map[ContestHandle, ContestWithProblems]] = {

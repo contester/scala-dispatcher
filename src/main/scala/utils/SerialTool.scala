@@ -215,7 +215,6 @@ abstract class RefresherCache[KeyType <: AnyRef, ValueType, RemoteType] extends 
     def load(key: KeyType): Future[ValueType] =
       nearFetch(key)
 
-
     override def reload(key: KeyType, oldValue: Future[ValueType]): ListenableFuture[Future[ValueType]] = {
       val result = SettableFuture.create[Future[ValueType]]()
       if (oldValue.isDefined) {
@@ -252,4 +251,8 @@ abstract class RefresherCache[KeyType <: AnyRef, ValueType, RemoteType] extends 
 
   def apply(key: KeyType) =
     nearFutureCache.get(key)
+
+  def dump = {
+    trace(nearFutureCache.asMap())
+  }
 }
