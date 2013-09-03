@@ -66,9 +66,7 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) 
       case (contests, problems) =>
         Future.collect(contests.flatMap(x => contestList.filter {
           h =>
-            val ch = getContestHandle(h.polygonId)
-            trace((ch, x._1, ch == x._1))
-            ch == x._1
+            getContestHandle(h.polygonId) == x._1 // TODO: check without creating new handle
         }.map { v => trace(v); v }.map(singleContest(_, x._2, problems))).toSeq)
     }.unit
   }
