@@ -56,7 +56,7 @@ class PolygonProblemHandle(val url: URL, val revision: Option[Int]) extends Prob
       case _ => super.equals(obj)
     }
 
-  override def toString = "PolygonProblemHandle(\"%s\"%s)".format(url, revision.map(", " + _))
+  override def toString = "PolygonProblemHandle(\"%s\"%s)".format(url, revision.map(", " + _).getOrElse(""))
 
   def toProblemURI: String = (Seq("polygon+", url.toString) ++ revision.map("?revision=%d".format(_)).toSeq).mkString
 }
