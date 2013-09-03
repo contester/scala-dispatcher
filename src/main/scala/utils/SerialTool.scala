@@ -212,13 +212,11 @@ abstract class RefresherCache[KeyType <: AnyRef, ValueType, RemoteType] extends 
   def fetch(key: KeyType): Future[RemoteType]
 
   object NearCacheReloader extends CacheLoader[KeyType, Future[ValueType]] {
-    def load(key: KeyType): Future[ValueType] = {
-      trace(key)
+    def load(key: KeyType): Future[ValueType] =
       nearFetch(key)
-    }
+
 
     override def reload(key: KeyType, oldValue: Future[ValueType]): ListenableFuture[Future[ValueType]] = {
-      trace((key, oldValue))
       val result = SettableFuture.create[Future[ValueType]]()
       if (oldValue.isDefined) {
         fetchSingleFlight(key).map(transform(key, _))

@@ -112,9 +112,7 @@ object CachedConnectionHttpService extends Service[(URL, HttpRequest), HttpRespo
     val url = request._1
     val addr = new InetSocketAddress(url.getHost, if (url.getPort == -1) url.getDefaultPort else url.getPort)
     val tlsHost = if (url.getProtocol == "https") Some(url.getHost) else None
-    trace(request)
-    trace(request._2.getContent.toString(Charsets.UTF_8))
-    connCache.get((tlsHost, addr))(request._2)
+    connCache.get((tlsHost, addr))(request._2).onSuccess(_ => trace("Fetching: " + url))
   }
 }
 
@@ -152,8 +150,6 @@ class AuthPolygonFilter extends Filter[PolygonClientRequest, ChannelBuffer, Poly
 
   def apply(request: PolygonClientRequest, service: Service[PolygonAuthenticatedRequest, ChannelBuffer]): Future[ChannelBuffer] = {
     val baseOpt = extractPolygonBase(request.objectUrl).flatMap(x => bases.get(x.toString))
-    trace(request)
-    trace(baseOpt)
     if (baseOpt.isDefined)
       service(new PolygonAuthenticatedRequest(request.objectUrl, request.params, baseOpt.get.authInfo))
     else
