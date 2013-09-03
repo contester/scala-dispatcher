@@ -43,6 +43,9 @@ trait PolygonClientRequest {
       case _ =>
         super.equals(obj)
     }
+
+  override def hashCode(): Int =
+    params.map(x => x._1.hashCode | x._2.hashCode).foldLeft(objectUrl.hashCode())((x, y) => x | y)
 }
 
 class PolygonAuthenticatedRequest(val url: URL, sourceParams: Iterable[(String, String)], authInfo: PolygonAuthInfo) {
@@ -56,12 +59,16 @@ class ContestHandle(val url: URL) extends PolygonClientRequest with PolygonConte
   override def toString =
     "ContestHandle(\"%s\")".format(url)
 
-  override def equals(obj: scala.Any): Boolean =
+  override def equals(obj: scala.Any): Boolean = {
     obj match {
       case other: ContestHandle =>
         url.equals(other.url)
       case _ => super.equals(obj)
     }
+  }
+
+  override def hashCode(): Int =
+    url.hashCode()
 }
 
 
