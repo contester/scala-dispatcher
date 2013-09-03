@@ -67,7 +67,7 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) 
         Future.collect(contests.flatMap(x => contestList.filter {
           h =>
             getContestHandle(h.polygonId) == x._1 // TODO: check without creating new handle
-        }.map { v => trace(v); v }.map(singleContest(_, x._2, problems))).toSeq)
+        }.map(singleContest(_, x._2, problems))).toSeq)
     }.unit
   }
 
@@ -81,7 +81,6 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) 
 
   def scan: Future[Unit] = {
     trace("Started scanning Contest/Problem tables")
-    d.polygonService.contests.dump
     getNewContestMap.flatMap { newMap =>
       trace("Finished scanning Contests, publishing the map")
       synchronized {

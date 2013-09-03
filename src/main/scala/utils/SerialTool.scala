@@ -251,8 +251,4 @@ abstract class RefresherCache[KeyType <: AnyRef, ValueType, RemoteType] extends 
 
   def apply(key: KeyType) =
     nearFutureCache.get(key)
-
-  def dump = {
-    trace(nearFutureCache.asMap())
-  }
 }
