@@ -38,6 +38,8 @@ trait ProblemID {
   def id: String
   def revision: Int
 
+  val pdbId = Seq(id, revision.toString).mkString("/")
+
   override def toString = "ProblemID(%s, %d)".format(id, revision)
 
   override def hashCode() =
@@ -50,7 +52,7 @@ trait ProblemID {
 
   def destName = id.replace('/', '.').replace(':', '.') + "." + revision.toString
   def zipName = destName + ".zip"
-  def prefix = Seq("problem", id, revision.toString).mkString("/")
+  def prefix = Seq("problem", pdbId).mkString("/")
   def dbName(suffix: String) =
     prefix + "/" + suffix
 

@@ -19,7 +19,7 @@ case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: L
 
   def ::(problem: ProblemID) =
     MongoDBObject(
-      List("id" -> problem.id, "revision" -> problem.revision) ++ toList
+      List("_id" -> problem.pdbId, "id" -> problem.id, "revision" -> problem.revision) ++ toList
     )
 }
 

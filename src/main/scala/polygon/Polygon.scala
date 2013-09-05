@@ -216,8 +216,7 @@ private object PolygonProblemUtils {
 
 class PolygonProblem(val source: Elem, val externalUrl: Option[URL]) extends ProblemDescription {
   override def toString = "PolygonProblem(%s, %d)".format(url, revision)
-  val pdbId: String = PolygonProblemUtils.getPdbPath(url)
-  val id = pdbId
+  val id = PolygonProblemUtils.getPdbPath(url)
   val handle = new PolygonProblemHandle(url, Some(revision))
 
   override def equals(obj: Any): Boolean =
