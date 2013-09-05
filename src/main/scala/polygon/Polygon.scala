@@ -206,9 +206,17 @@ class ContestWithProblems(val contest: ContestDescription, val problems: Map[Str
     }
 }
 
+private object PolygonProblemUtils {
+  def getPathPart(url: URL) =
+    url.getPath.stripPrefix("/").stripSuffix("/")
+
+  def getPdbPath(url: URL): String =
+    ("polygon" :: url.getProtocol :: url.getHost :: (if (url.getPort != -1) url.getPort.toString :: getPathPart(url) :: Nil else getPathPart(url) :: Nil)).mkString("/")
+}
+
 class PolygonProblem(val source: Elem, val externalUrl: Option[URL]) extends ProblemDescription {
   override def toString = "PolygonProblem(%s, %d)".format(url, revision)
-  val pdbId: String = (url.getProtocol :: url.getHost :: url.getPath :: Nil).mkString("/")
+  val pdbId: String = PolygonProblemUtils.getPdbPath(url)
   val id = pdbId
   val handle = new PolygonProblemHandle(url, Some(revision))
 
