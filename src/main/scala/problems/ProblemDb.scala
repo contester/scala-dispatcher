@@ -19,7 +19,7 @@ case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: L
 
   def ::(problem: ProblemID) =
     MongoDBObject(
-      List("_id" -> problem.pdbId, "id" -> problem.id, "revision" -> problem.revision) ++ toList
+      List("_id" -> problem.pdbId, "id" -> problem.pid, "revision" -> problem.revision) ++ toList
     )
 }
 
@@ -70,7 +70,7 @@ class CommonProblemDb(mdb: MongoDB) extends SanitizeDb with Logging {
   private def getManifest(problem: ProblemID): Future[Option[ProblemManifest]] =
     Future {
       trace("Looking for manifest: " + problem)
-      val criteria = MongoDBObject("id" -> problem.id, "revision" -> problem.revision) ++ ("testerName" $exists true)
+      val criteria = MongoDBObject("id" -> problem.pid, "revision" -> problem.revision) ++ ("testerName" $exists true)
       mdb("manifest").findOne(criteria)
         .map { i =>
         ProblemManifest(i)

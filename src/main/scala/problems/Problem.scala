@@ -35,24 +35,24 @@ trait Problem extends immutable.SortedMap[Int, Test] {
 }
 
 trait ProblemID {
-  def id: String
+  def pid: String
   def revision: Int
 
-  val pdbId = id + "/" + revision.toString
+  final val pdbId = pid + "/" + revision.toString
 
-  override def toString = "ProblemID(%s, %d)".format(id, revision)
+  override def toString = "ProblemID(%s, %d)".format(pid, revision)
 
   override def hashCode() =
-    id.hashCode() + revision.hashCode()
+    pid.hashCode() + revision.hashCode()
 
   override def equals(obj: Any): Boolean = obj match {
-    case other: ProblemID => (id == other.id) && (revision == other.revision)
+    case other: ProblemID => (pid == other.pid) && (revision == other.revision)
     case _ => super.equals(obj)
   }
 
-  def destName = id.replace('/', '.').replace(':', '.') + "." + revision.toString
+  def destName = pid.replace('/', '.').replace(':', '.') + "." + revision.toString
   def zipName = destName + ".zip"
-  def prefix = Seq("problem", pdbId).mkString("/")
+  def prefix = "problem/" +  pdbId
   def dbName(suffix: String) =
     prefix + "/" + suffix
 
@@ -66,7 +66,7 @@ trait ProblemID {
   def interactorName = dbName("interactor")
 }
 
-case class SimpleProblemID(override val id: String, override val revision: Int) extends ProblemID
+case class SimpleProblemID(override val pid: String, override val revision: Int) extends ProblemID
 
 class PDBProblem(val pdb: ProblemDb, val id: ProblemID, val testCount: Int, val timeLimitMicros: Long,
                  val memoryLimit: Long, val testerName: String, val answers: Set[Int],
@@ -80,7 +80,7 @@ class PDBProblem(val pdb: ProblemDb, val id: ProblemID, val testCount: Int, val 
 
   def interactive = interactorName.isDefined
 
-  override def toString = "PDBProblem(%s, %d)".format(id.id, id.revision)
+  override def toString = "PDBProblem(%s, %d)".format(id.pid, id.revision)
 }
 
 object PDBProblem {
