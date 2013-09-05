@@ -50,6 +50,7 @@ class PolygonCache(mdb: MongoDB) extends ValueCache[PolygonCacheKey, String] wit
         Future {
           mdb("problem").insert(
             Map(
+              "_id" -> (problem.url.toString + "?revision=" + problem.revision.get.toString),
               "id" -> problem.url.toString,
               "revision" -> problem.revision.get,
               "raw" -> value
