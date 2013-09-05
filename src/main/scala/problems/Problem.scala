@@ -38,7 +38,7 @@ trait ProblemID {
   def id: String
   def revision: Int
 
-  val pdbId = Seq(id, revision.toString).mkString("/")
+  val pdbId = id + "/" + revision.toString
 
   override def toString = "ProblemID(%s, %d)".format(id, revision)
 
