@@ -90,66 +90,66 @@ trait ProblemID {
    * TODO: Replace with shortened/hash?
    * @return Filesystem-compatible name.
    */
-  def destName = pid.replace('/', '.').replace(':', '.') + "." + revision.toString
+  final def destName = pid.replace('/', '.').replace(':', '.') + "." + revision.toString
 
   /**
    * Archive name written out for saniziting.
    * @return FIlesystem-compatible name.
    */
-  def zipName = destName + ".zip"
+  final def zipName = destName + ".zip"
 
   /**
    * Prefix in gridfs for all problem-related things.
    * @return Gridf-compatible prefix.
    */
-  def prefix = "problem/" +  pdbId
+  final def prefix = "problem/" +  pdbId
 
   /**
    * Shorthand for creating all other paths.
    * @param suffix
    * @return
    */
-  def dbName(suffix: String) =
+  final private def dbName(suffix: String) =
     prefix + "/" + suffix
 
   /**
    * Checker path.
    * @return
    */
-  def checkerName = dbName("checker")
+  final def checkerName = dbName("checker")
 
   /**
    * Prefix for a given test id.
    * @param testId Test id.
    * @return
    */
-  def testPrefix(testId: Int) = dbName("tests/" + testId + "/")
+  final def testPrefix(testId: Int) = dbName("tests/" + testId + "/")
 
   /**
    * Input data path.
    * @param testId Test id.
    * @return
    */
-  def inputName(testId: Int) = testPrefix(testId) + "input.txt"
+  final def inputName(testId: Int) = testPrefix(testId) + "input.txt"
 
   /**
    * Answer file path.
    * @param testId Test id.
    * @return
    */
-  def answerName(testId: Int) = testPrefix(testId) + "answer.txt"
+  final def answerName(testId: Int) = testPrefix(testId) + "answer.txt"
 
   /**
    * Archive path.
    * @return
    */
-  def archiveName = dbName("archive")
+  final def archiveName = dbName("archive")
 
   /**
    * Interactor path.
    * @return
    */
-  def interactorName = dbName("interactor")
+  final def interactorName = dbName("interactor")
 }
 
 /**
