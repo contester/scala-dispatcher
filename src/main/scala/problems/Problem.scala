@@ -175,8 +175,6 @@ case class SimpleProblemID(override val pid: String, override val revision: Int)
 class PDBProblem(val pdb: ProblemDb, val id: ProblemID, val testCount: Int, val timeLimitMicros: Long,
                  val memoryLimit: Long, val testerName: String, val answers: Set[Int],
                  val interactorName: Option[String], val stdio: Boolean) extends Problem {
-
-
   def tests: Seq[Int] = 1 to testCount
 
   def getTest(key: Int): Test =
@@ -193,7 +191,7 @@ object PDBProblem {
       m.interactorName, m.stdio)
 }
 
-class PDBTest(val problem: PDBProblem, val testId: Int) extends Test with TestLimits {
+private class PDBTest(val problem: PDBProblem, val testId: Int) extends Test with TestLimits {
   override def toString = "PDBTest(%s, %d)".format(problem, testId)
 
   def memoryLimit: Long = problem.memoryLimit
