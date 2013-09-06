@@ -5,6 +5,12 @@ import org.scalatest.FlatSpec
 
 import java.util.concurrent.TimeUnit
 import com.twitter.util.{Await, Future, Promise, Duration}
+import com.google.common.cache.{CacheLoader, CacheBuilder}
+import com.google.common.util.concurrent.{SettableFuture, ListenableFuture}
+import com.google.common.base.Ticker
+import org.stingray.contester.polygon.ContestHandle
+import java.net.URL
+import java.util.concurrent.atomic.AtomicInteger
 
 class SerialHashTests extends FlatSpec with ShouldMatchers {
   "HashQueue" should "return the same future for long-running request" in {
@@ -192,4 +198,51 @@ class ScannerCacheTests extends FlatSpec with ShouldMatchers {
     }
   }
 
+}
+
+class RefreshCacheTests extends FlatSpec with ShouldMatchers {
+  "CacheLoader" should "refresh" in {
+    object Loader extends CacheLoader[ContestHandle, String] {
+      val loadCount = new AtomicInteger()
+      val reloadCount = new AtomicInteger()
+      def load(key: ContestHandle): String = {
+        loadCount.incrementAndGet()
+        key.url.toString
+      }
+
+      override def reload(key: ContestHandle, oldValue: String): ListenableFuture[String] = {
+        reloadCount.incrementAndGet()
+        val result = SettableFuture.create[String]()
+        result.set(key.url + "|foo")
+        result
+      }
+    }
+
+    object Tick extends Ticker {
+      var value: Long = 0
+      def read(): Long = synchronized {
+        value
+      }
+    }
+
+    val c = CacheBuilder.newBuilder().refreshAfterWrite(60, TimeUnit.SECONDS).expireAfterAccess(300, TimeUnit.SECONDS).ticker(Tick).build(Loader)
+
+    expectResult(true)(new ContestHandle(new URL("http://foo/bar/")) == new ContestHandle(new URL("http://foo/bar/")))
+    expectResult("http://foo/bar/")(c.get(new ContestHandle(new URL("http://foo/bar/"))))
+    expectResult(1)(Loader.loadCount.get())
+
+    expectResult("http://foo/bar/")(c.asMap().get(new ContestHandle(new URL("http://foo/bar/"))))
+
+    Tick.synchronized {
+      Tick.value = 15 * 1000000000L
+    }
+    expectResult("http://foo/bar/")(c.get(new ContestHandle(new URL("http://foo/bar/"))))
+    expectResult(1)(Loader.loadCount.get())
+    Tick.synchronized {
+      Tick.value = 70 * 1000000000L
+    }
+    expectResult("http://foo/bar/|foo")(c.get(new ContestHandle(new URL("http://foo/bar/"))))
+    expectResult(1)(Loader.loadCount.get())
+    expectResult(1)(Loader.reloadCount.get())
+  }
 }

@@ -17,9 +17,9 @@ case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: L
     "testerName" -> testerName,
     "answers" -> answers) ++ interactorName.map("interactorName" -> _)
 
-  def ::(problem: ProblemT) =
+  def ::(problem: ProblemID) =
     MongoDBObject(
-      List("id" -> problem.id, "revision" -> problem.revision) ++ toList
+      List("_id" -> problem.pdbId, "id" -> problem.pid, "revision" -> problem.revision) ++ toList
     )
 }
 
@@ -37,13 +37,13 @@ object ProblemManifest {
 }
 
 trait ProblemDb {
-  def setProblem(problem: ProblemT, manifest: ProblemManifest): Future[Problem]
-  def getProblem(problem: ProblemT): Future[Option[Problem]]
+  def setProblem(problem: ProblemID, manifest: ProblemManifest): Future[Problem]
+  def getProblem(problem: ProblemID): Future[Option[Problem]]
   def getMostRecentProblem(problemId: String): Future[Option[Problem]]
 }
 
 trait ProblemFileStore {
-  def getProblemFile(problem: ProblemT, getFn: => Future[Array[Byte]]): Future[Unit]
+  def getProblemFile(problem: ProblemID, getFn: => Future[Array[Byte]]): Future[Unit]
 }
 
 trait SanitizeDb extends ProblemDb with ProblemFileStore
@@ -60,24 +60,24 @@ class CommonProblemDb(mdb: MongoDB) extends SanitizeDb with Logging {
       mdb("manifest").ensureIndex(Map("id" -> 1, "revision" -> 1), "uniqueProblem", true)
     }
 
-  def setProblem(problem: ProblemT, manifest: ProblemManifest) =
+  def setProblem(problem: ProblemID, manifest: ProblemManifest) =
     Future {
       trace("Inserting manifest: " + (problem :: manifest))
       mdb("manifest").insert(problem :: manifest)
       PDBProblem(this, problem, manifest)
     }
 
-  private def getManifest(problem: ProblemT): Future[Option[ProblemManifest]] =
+  private def getManifest(problem: ProblemID): Future[Option[ProblemManifest]] =
     Future {
       trace("Looking for manifest: " + problem)
-      val criteria = MongoDBObject("id" -> problem.id, "revision" -> problem.revision) ++ ("testerName" $exists true)
+      val criteria = MongoDBObject("id" -> problem.pid, "revision" -> problem.revision) ++ ("testerName" $exists true)
       mdb("manifest").findOne(criteria)
         .map { i =>
         ProblemManifest(i)
       }
     }
 
-  def getProblem(problem: ProblemT): Future[Option[Problem]] =
+  def getProblem(problem: ProblemID): Future[Option[Problem]] =
     getManifest(problem).map { opt =>
       opt.map { m =>
         PDBProblem(this, problem, m)
@@ -85,19 +85,19 @@ class CommonProblemDb(mdb: MongoDB) extends SanitizeDb with Logging {
     }
   import com.twitter.util.TimeConversions._
 
-  private[this] def storeProblemFile(problem: ProblemT, data: Array[Byte]) =
+  private[this] def storeProblemFile(problem: ProblemID, data: Array[Byte]) =
     Future {
       mfs(data) { fh =>
         fh.filename = problem.archiveName
       }
     }.unit.flatMap(_ => Utils.later(2.seconds))
 
-  private[this] def hasProblemFile(problem: ProblemT): Future[Boolean] =
+  private[this] def hasProblemFile(problem: ProblemID): Future[Boolean] =
     Future {
       mfs.findOne(problem.archiveName).headOption.isDefined
     }
 
-  def getProblemFile(problem: ProblemT, getFn: => Future[Array[Byte]]): Future[Unit] =
+  def getProblemFile(problem: ProblemID, getFn: => Future[Array[Byte]]): Future[Unit] =
     hasProblemFile(problem).flatMap { exists =>
       if (!exists)
         getFn.flatMap(storeProblemFile(problem, _))
@@ -110,7 +110,7 @@ class CommonProblemDb(mdb: MongoDB) extends SanitizeDb with Logging {
         .take(1).toIterable.headOption.map { found =>
         val revision = found.getAsOrElse[Int]("revision", 1)
         localCache.get((problemId, revision)).getOrElse {
-          val pt = SimpleProblemT(problemId, revision)
+          val pt = SimpleProblemID(problemId, revision)
           val m = ProblemManifest(found)
           val p = PDBProblem(this, pt, m)
           localCache.putIfAbsent((problemId, revision), p).getOrElse(p)

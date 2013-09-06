@@ -56,6 +56,7 @@ libraryDependencies ++= Seq(
   "joda-time" % "joda-time" % "2.2",
   "org.joda" % "joda-convert" % "1.3.1",
   "org.fusesource.scalate" %% "scalate-core" % "1.6.1",
+  "org.apache.httpcomponents" % "httpclient" % "4.2.5",
   "commons-io" % "commons-io" % "2.4",
   "com.rabbitmq" % "amqp-client" % "3.1.3",
   "com.codahale" % "jerkson_2.9.1" % "0.5.0",

@@ -8,10 +8,12 @@ import org.stingray.contester.db.ConnectionPool
 import org.stingray.contester.problems.Problem
 import org.stingray.contester.testing.{CombinedResultReporter, SolutionTester}
 import org.stingray.contester.common.GridfsObjectStore
+import java.net.URL
+import org.streum.configrity.Configuration
 
 class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
-                   val store: GridfsObjectStore, val storeId: String) extends Logging {
-  val pscanner = new ContestTableScanner(pdata, dbclient)
+                   val store: GridfsObjectStore, val storeId: String, polygonBase: URL) extends Logging {
+  val pscanner = new ContestTableScanner(pdata, dbclient, polygonBase)
   val dispatcher = new SubmitDispatcher(this)
   val evaldispatcher = new CustomTestDispatcher(dbclient, invoker, store, storeId)
 
@@ -19,7 +21,7 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
     Future.collect(x.toSeq).map(_.headOption)
 
   def getProblem(cid: Int, problem: String): Future[Problem] =
-    pscanner(cid).flatMap(pdata.getProblemInfo(pscanner, _, problem))
+    pscanner(cid).flatMap(pdata.getProblemInfo(_, problem))
 
   def getReporter(submit: SubmitObject) =
     CombinedResultReporter(submit, dbclient, basePath)
@@ -28,12 +30,15 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
     pscanner.rescan.join(dispatcher.scan).join(evaldispatcher.scan).unit
 }
 
-case class DbConfig(host: String, db: String, username: String, password: String) {
-  def createConnectionPool =
-    new ConnectionPool(host, db, username, password)
+class DbConfig(conf: Configuration) {
+  val short = conf.get[String]("short").getOrElse(conf[String]("db"))
+  val polygonBase = new URL(conf[String]("polygon"))
 
-  override def toString =
-    "DbConfig(\"%s\", \"%s\", \"%s\", \"%s\")".format(host, db, username, "hunter2")
+  def createConnectionPool =
+    new ConnectionPool(conf[String]("host"),
+      conf[String]("db"),
+      conf[String]("username"),
+      conf[String]("password"))
 }
 
 class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: SolutionTester, val store: GridfsObjectStore) extends Logging {
@@ -42,14 +47,17 @@ class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: Sol
 
   def add(conf: DbConfig) = {
     info(conf)
-    val d = new DbDispatcher(conf.createConnectionPool, pdata, new File(basePath, conf.db), invoker, store, conf.db)
+    val d = new DbDispatcher(conf.createConnectionPool, pdata, new File(basePath, conf.short), invoker, store, conf.short, conf.polygonBase)
     scanners(d) = d.start
   }
 
+/*
   def remove(conf: DbConfig) = {
-    dispatchers.remove(conf).foreach { d =>
-      scanners.remove(d).foreach(_.cancel())
-      pdata.remove(d.pscanner)
+    dispatchers.remove(conf).foreach {
+      d =>
+        scanners.remove(d).foreach(_.cancel())
+        pdata.remove(d.pscanner)
     }
   }
+*/
 }

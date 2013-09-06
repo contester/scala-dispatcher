@@ -5,15 +5,21 @@ import com.twitter.util.{Promise, Future}
 import com.twitter.util.TimeConversions._
 import grizzled.slf4j.Logging
 import org.stingray.contester.db.ConnectionPool
-import org.stingray.contester.polygon.ContestWithProblems
+import org.stingray.contester.polygon.{ContestHandle, ContestWithProblems}
 import org.stingray.contester.utils.Utils
+import java.net.URL
 
 case class ContestRow(id: Int, name: String, polygonId: Int, schoolMode: Boolean, Language: String)
 case class ProblemRow(contest: Int, id: String, tests: Int, name: String, rating: Int)
 
 class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
-class ContestTableScanner(d: ProblemData, db: ConnectionPool) extends Function[Int, Future[Int]] with Logging {
+class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) extends Function[Int, Future[ContestHandle]] with Logging {
+  private def getContestHandle(id: Int): ContestHandle = {
+    val result = new ContestHandle(new URL(polygonBase, "c/" + id + "/"))
+    result
+  }
+
   private def getContestsFromDb: Future[Seq[ContestRow]] =
     db.select("select ID, Name, SchoolMode, PolygonID, Language from Contests where PolygonID != 0") { row =>
       ContestRow(row.getInt("ID"), row.getString("Name"), row.getInt("PolygonID"), row.getInt("SchoolMode") == 1, row.getString("Language").toLowerCase)
@@ -37,6 +43,8 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool) extends Function[I
   private def singleContest(r: ContestRow, c: ContestWithProblems, oldp: Seq[ProblemRow]): Future[Unit] = {
     val m = oldp.filter(_.contest == r.id).map(v => v.id.toUpperCase -> v).toMap
 
+    c.problems.values.foreach(d.sanitizer)
+
     Future.collect(maybeUpdateContestName(r.id, r.name, c.getName(r.Language)).toSeq ++
     (m.keySet -- c.problems.keySet).toSeq.map { contestId =>
       db.execute("delete from Problems where Contest = ? and ID = ?", r.id, contestId).unit
@@ -53,19 +61,22 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool) extends Function[I
   }
 
   private def updateContests(contestList: Iterable[ContestRow]): Future[Unit] = {
-    d.getContests(this, contestList.map(_.polygonId).toSet.toSeq).join(getProblemsFromDb)
+    d.getContests(contestList.map(_.polygonId).toSet.toSeq.map(getContestHandle)).join(getProblemsFromDb)
       .flatMap {
       case (contests, problems) =>
-        Future.collect(contests.flatMap(x => contestList.filter(_.polygonId == x._1).map(singleContest(_, x._2, problems))).toSeq)
+        Future.collect(contests.flatMap(x => contestList.filter {
+          h =>
+            getContestHandle(h.polygonId) == x._1 // TODO: check without creating new handle
+        }.map(singleContest(_, x._2, problems))).toSeq)
     }.unit
   }
 
   def getNewContestMap: Future[Map[Int, ContestRow]] =
     getContestsFromDb.map(_.map(v => v.id -> v).toMap)
 
-  def apply(key: Int): Future[Int] =
+  def apply(key: Int): Future[ContestHandle] =
     synchronized {
-      data.get(key).map(x => Future.value(x.polygonId)).getOrElse(nextScan.map(_ => data(key).polygonId))
+      data.get(key).map(x => Future.value(getContestHandle(x.polygonId))).getOrElse(nextScan.map(_ => getContestHandle(data(key).polygonId)))
     }
 
   def scan: Future[Unit] = {

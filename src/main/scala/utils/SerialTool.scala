@@ -1,7 +1,11 @@
 package org.stingray.contester.utils
 
-import com.twitter.util.{Try, Future}
+import com.twitter.util.{Await, Try, Future}
 import collection.mutable
+import com.google.common.cache.{CacheBuilder, CacheLoader}
+import com.google.common.util.concurrent.{ListenableFuture, SettableFuture}
+import java.util.concurrent.TimeUnit
+import grizzled.slf4j.Logging
 
 /** Memoizator/serializator makes sure there's only one outstanding async operation per key.
   *
@@ -41,7 +45,7 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[Val
         data(key)
       } else
         data(key) = get()
-        data(key).transform(removeKey(key, _))
+      data(key).transform(removeKey(key, _))
     }
 }
 
@@ -107,10 +111,12 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
     * @return Value.
     */
   private[this] def getValue(key: KeyType) =
-    nearGet(key).flatMap { optVal =>
-      optVal.map { v =>
-        Future.value(v)
-      }.getOrElse(fetchValue(key))
+    nearGet(key).flatMap {
+      optVal =>
+        optVal.map {
+          v =>
+            Future.value(v)
+        }.getOrElse(fetchValue(key))
     }
 
   /** Set value in local cache.
@@ -148,8 +154,9 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
     */
   def apply(key: KeyType): Future[ValueType] =
     synchronized {
-      localCache.get(key).map { v =>
-        Future.value(v)
+      localCache.get(key).map {
+        v =>
+          Future.value(v)
       }.getOrElse(fetchAndSet(getValue, key))
     }
 
@@ -159,8 +166,9 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
     * @return Values.
     */
   def scan(keys: Iterable[KeyType]) =
-    Future.collect(keys.map(fetchAndSet(if (farScan) fetchValue else getValue, _)).toSeq).onSuccess { vals =>
-      setKeys(keys.toSet)
+    Future.collect(keys.map(fetchAndSet(if (farScan) fetchValue else getValue, _)).toSeq).onSuccess {
+      vals =>
+        setKeys(keys.toSet)
     }
 }
 
@@ -175,8 +183,8 @@ object ScannerCache {
     * @return ScannerCache instance.
     */
   def apply[KeyType, ValueType](nearGetFn: KeyType => Future[Option[ValueType]],
-                                nearPutFn: (KeyType, ValueType) => Future[Unit],
-                                farGetFn: KeyType => Future[ValueType]): ScannerCache[KeyType, ValueType, ValueType] =
+      nearPutFn: (KeyType, ValueType) => Future[Unit],
+      farGetFn: KeyType => Future[ValueType]): ScannerCache[KeyType, ValueType, ValueType] =
     new ScannerCache[KeyType, ValueType, ValueType] {
       def nearGet(key: KeyType): Future[Option[ValueType]] = nearGetFn(key)
 
@@ -184,4 +192,63 @@ object ScannerCache {
 
       def farGet(key: KeyType): Future[ValueType] = farGetFn(key)
     }
+}
+
+/**
+ * Interface for asynchronous caches.
+ *
+ * @tparam KeyType Type for keys.
+ * @tparam ValueType Type for values.
+ */
+trait ValueCache[KeyType, ValueType] {
+  def get(key: KeyType): Future[Option[ValueType]]
+
+  def put(key: KeyType, value: ValueType): Future[Unit]
+}
+
+abstract class RefresherCache[KeyType <: AnyRef, ValueType, RemoteType] extends Logging {
+  def cache: ValueCache[KeyType, RemoteType]
+
+  def fetch(key: KeyType): Future[RemoteType]
+
+  object NearCacheReloader extends CacheLoader[KeyType, Future[ValueType]] {
+    def load(key: KeyType): Future[ValueType] =
+      nearFetch(key)
+
+    override def reload(key: KeyType, oldValue: Future[ValueType]): ListenableFuture[Future[ValueType]] = {
+      val result = SettableFuture.create[Future[ValueType]]()
+      if (oldValue.isDefined) {
+        fetchSingleFlight(key).map(transform(key, _))
+            .onSuccess {
+              v =>
+                result.set(if (v == Await.result(oldValue)) oldValue else Future.value(v))
+            }
+            .onFailure(e => result.setException(e))
+      } else {
+        result.set(oldValue)
+      }
+      result
+    }
+  }
+
+  private def fetchSingleFlight(key: KeyType) =
+    farSerial(key, () => fetch(key).flatMap(result => cache.put(key, result).map(_ => result)))
+
+  private def nearFetch(key: KeyType) =
+    cache.get(key).flatMap { v =>
+        v.map(x => Future.value(transform(key, x)))
+            .getOrElse(fetchSingleFlight(key).map(transform(key, _)))
+    }
+
+  def transform(key: KeyType, x: RemoteType): ValueType
+
+  private val nearFutureCache = CacheBuilder.newBuilder()
+      .expireAfterAccess(300, TimeUnit.SECONDS)
+      .refreshAfterWrite(60, TimeUnit.SECONDS)
+      .build(NearCacheReloader)
+
+  private val farSerial = new SerialHash[KeyType, RemoteType]
+
+  def apply(key: KeyType) =
+    nearFutureCache.get(key)
 }
