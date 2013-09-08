@@ -4,9 +4,14 @@ import ScalateKeys._
 
 import sbtprotobuf.{ProtobufPlugin=>PB}
 
+import com.typesafe.sbt.SbtProguard._
+import com.typesafe.sbt.SbtProguard.ProguardKeys.proguard
+
 assemblySettings
 
 proguardSettings
+
+javaOptions in (Proguard, proguard) := Seq("-Xmx2G")
 
 seq(scalateSettings:_*)
 
@@ -34,7 +39,7 @@ version in PB.protobufConfig := "2.5.0"
 
 ProguardKeys.options in Proguard ++= Seq("-dontnote", "-dontwarn", "-ignorewarnings")
 
-ProguardKeys.options in Proguard += ProguardOptions.keepMain("org.stingray.contester.dispatcher.Main")
+ProguardKeys.options in Proguard += ProguardOptions.keepMain("org.stingray.contester.dispatcher.DispatcherServer")
 
 resolvers ++= Seq(
     "twitter.com" at "http://maven.twttr.com/",
