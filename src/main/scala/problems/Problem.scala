@@ -3,6 +3,7 @@ package org.stingray.contester.problems
 import org.stingray.contester.invokers.Sandbox
 import com.twitter.util.Future
 import collection.immutable
+import grizzled.slf4j.Logging
 
 class ProblemProxy(parent: Problem, protected val tests: Seq[Int]) extends Problem {
   def getTest(key: Int): Test = parent.getTest(key)
@@ -34,11 +35,12 @@ trait Problem extends immutable.SortedMap[Int, Test] {
       None
 }
 
-trait ProblemID {
+trait ProblemID extends Logging {
   def pid: String
   def revision: Int
 
   final val pdbId = pid + "/" + revision.toString
+  trace((pid, pdbId))
 
   override def toString = "ProblemID(%s, %d)".format(pid, revision)
 
