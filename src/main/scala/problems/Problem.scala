@@ -3,7 +3,6 @@ package org.stingray.contester.problems
 import org.stingray.contester.invokers.Sandbox
 import com.twitter.util.Future
 import collection.immutable
-import grizzled.slf4j.Logging
 
 /**
  * A proxy for parent problem to limit the test set.
@@ -74,7 +73,6 @@ trait ProblemID {
    * Constructed ID for a problem. Used as part of paths and as _id in manifest collection.
    */
   final val pdbId = pid + "/" + revision.toString
-  trace((pid, pdbId))
 
   override def toString = "ProblemID(%s, %d)".format(pid, revision)
 
