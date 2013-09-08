@@ -17,8 +17,10 @@ import org.stingray.contester.common.GridfsObjectStore
 import com.mongodb.casbah.gridfs.GridFS
 import org.stingray.contester.polygon._
 import org.stingray.contester.problems.CommonProblemDb
+import com.twitter.server.TwitterServer
+import com.twitter.util.Await
 
-object Main extends App with Logging {
+object DispatcherServer extends TwitterServer with Logging {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
 
   def createDbConfig(conf: Configuration) =
@@ -28,23 +30,25 @@ object Main extends App with Logging {
   val mHost = config[String]("pdb.mhost")
   //val amqclient = AMQ.createConnection(config.detach("messaging"))
 
-  val httpStatus = HttpStatus.bind(config[Int]("dispatcher.port"))
+  //val httpStatus = HttpStatus.bind(config[Int]("dispatcher.port"))
+  override def defaultHttpPort = config[Int]("dispatcher.port")
 
   val mongoDb = MongoConnection(mHost).getDB("contester")
   val pdb = new PolygonCache(mongoDb)
   val sdb = new CommonProblemDb(mongoDb)
-  //Await.result(pdb.buildIndexes)
   val objectStore = new GridfsObjectStore(GridFS(mongoDb))
   val invoker = new InvokerRegistry(mHost)
   StatusPageBuilder.data("invoker") = invoker
   val tester = new SolutionTester(new InvokerSimpleApi(invoker))
 
-  val sf = new NioServerSocketChannelFactory(
-    Executors.newCachedThreadPool(),
-    Executors.newCachedThreadPool())
-  val bs = new ServerBootstrap(sf)
-  bs.setPipelineFactory(new ServerPipelineFactory(invoker))
-  bs.bind(new InetSocketAddress(9981))
+  private def bindInvokerTo(socket: InetSocketAddress) = {
+    val sf = new NioServerSocketChannelFactory(
+      Executors.newCachedThreadPool(),
+      Executors.newCachedThreadPool())
+    val bs = new ServerBootstrap(sf)
+    bs.setPipelineFactory(new ServerPipelineFactory(invoker))
+    bs.bind(socket)
+  }
 
   val dispatchers =
     config.get[List[String]]("dispatcher.standard").map { names =>
@@ -74,4 +78,10 @@ object Main extends App with Logging {
         new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, sdb, tester, objectStore)
       }.foreach(_.scan)
     }
+
+  def main() {
+    HttpStatus.addHandlers
+    bindInvokerTo(new InetSocketAddress(config[Int]("dispatcher.invokerPort", 9981)))
+    Await.ready(httpServer)
+  }
 }
