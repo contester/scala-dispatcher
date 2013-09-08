@@ -48,6 +48,7 @@ libraryDependencies ++= Seq(
   "io.netty" % "netty" % "3.6.6.Final",
   "com.twitter" %% "finagle-core" % "6.5.2",
   "com.twitter" %% "finagle-http" % "6.5.2",
+  "com.twitter" %% "twitter-server" % "1.0.3",
   "org.streum" %% "configrity-core" % "1.0.0",
   "com.twitter" %% "util-core" % "6.3.8",
   "org.mongodb" %% "casbah" % "2.6.2",

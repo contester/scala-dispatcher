@@ -120,6 +120,12 @@ object Sanitizer extends Logging {
       .flatMap(d => new ProblemSanitizer(sandbox, d, problem).sanitizeAndStore)
   }
 
+  /**
+   * Sanitize a given problem.
+   * @param instance Invoker instance to use.
+   * @param problem Problem to sanitize. Problem archive already needs to be loaded into gridfs.
+   * @return
+   */
   def apply(instance: InvokerInstance, problem: ProblemDescription) =
     sanitize(instance.unrestricted, problem, instance.factory("zip").asInstanceOf[SevenzipHandler].p7z)
 }
