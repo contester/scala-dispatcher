@@ -14,7 +14,7 @@ case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
   extends Submit {
   val timestamp = arrived
   override def toString =
-    "Submit(%d, %s)".format(id, problemId)
+    "Submit(%d, %d, %s, %s)".format(id, contestId, problemId, arrived)
 }
 
 class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObject](parent.dbclient) {
