@@ -6,7 +6,7 @@ import com.twitter.util.Future
 import org.stingray.contester.common._
 
 object Compiler {
-  def justCompile(sandbox: Sandbox, handler: SourceHandler, module: Module) =
+  private def justCompile(sandbox: Sandbox, handler: SourceHandler, module: Module) =
     module.putToSandbox(sandbox, handler.sourceName)
       .flatMap(_ => handler.compile(sandbox))
 
@@ -24,6 +24,14 @@ object Compiler {
         }.toSeq).map(compileResult -> _.headOption)
     }
 
+  /**
+   * Check if this module was already compiled. We use both checksum and storename.
+   * TODO: Use memcached too.
+   * @param module Source module. We compare module.moduleHash to (storeName).sourceChecksum.
+   * @param store Object store.
+   * @param storeName Name for compiled module.
+   * @return Future(Some(compiled module) or None).
+   */
   def checkIfCompiled(module: Module, store: GridfsObjectStore, storeName: String): Future[Option[Module]] =
     store.getModuleEx(storeName).map(_.flatMap {
       case (module, metadata) =>
