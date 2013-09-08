@@ -182,6 +182,12 @@ class PDBProblem(val pdb: ProblemDb, val id: ProblemID, val testCount: Int, val 
 
   def interactive = interactorName.isDefined
 
+  def toBriefId = {
+    val components = id.pid.split("/")
+    val base = components.take(2) ++ Seq("...") ++ components.takeRight(2)
+    (base + id.revision.toString).mkString("/")
+  }
+
   override def toString = "PDBProblem(%s, %d)".format(id.pid, id.revision)
 }
 
@@ -192,7 +198,7 @@ object PDBProblem {
 }
 
 private class PDBTest(val problem: PDBProblem, val testId: Int) extends Test with TestLimits {
-  override def toString = "PDBTest(%s, %d)".format(problem, testId)
+  override def toString = "Test(%s, %d)".format(problem.toBriefId, testId)
 
   def memoryLimit: Long = problem.memoryLimit
 
