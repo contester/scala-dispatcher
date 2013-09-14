@@ -67,6 +67,10 @@ object Tester extends Logging {
     }
   }
 
+  def storeFile(sandbox: Sandbox, store: GridfsObjectStore, storeAs: String, storeWhat: RemoteFileName): Future[Option[String]] =
+    sandbox.invoker.api.stat(Seq(storeWhat), true)
+      .map(_.headOption).flatMap(_.map(_ => store.copyFromSandbox(sandbox, storeAs, storeWhat, Map.empty)))
+
   def apply(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String): Future[TestResult] =
     (if (test.interactive)
       testInteractive(instance, module, test)
@@ -79,7 +83,7 @@ object Tester extends Logging {
       .flatMap { _ => executeSolution(instance.restricted, moduleHandler, module, test.getLimits(module.moduleType), test.stdio) }
       .flatMap { solutionResult =>
         if (solutionResult.success) {
-            store.copyFromSandbox(instance.restricted, resultName, instance.unrestricted.sandboxId / "output.txt", Map.empty)
+            storeFile(instance.restricted, store, resultName, instance.unrestricted.sandboxId / "output.txt")
             .flatMap { _ => test.prepareInput(instance.restricted)}.flatMap { _ => test.prepareTester(instance.restricted)}
             .flatMap(_ => test.prepareTesterBinary(instance.restricted))
             .flatMap { testerName =>
