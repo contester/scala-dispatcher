@@ -83,7 +83,7 @@ object Tester extends Logging {
       .flatMap { _ => executeSolution(instance.restricted, moduleHandler, module, test.getLimits(module.moduleType), test.stdio) }
       .flatMap { solutionResult =>
         if (solutionResult.success) {
-            storeFile(instance.restricted, store, resultName, instance.unrestricted.sandboxId / "output.txt")
+            storeFile(instance.restricted, store, resultName, instance.restricted.sandboxId / "output.txt")
             .flatMap { _ => test.prepareInput(instance.restricted)}.flatMap { _ => test.prepareTester(instance.restricted)}
             .flatMap(_ => test.prepareTesterBinary(instance.restricted))
             .flatMap { testerName =>
