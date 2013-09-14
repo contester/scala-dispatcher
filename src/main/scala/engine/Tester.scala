@@ -79,8 +79,8 @@ object Tester extends Logging {
       .flatMap { _ => executeSolution(instance.restricted, moduleHandler, module, test.getLimits(module.moduleType), test.stdio) }
       .flatMap { solutionResult =>
         if (solutionResult.success) {
-            store.copyFromSandbox(instance.restricted, resultName, instance.unrestricted.sandboxId / "output.txt", Map.empty).join(
-            test.prepareInput(instance.restricted).flatMap { _ => test.prepareTester(instance.restricted)})
+            store.copyFromSandbox(instance.restricted, resultName, instance.unrestricted.sandboxId / "output.txt", Map.empty)
+            .flatMap { _ => test.prepareInput(instance.restricted)}.flatMap { _ => test.prepareTester(instance.restricted)}
             .flatMap(_ => test.prepareTesterBinary(instance.restricted))
             .flatMap { testerName =>
               Utils.later(Duration(500, TimeUnit.MILLISECONDS))
