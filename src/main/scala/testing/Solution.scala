@@ -50,7 +50,7 @@ class BinarySolution(invoker: InvokerSimpleApi, store: GridfsObjectStore, storeP
     r._2.success || (schoolMode && r._1 != 1)
 
   def test(test: Solution.NumberedTest): Future[Solution.EvaluatedTestResult] =
-    invoker.test(submit, binary, test._2, store, storePrefix)
+    invoker.test(submit, binary, test._2, store, storePrefix + "/" + test._1 + "/output.txt")
       .map(x => test._1 -> x)
       .flatMap { result =>
       reporter.test(result._1, result._2)

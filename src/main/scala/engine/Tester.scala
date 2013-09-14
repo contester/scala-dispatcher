@@ -67,19 +67,20 @@ object Tester extends Logging {
     }
   }
 
-  def apply(instance: InvokerInstance, module: Module, test: Test): Future[TestResult] =
+  def apply(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String): Future[TestResult] =
     (if (test.interactive)
       testInteractive(instance, module, test)
     else
-      testOld(instance, module, test)).map(x => new TestResult(x._1, x._2))
+      testOld(instance, module, test, store, resultName)).map(x => new TestResult(x._1, x._2))
 
-  private def testOld(instance: InvokerInstance, module: Module, test: Test): Future[(RunResult, Option[TesterRunResult])] = {
+  private def testOld(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String): Future[(RunResult, Option[TesterRunResult])] = {
     val moduleHandler = instance.factory(module.moduleType).asInstanceOf[BinaryHandler]
     test.prepareInput(instance.restricted)
       .flatMap { _ => executeSolution(instance.restricted, moduleHandler, module, test.getLimits(module.moduleType), test.stdio) }
       .flatMap { solutionResult =>
         if (solutionResult.success) {
-            test.prepareInput(instance.restricted).flatMap { _ => test.prepareTester(instance.restricted)}
+            store.copyFromSandbox(instance.restricted, resultName, instance.unrestricted.sandboxId / "output.txt", Map.empty).join(
+            test.prepareInput(instance.restricted).flatMap { _ => test.prepareTester(instance.restricted)})
             .flatMap(_ => test.prepareTesterBinary(instance.restricted))
             .flatMap { testerName =>
               Utils.later(Duration(500, TimeUnit.MILLISECONDS))
