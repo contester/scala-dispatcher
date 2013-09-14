@@ -20,7 +20,7 @@ trait SingleProgress {
   def finish(r: SolutionTestingResult): Future[Unit]
   def rescue: PartialFunction[Throwable, Future[Unit]] = Map.empty
 
-  def testingId: Int = ???
+  def testingId: Int = -1
 }
 
 trait ProgressReporter {
