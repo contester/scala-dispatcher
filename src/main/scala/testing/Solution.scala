@@ -26,7 +26,7 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
       .flatMap { compiled =>
         reporter { pr =>
           compiled._2.map { binary =>
-            new BinarySolution(invoker, store, "submit/%d/%d".format(submitId, pr.testingId), submit, problem,
+            new BinarySolution(invoker, store, storeBase + "submit/%d/%d".format(submitId, pr.testingId), submit, problem,
               binary, pr, schoolMode).run
           }.getOrElse(Future.value(Nil)).map(x => SolutionTestingResult(compiled._1, x.map(v => v._2)))
         }
