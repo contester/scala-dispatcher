@@ -29,6 +29,7 @@
       <excludeFolder url="file://$MODULE_DIR$/../target/resolution-cache" />
       <excludeFolder url="file://$MODULE_DIR$/../target/scala-2.10/cache" />
       <excludeFolder url="file://$MODULE_DIR$/../target/scala-2.10/classes" />
+      <excludeFolder url="file://$MODULE_DIR$/../target/scala-2.10/proguard" />
       <excludeFolder url="file://$MODULE_DIR$/../target/scala-2.10/test-classes" />
       <excludeFolder url="file://$MODULE_DIR$/../target/streams" />
     </content>
@@ -111,6 +112,7 @@
     <orderEntry type="library" name="SBT: org.codehaus.jackson:jackson-core-asl:1.9.13" level="project" />
     <orderEntry type="library" name="SBT: org.codehaus.jackson:jackson-mapper-asl:1.9.13" level="project" />
     <orderEntry type="library" name="SBT: mysql:mysql-connector-java:5.1.25" level="project" />
+    <orderEntry type="library" name="SBT: com.googlecode.protobuf-java-format:protobuf-java-format:1.2" level="project" />
   </component>
 </module>
 

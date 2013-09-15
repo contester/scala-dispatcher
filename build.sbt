@@ -67,6 +67,7 @@ libraryDependencies ++= Seq(
   "com.rabbitmq" % "amqp-client" % "3.1.3",
   "com.codahale" % "jerkson_2.9.1" % "0.5.0",
   "mysql" % "mysql-connector-java" % "5.1.25",
+  "com.googlecode.protobuf-java-format" % "protobuf-java-format" % "1.2",
   "org.scalatest" %% "scalatest" % "1.9" % "test"
 )
 

@@ -67,7 +67,7 @@ object Tester extends Logging {
     }
   }
 
-  def storeFile(sandbox: Sandbox, store: GridfsObjectStore, storeAs: String, storeWhat: RemoteFileName): Future[Option[String]] =
+  private def storeFile(sandbox: Sandbox, store: GridfsObjectStore, storeAs: String, storeWhat: RemoteFileName): Future[Option[String]] =
     sandbox.invoker.api.stat(Seq(storeWhat), true)
       .map(_.headOption).flatMap(_.map(_ => store.copyFromSandbox(sandbox, storeAs, storeWhat, Map.empty)))
 
