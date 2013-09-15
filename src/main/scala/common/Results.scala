@@ -292,4 +292,15 @@ class TestResult(val solution: RunResult, val tester: Option[TesterRunResult]) e
   override def toString =
       "%s, time=%ss, memory=%s".format(StatusCode(status),
       solution.time / 1000000.0, solution.memory)
+
+  import com.mongodb.casbah.Implicits._
+  override def toMongoDBObject: Imports.DBObject = super.toMongoDBObject ++ MongoDBObject(
+      "status" -> status,
+      "testerStatus" -> testerStatus,
+      "solutionStatus" -> solutionStatus,
+      "testerOutput" -> getTesterOutput,
+      "testerError" -> getTesterError,
+      "testerReturnCode" -> getTesterReturnCode,
+      "solution" -> solution.toMongoDBObject
+  ) ++ tester.map(x => MongoDBObject("tester" ->  x))
 }
