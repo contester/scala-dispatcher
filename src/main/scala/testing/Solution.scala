@@ -3,7 +3,7 @@ package org.stingray.contester.testing
 import org.stingray.contester.problems.{Problem, Test}
 import org.stingray.contester.common._
 import com.twitter.util.Future
-import org.stingray.contester.engine.{InvokerSimpleApi, Compiler}
+import org.stingray.contester.engine.InvokerSimpleApi
 import grizzled.slf4j.Logging
 import org.stingray.contester.invokers.SchedulingKey
 import scala.Some
@@ -18,12 +18,7 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
   def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, reporter: ProgressReporter,
       schoolMode: Boolean, store: GridfsObjectStore, storeHandle: InstanceSubmitHandle): Future[Unit] = {
     val compiledModuleName = storeHandle.toGridfsPath + "/compiledModule"
-    Compiler.checkIfCompiled(sourceModule, store, compiledModuleName).flatMap { maybeCompiled =>
-      if (maybeCompiled.isDefined)
-        Future.value((AlreadyCompiledResult, maybeCompiled))
-      else
-        invoker.compile(submit, sourceModule, store, compiledModuleName)
-    }
+    invoker.maybeCompile(submit, sourceModule, store, compiledModuleName)
       .flatMap { compiled =>
         reporter { pr =>
           pr.compile(compiled._1).flatMap { _ =>
