@@ -17,12 +17,23 @@ import org.stingray.contester.polygon._
 import org.stingray.contester.problems.CommonProblemDb
 import com.twitter.server.TwitterServer
 import com.twitter.util.Await
+import org.fusesource.scalate.layout.DefaultLayoutStrategy
+import com.twitter.finagle.http.HttpMuxer
 
 object DispatcherServer extends TwitterServer with Logging {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
 
   def createDbConfig(conf: Configuration) =
     new DbConfig(conf)
+
+  val templateEngine = {
+    import org.fusesource.scalate.TemplateEngine
+    val templatePath = getClass.getResource("/templates").getPath
+    val e = new TemplateEngine(List(new java.io.File(templatePath)))
+    e.allowReload = false
+    e.layoutStrategy =  new DefaultLayoutStrategy(e, "layouts/default.ssp")
+    e
+  }
 
   val config = Configuration.load("dispatcher.conf")
   val mHost = config[String]("pdb.mhost")
@@ -35,7 +46,11 @@ object DispatcherServer extends TwitterServer with Logging {
   val polygonCache = new PolygonCache(mongoDb.db)
   val problemDb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
   val invoker = new InvokerRegistry(mHost)
-  StatusPageBuilder.data("invoker") = invoker
+
+  HttpMuxer.addHandler("assets/", StaticServer)
+  HttpMuxer.addHandler("invokers", new DynamicServer(
+      templateEngine, "org/stingray/contester/invokers/InvokerRegistry.ssp", Map("invoker" -> invoker)))
+
   val invokerApi = new InvokerSimpleApi(invoker)
   val tester = new SolutionTester(invokerApi)
 
@@ -77,7 +92,6 @@ object DispatcherServer extends TwitterServer with Logging {
     }
 
   def main() {
-    HttpStatus.addHandlers
     bindInvokerTo(new InetSocketAddress(config[Int]("dispatcher.invokerPort", 9981)))
     Await.ready(httpServer)
   }
