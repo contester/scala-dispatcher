@@ -48,9 +48,7 @@ trait ProblemFileStore {
 
 trait SanitizeDb extends ProblemDb with ProblemFileStore
 
-class CommonProblemDb(mdb: MongoDB) extends SanitizeDb with Logging {
-  lazy val mfs = GridFS(mdb)
-
+class CommonProblemDb(mdb: MongoDB, mfs: GridFS) extends SanitizeDb with Logging {
   import collection.JavaConversions._
   val localCache: collection.concurrent.Map[(String, Int), PDBProblem] = new MapMaker().weakValues().makeMap[(String, Int), PDBProblem]()
 

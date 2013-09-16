@@ -1,6 +1,5 @@
 package org.stingray.contester.dispatcher
 
-import com.mongodb.casbah.MongoConnection
 import grizzled.slf4j.Logging
 import java.io.File
 import java.net.{URL, InetSocketAddress}
@@ -13,8 +12,7 @@ import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.streum.configrity.Configuration
 import org.stingray.contester.testing.SolutionTester
 import org.stingray.contester.engine.InvokerSimpleApi
-import org.stingray.contester.common.GridfsObjectStore
-import com.mongodb.casbah.gridfs.GridFS
+import org.stingray.contester.common.{MongoDBInstance, GridfsObjectStore}
 import org.stingray.contester.polygon._
 import org.stingray.contester.problems.CommonProblemDb
 import com.twitter.server.TwitterServer
@@ -33,10 +31,11 @@ object DispatcherServer extends TwitterServer with Logging {
   //val httpStatus = HttpStatus.bind(config[Int]("dispatcher.port"))
   override def defaultHttpPort = config[Int]("dispatcher.port")
 
-  val mongoDb = MongoConnection(mHost).getDB("contester")
-  val pdb = new PolygonCache(mongoDb)
-  val sdb = new CommonProblemDb(mongoDb)
-  val objectStore = new GridfsObjectStore(GridFS(mongoDb))
+  val mongoDb = new MongoDBInstance(mHost, "contester")
+
+  val pdb = new PolygonCache(mongoDb.db)
+  val sdb = new CommonProblemDb(mongoDb.db, mongoDb.fs)
+  val objectStore = new GridfsObjectStore(mongoDb.fs)
   val invoker = new InvokerRegistry(mHost)
   StatusPageBuilder.data("invoker") = invoker
   val tester = new SolutionTester(new InvokerSimpleApi(invoker))
@@ -56,7 +55,6 @@ object DispatcherServer extends TwitterServer with Logging {
       val authFilter = new AuthPolygonFilter
       config.detach("polygons").detachAll.foreach {
         case (shortName, polygonConf) =>
-	println(polygonConf)
         authFilter.addPolygon(new PolygonBase(shortName, new URL(polygonConf[String]("url")), polygonConf[String]("username"), polygonConf[String]("password")))
       }
 
