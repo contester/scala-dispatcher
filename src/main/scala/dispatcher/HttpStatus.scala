@@ -15,7 +15,7 @@ import org.jboss.netty.buffer.ChannelBuffers.copiedBuffer
 object StaticServer extends Service[HttpRequest, HttpResponse] {
   def apply(request: HttpRequest): Future[HttpResponse] =
     Future {
-      val path = normalize(new URI(request.getUri).getPath)
+      val path = HttpStatus.normalize(new URI(request.getUri).getPath)
       val contents = Option(getClass.getResourceAsStream(path))
       contents.map { c =>
         val response = new DefaultHttpResponse(HTTP_1_1, OK)
@@ -24,11 +24,6 @@ object StaticServer extends Service[HttpRequest, HttpResponse] {
       }.getOrElse(new DefaultHttpResponse(HTTP_1_1, NOT_FOUND))
     }
 
-  def normalize(path: String) = {
-    val suffix = if (path.endsWith("/")) "/" else ""
-    val p = path.split("/") filterNot(_.isEmpty) mkString "/"
-    "/" + p + suffix
-  }
 }
 
 class DynamicServer(templateEngine: TemplateEngine, template: String, attributes: Map[String, Any])
@@ -46,5 +41,11 @@ class DynamicServer(templateEngine: TemplateEngine, template: String, attributes
 object HttpStatus {
   def addHandlers = {
     HttpMuxer.addHandler("assets/", StaticServer)
+  }
+
+  def normalize(path: String) = {
+    val suffix = if (path.endsWith("/")) "/" else ""
+    val p = path.split("/") filterNot(_.isEmpty) mkString "/"
+    "/" + p + suffix
   }
 }
