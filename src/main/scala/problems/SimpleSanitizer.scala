@@ -1,17 +1,16 @@
 package org.stingray.contester.problems
 
-import org.stingray.contester.engine.{Sanitizer, ProblemDescription}
-import org.stingray.contester.invokers.InvokerRegistry
+import org.stingray.contester.engine.{InvokerSimpleApi, ProblemDescription}
 import com.twitter.util.Future
 import collection.mutable
 import org.stingray.contester.utils.ScannerCache
 
-class SimpleSanitizer(invoker: InvokerRegistry) extends Function[ProblemDescription, Future[ProblemManifest]] {
+class SimpleSanitizer(invoker: InvokerSimpleApi) extends Function[ProblemDescription, Future[ProblemManifest]] {
   private val futures = new mutable.HashMap[ProblemDescription, Future[ProblemManifest]]()
 
   def apply(key: ProblemDescription): Future[ProblemManifest] =
     synchronized {
-      futures.getOrElseUpdate(key, invoker("zip", key, "sanitize")(Sanitizer(_, key)).ensure(futures.remove(key)))
+      futures.getOrElseUpdate(key, invoker.sanitize(key)).ensure(futures.remove(key))
     }
 }
 

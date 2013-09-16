@@ -36,7 +36,8 @@ object DispatcherServer extends TwitterServer with Logging {
   val problemDb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
   val invoker = new InvokerRegistry(mHost)
   StatusPageBuilder.data("invoker") = invoker
-  val tester = new SolutionTester(new InvokerSimpleApi(invoker))
+  val invokerApi = new InvokerSimpleApi(invoker)
+  val tester = new SolutionTester(invokerApi)
 
   private def bindInvokerTo(socket: InetSocketAddress) = {
     val sf = new NioServerSocketChannelFactory(
@@ -57,7 +58,7 @@ object DispatcherServer extends TwitterServer with Logging {
       }
 
       val client = authFilter andThen BasicPolygonFilter andThen CachedConnectionHttpService
-      val problems = new ProblemData(client, polygonCache, problemDb, invoker)
+      val problems = new ProblemData(client, polygonCache, problemDb, invokerApi)
       val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester, mongoDb.objectStore)
 
       names.foreach { name =>

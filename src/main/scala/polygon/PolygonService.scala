@@ -1,15 +1,16 @@
 package org.stingray.contester.polygon
 
 import com.twitter.util.Future
-import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.problems
 import problems._
 import org.stingray.contester.utils.{RefresherCache, ValueCache}
 import org.jboss.netty.buffer.ChannelBuffer
 import com.twitter.finagle.Service
 import scala.xml.XML
+import org.stingray.contester.engine.InvokerSimpleApi
 
-class ProblemByPid(client: Service[PolygonClientRequest, ChannelBuffer], pdb: ValueCache[PolygonCacheKey, String]) extends RefresherCache[PolygonProblemHandle, PolygonProblem, String] {
+class ProblemByPid(client: Service[PolygonClientRequest, ChannelBuffer], pdb: ValueCache[PolygonCacheKey, String])
+    extends RefresherCache[PolygonProblemHandle, PolygonProblem, String] {
   val cache: ValueCache[PolygonProblemHandle, String] = new ValueCache[PolygonProblemHandle, String] {
     def get(key: PolygonProblemHandle): Future[Option[String]] = pdb.get(key)
 
@@ -20,10 +21,12 @@ class ProblemByPid(client: Service[PolygonClientRequest, ChannelBuffer], pdb: Va
 
   def fetch(key: PolygonProblemHandle): Future[String] = client(key).map(PolygonClient.asPage)
 
-  def transform(key: PolygonProblemHandle, x: String): PolygonProblem = new PolygonProblem(XML.loadString(x), Some(key.url))
+  def transform(key: PolygonProblemHandle, x: String): PolygonProblem =
+    new PolygonProblem(XML.loadString(x), Some(key.url))
 }
 
-class ContestByPid(client: Service[PolygonClientRequest, ChannelBuffer], pdb: ValueCache[PolygonCacheKey, String]) extends RefresherCache[ContestHandle, ContestDescription, String] {
+class ContestByPid(client: Service[PolygonClientRequest, ChannelBuffer], pdb: ValueCache[PolygonCacheKey, String])
+    extends RefresherCache[ContestHandle, ContestDescription, String] {
   val cache: ValueCache[ContestHandle, String] = new ValueCache[ContestHandle, String] {
     def get(key: ContestHandle): Future[Option[String]] = pdb.get(key)
 
@@ -35,7 +38,7 @@ class ContestByPid(client: Service[PolygonClientRequest, ChannelBuffer], pdb: Va
   def transform(key: ContestHandle, x: String): ContestDescription = new ContestDescription(XML.loadString(x))
 }
 
-class PolygonSanitizer(db: SanitizeDb, client: Service[PolygonClientRequest, ChannelBuffer], invoker: InvokerRegistry)
+class PolygonSanitizer(db: SanitizeDb, client: Service[PolygonClientRequest, ChannelBuffer], invoker: InvokerSimpleApi)
   extends ProblemDBSanitizer[PolygonProblem](db, new SimpleSanitizer(invoker)) {
   def getProblemFile(key: PolygonProblem): Future[Array[Byte]] =
     client(new PolygonProblemHandle(key.url, Some(key.revision)).file).map(buffer => PolygonClient.asByteArray(buffer))
