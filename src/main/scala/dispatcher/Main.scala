@@ -28,7 +28,6 @@ object DispatcherServer extends TwitterServer with Logging {
   val mHost = config[String]("pdb.mhost")
   //val amqclient = AMQ.createConnection(config.detach("messaging"))
 
-  //val httpStatus = HttpStatus.bind(config[Int]("dispatcher.port"))
   override def defaultHttpPort = config[Int]("dispatcher.port")
 
   val mongoDb = new MongoDBInstance(mHost, "contester")
