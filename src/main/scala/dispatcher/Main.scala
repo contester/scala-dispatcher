@@ -32,8 +32,8 @@ object DispatcherServer extends TwitterServer with Logging {
 
   val mongoDb = new MongoDBInstance(mHost, "contester")
 
-  val pdb = new PolygonCache(mongoDb.db)
-  val sdb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
+  val polygonCache = new PolygonCache(mongoDb.db)
+  val problemDb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
   val invoker = new InvokerRegistry(mHost)
   StatusPageBuilder.data("invoker") = invoker
   val tester = new SolutionTester(new InvokerSimpleApi(invoker))
@@ -57,7 +57,7 @@ object DispatcherServer extends TwitterServer with Logging {
       }
 
       val client = authFilter andThen BasicPolygonFilter andThen CachedConnectionHttpService
-      val problems = new ProblemData(client, pdb, sdb, invoker)
+      val problems = new ProblemData(client, polygonCache, problemDb, invoker)
       val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester, mongoDb.objectStore)
 
       names.foreach { name =>
@@ -71,7 +71,7 @@ object DispatcherServer extends TwitterServer with Logging {
   val moodles =
     config.get[List[String]]("dispatcher.moodles").map { names =>
       names.filter(x => config.contains(x + ".db")).map { name =>
-        new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, sdb, tester, mongoDb.objectStore)
+        new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, problemDb, tester, mongoDb.objectStore)
       }.foreach(_.scan)
     }
 
