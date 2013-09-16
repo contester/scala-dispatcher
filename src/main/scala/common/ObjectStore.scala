@@ -6,6 +6,7 @@ import com.mongodb.casbah.gridfs.GridFS
 import java.io.InputStream
 import com.mongodb.casbah.commons.MongoDBObject
 import org.apache.commons.io.FilenameUtils
+import com.mongodb.DBObject
 
 object ObjectStore {
   def getMetadataString(metadata: Map[String, Any], key: String): String =
@@ -15,6 +16,29 @@ object ObjectStore {
       case _ =>
         ""
     }
+}
+
+trait HasMongoDBObject {
+  def toMongoDBObject: DBObject
+}
+
+trait HasGridfsPath {
+  def toGridfsPath: String
+}
+
+class InstanceHandle(val handle: String) {
+  def submit(submitId: Int) =
+    new InstanceSubmitHandle(handle, submitId)
+}
+class InstanceSubmitHandle(val handle: String, val submitId: Int) extends HasGridfsPath {
+  def toGridfsPath: String = "submit/%s/%d".format(handle, submitId)
+
+  def testing(testingId: Int) =
+    new InstanceSubmitTestingHandle(handle, submitId, testingId)
+}
+
+class InstanceSubmitTestingHandle(val handle: String, val submitId: Int, val testingId: Int) extends HasGridfsPath {
+  def toGridfsPath: String = "submit/%s/%d/%d".format(handle, submitId, testingId)
 }
 
 class GridfsObjectStore(fs: GridFS) {

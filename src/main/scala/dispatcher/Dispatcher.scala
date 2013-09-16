@@ -2,7 +2,7 @@ package org.stingray.contester.dispatcher
 
 import java.sql.{Timestamp, ResultSet}
 import org.stingray.contester.db.{HasId, SelectDispatcher}
-import org.stingray.contester.common.{ByteBufferModule, Module, SubmitWithModule}
+import org.stingray.contester.common.{InstanceSubmitHandle, ByteBufferModule, Module, SubmitWithModule}
 import org.stingray.contester.invokers.TimeKey
 
 trait Submit extends TimeKey with HasId with SubmitWithModule {
@@ -60,7 +60,7 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
   // main test entry point
   def run(m: SubmitObject) = {
     parent.getProblem(m.contestId, m.problemId).flatMap { problem =>
-      parent.invoker(m, m.sourceModule, problem, parent.getReporter(m), m.schoolMode, parent.store, parent.storeId + "/", m.id)
+      parent.invoker(m, m.sourceModule, problem, parent.getReporter(m), m.schoolMode, parent.store, new InstanceSubmitHandle(parent.storeId, m.id))
     }
   }
 }

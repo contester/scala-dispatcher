@@ -79,6 +79,6 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester, 
 
   def run(item: MoodleSubmit): Future[Unit] =
     pdb.getMostRecentProblem("moodle/" + item.problemId).flatMap { problem =>
-      inv(item, item.sourceModule, problem.get, new MoodleResultReporter(db, item), true, store, "moodle/", item.id)
+      inv(item, item.sourceModule, problem.get, new MoodleResultReporter(db, item), true, store, new InstanceSubmitHandle("moodle", item.id))
     }
 }

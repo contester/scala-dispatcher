@@ -1,11 +1,12 @@
 package org.stingray.contester.testing
 
 import org.stingray.contester.problems.{Problem, Test}
-import org.stingray.contester.common.{AlreadyCompiledResult, GridfsObjectStore, Module, TestResult}
+import org.stingray.contester.common._
 import com.twitter.util.Future
 import org.stingray.contester.engine.{InvokerSimpleApi, Compiler}
 import grizzled.slf4j.Logging
 import org.stingray.contester.invokers.SchedulingKey
+import scala.Some
 
 object Solution {
   type NumberedTest = (Int, Test)
@@ -15,8 +16,8 @@ object Solution {
 
 class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
   def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, reporter: ProgressReporter,
-      schoolMode: Boolean, store: GridfsObjectStore, storeBase: String, submitId: Int): Future[Unit] = {
-    val compiledModuleName = storeBase + "submit/%d/compiledModule".format(submitId)
+      schoolMode: Boolean, store: GridfsObjectStore, storeHandle: InstanceSubmitHandle): Future[Unit] = {
+    val compiledModuleName = storeHandle.toGridfsPath + "/compiledModule"
     Compiler.checkIfCompiled(sourceModule, store, compiledModuleName).flatMap { maybeCompiled =>
       if (maybeCompiled.isDefined)
         Future.value((AlreadyCompiledResult, maybeCompiled))
@@ -27,7 +28,7 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
         reporter { pr =>
           pr.compile(compiled._1).flatMap { _ =>
             compiled._2.map { binary =>
-              new BinarySolution(invoker, store, storeBase + "submit/%d/%d".format(submitId, pr.testingId), submit, problem,
+              new BinarySolution(invoker, store, storeHandle.testing(pr.testingId), submit, problem,
                 binary, pr, schoolMode).run
             }.getOrElse(Future.value(Nil)).map(x => SolutionTestingResult(compiled._1, x.map(v => v._2)))
           }
@@ -45,14 +46,14 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
     }
 }
 
-class BinarySolution(invoker: InvokerSimpleApi, store: GridfsObjectStore, storePrefix: String,
+class BinarySolution(invoker: InvokerSimpleApi, store: GridfsObjectStore, storeHandle: InstanceSubmitTestingHandle,
     submit: SchedulingKey, problem: Problem,
     binary: Module, reporter: SingleProgress, schoolMode: Boolean) extends Logging with TestingStrategy {
   private def proceed(r: Solution.NumberedTestResult): Boolean =
     r._2.success || (schoolMode && r._1 != 1)
 
   def test(test: Solution.NumberedTest): Future[Solution.EvaluatedTestResult] =
-    invoker.test(submit, binary, test._2, store, storePrefix + "/" + test._1 + "/output.txt")
+    invoker.test(submit, binary, test._2, store, storeHandle.toGridfsPath + "/" + test._1 + "/output.txt")
       .map(x => test._1 -> x)
       .flatMap { result =>
       reporter.test(result._1, result._2)

@@ -294,7 +294,7 @@ class TestResult(val solution: RunResult, val tester: Option[TesterRunResult]) e
       solution.time / 1000000.0, solution.memory)
 
   import com.mongodb.casbah.Implicits._
-  override def toMongoDBObject: Imports.DBObject = super.toMongoDBObject ++ MongoDBObject(
+  override def toMongoDBObject: Imports.DBObject = super.toMongoDBObject ++ MongoDBObject(List(
       "status" -> status,
       "testerStatus" -> testerStatus,
       "solutionStatus" -> solutionStatus,
@@ -302,5 +302,5 @@ class TestResult(val solution: RunResult, val tester: Option[TesterRunResult]) e
       "testerError" -> getTesterError,
       "testerReturnCode" -> getTesterReturnCode,
       "solution" -> solution.toMongoDBObject
-  ) ++ tester.map(x => MongoDBObject("tester" ->  x))
+  ) ++ tester.map("tester" -> _))
 }
