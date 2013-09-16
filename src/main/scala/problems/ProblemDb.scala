@@ -3,9 +3,9 @@ package org.stingray.contester.problems
 import com.mongodb.casbah.Imports._
 import com.twitter.util.Future
 import org.stingray.contester.utils.Utils
-import com.mongodb.casbah.gridfs.GridFS
 import grizzled.slf4j.Logging
 import com.google.common.collect.MapMaker
+import org.stingray.contester.common.GridfsObjectStore
 
 case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
                            stdio: Boolean, testerName: String, answers: Iterable[Int], interactorName: Option[String]) {
@@ -48,7 +48,7 @@ trait ProblemFileStore {
 
 trait SanitizeDb extends ProblemDb with ProblemFileStore
 
-class CommonProblemDb(mdb: MongoDB, mfs: GridFS) extends SanitizeDb with Logging {
+class CommonProblemDb(mdb: MongoDB, mfs: GridfsObjectStore) extends SanitizeDb with Logging {
   import collection.JavaConversions._
   val localCache: collection.concurrent.Map[(String, Int), PDBProblem] = new MapMaker().weakValues().makeMap[(String, Int), PDBProblem]()
 
@@ -84,16 +84,11 @@ class CommonProblemDb(mdb: MongoDB, mfs: GridFS) extends SanitizeDb with Logging
   import com.twitter.util.TimeConversions._
 
   private[this] def storeProblemFile(problem: ProblemID, data: Array[Byte]) =
-    Future {
-      mfs(data) { fh =>
-        fh.filename = problem.archiveName
-      }
-    }.unit.flatMap(_ => Utils.later(2.seconds))
+    mfs.put(problem.archiveName, data, Map.empty)
+      .unit.flatMap(_ => Utils.later(2.seconds))
 
   private[this] def hasProblemFile(problem: ProblemID): Future[Boolean] =
-    Future {
-      mfs.findOne(problem.archiveName).headOption.isDefined
-    }
+    mfs.exists(problem.archiveName)
 
   def getProblemFile(problem: ProblemID, getFn: => Future[Array[Byte]]): Future[Unit] =
     hasProblemFile(problem).flatMap { exists =>

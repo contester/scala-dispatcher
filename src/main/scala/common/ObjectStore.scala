@@ -66,6 +66,9 @@ class GridfsObjectStore(fs: GridFS) {
       }
     }
 
+  def exists(name: String): Future[Boolean] =
+    getMetaData(name).map(_.isDefined)
+
   def setMetaData(name: String)(f: Map[String, Any] => Map[String, Any]): Future[Unit] =
     Future {
       fs.findOne(name).map { file =>

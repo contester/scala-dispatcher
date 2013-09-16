@@ -4,6 +4,8 @@ import com.mongodb.casbah.{MongoConnection, MongoDB}
 import com.mongodb.casbah.gridfs.GridFS
 
 class MongoDBInstance(val db: MongoDB, val fs: GridFS) {
+  val objectStore = new GridfsObjectStore(fs)
+
   def this(db: MongoDB) =
     this(db, GridFS(db))
 

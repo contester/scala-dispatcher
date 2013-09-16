@@ -12,7 +12,7 @@ import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.streum.configrity.Configuration
 import org.stingray.contester.testing.SolutionTester
 import org.stingray.contester.engine.InvokerSimpleApi
-import org.stingray.contester.common.{MongoDBInstance, GridfsObjectStore}
+import org.stingray.contester.common.MongoDBInstance
 import org.stingray.contester.polygon._
 import org.stingray.contester.problems.CommonProblemDb
 import com.twitter.server.TwitterServer
@@ -34,8 +34,7 @@ object DispatcherServer extends TwitterServer with Logging {
   val mongoDb = new MongoDBInstance(mHost, "contester")
 
   val pdb = new PolygonCache(mongoDb.db)
-  val sdb = new CommonProblemDb(mongoDb.db, mongoDb.fs)
-  val objectStore = new GridfsObjectStore(mongoDb.fs)
+  val sdb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
   val invoker = new InvokerRegistry(mHost)
   StatusPageBuilder.data("invoker") = invoker
   val tester = new SolutionTester(new InvokerSimpleApi(invoker))
@@ -60,7 +59,7 @@ object DispatcherServer extends TwitterServer with Logging {
 
       val client = authFilter andThen BasicPolygonFilter andThen CachedConnectionHttpService
       val problems = new ProblemData(client, pdb, sdb, invoker)
-      val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester, objectStore)
+      val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester, mongoDb.objectStore)
 
       names.foreach { name =>
         if (config.contains(name + ".db")) {
@@ -73,7 +72,7 @@ object DispatcherServer extends TwitterServer with Logging {
   val moodles =
     config.get[List[String]]("dispatcher.moodles").map { names =>
       names.filter(x => config.contains(x + ".db")).map { name =>
-        new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, sdb, tester, objectStore)
+        new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, sdb, tester, mongoDb.objectStore)
       }.foreach(_.scan)
     }
 
