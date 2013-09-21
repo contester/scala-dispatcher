@@ -6,6 +6,9 @@
         <ScalaCodeStyleSettings>
           <option name="WRAP_BEFORE_WITH_KEYWORD" value="true" />
         </ScalaCodeStyleSettings>
+        <XML>
+          <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
+        </XML>
         <codeStyleSettings language="Scala">
           <option name="ALIGN_MULTILINE_EXTENDS_LIST" value="true" />
           <option name="CALL_PARAMETERS_WRAP" value="1" />

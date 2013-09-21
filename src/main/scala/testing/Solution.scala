@@ -15,6 +15,8 @@ object Solution {
 }
 
 class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
+  // TODO(stingray): Restore the state.
+  // TODO: Pass state from above, if exists. Skip compile, if needed.
   def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, reporter: ProgressReporter,
       schoolMode: Boolean, store: GridfsObjectStore, storeHandle: InstanceSubmitHandle): Future[Unit] = {
     val compiledModuleName = storeHandle.toGridfsPath + "/compiledModule"
@@ -44,6 +46,7 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
 class BinarySolution(invoker: InvokerSimpleApi, store: GridfsObjectStore, storeHandle: InstanceSubmitTestingHandle,
     submit: SchedulingKey, problem: Problem,
     binary: Module, reporter: SingleProgress, schoolMode: Boolean) extends Logging with TestingStrategy {
+  // TODO: as a state, we get a list of tests we don't need to test anymore.
   private def proceed(r: Solution.NumberedTestResult): Boolean =
     r._2.success || (schoolMode && r._1 != 1)
 
