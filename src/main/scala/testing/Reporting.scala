@@ -81,6 +81,9 @@ object CombinedResultReporter {
 
   def apply(submit: SubmitObject, client: ConnectionPool, base: File): CombinedResultReporter =
     apply(new RawLogResultReporter(base, submit) :: new DBResultReporter(client, submit) :: Nil)
+
+  def apply(submit: SubmitObject, client: ConnectionPool, base: File, testingId: Int): CombinedResultReporter =
+    apply(new RawLogResultReporter(base, submit) :: new DBExistingResultReporter(client, submit, testingId) :: Nil)
 }
 
 class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, override val testingId: Int) extends SingleProgress {
@@ -114,6 +117,11 @@ class DBResultReporter(client: ConnectionPool, val submit: SubmitObject) extends
         submit.contestId, submit.arrived, submit.teamId, submit.problemId, submit.id, submit.sourceModule.moduleType, submit.computer, lastInsertId)
         .unit.map(_ => new DBSingleResultReporter(client, submit, lastInsertId))
     }
+}
+
+class DBExistingResultReporter(client: ConnectionPool, val submit: SubmitObject, val testingId: Int) extends ProgressReporter {
+  def start =
+    Future.value(new DBSingleResultReporter(client, submit, testingId))
 }
 
 class RawLogResultReporter(base: File, val submit: SubmitObject) extends ProgressReporter with SingleProgress {

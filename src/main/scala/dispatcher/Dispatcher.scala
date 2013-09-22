@@ -56,7 +56,6 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
       row.getLong("Computer")
     )
 
-
   // main test entry point
   def run(m: SubmitObject) = {
     parent.getProblem(m.contestId, m.problemId).flatMap { problem =>
