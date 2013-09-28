@@ -47,10 +47,6 @@ object DispatcherServer extends TwitterServer with Logging {
   val problemDb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
   val invoker = new InvokerRegistry(mHost)
 
-  HttpMuxer.addHandler("assets/", StaticServer)
-  HttpMuxer.addHandler("invokers", new DynamicServer(
-      templateEngine, "org/stingray/contester/invokers/InvokerRegistry.ssp", Map("invoker" -> invoker)))
-
   val invokerApi = new InvokerSimpleApi(invoker)
   val tester = new SolutionTester(invokerApi)
 
@@ -92,6 +88,9 @@ object DispatcherServer extends TwitterServer with Logging {
     }
 
   def main() {
+    HttpMuxer.addHandler("assets/", StaticServer)
+    HttpMuxer.addHandler("invokers", new DynamicServer(
+        templateEngine, "org/stingray/contester/invokers/InvokerRegistry.ssp", Map("invoker" -> invoker)))
     bindInvokerTo(new InetSocketAddress(config[Int]("dispatcher.invokerPort", 9981)))
     Await.ready(httpServer)
   }
