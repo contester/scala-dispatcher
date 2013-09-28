@@ -110,29 +110,29 @@ class DBReporter(val client: ConnectionPool) {
   private def testingRow(row: ResultSet): (Int, String) =
     (row.getInt("ID"), row.getString("ProblemID"))
 
-  def retrieveTestingBySubmit(submitId: Int): Future[Option[(Int, String)]] =
+  private def retrieveTestingBySubmit(submitId: Int): Future[Option[(Int, String)]] =
     client.select("select ID, ProblemID from Testings where Finish is null and Submit = ? ordered by ID desc limit 1")(testingRow)
         .map(_.headOption)
 
   // Get testing ID from submit row, or None
-  def getTestingIdFromSubmit(submitId: Int): Future[Option[Int]] =
+  private def getTestingIdFromSubmit(submitId: Int): Future[Option[Int]] =
     client.select("select TestingID from Submits where Id = ?", submitId) { row =>
       Option(row.getInt("Id"))
     }.map(_.headOption.flatten)
 
   // Get active testing from testingId, or None
-  def getTestingFromSubmitAndId(submitId: Int, testingId: Int): Future[Option[(Int, String)]] =
+  private def getTestingFromSubmitAndId(submitId: Int, testingId: Int): Future[Option[(Int, String)]] =
     client.select(
       "select ID, ProblemID from Testings where Finish is null and ProblemID is not null and Submit = ? and ID = ?",
       submitId, testingId)(testingRow).map(_.headOption)
 
   // Get most recent active testing
-  def getTestingFromSubmit(submitId: Int): Future[Option[(Int, String)]] =
+  private def getTestingFromSubmit(submitId: Int): Future[Option[(Int, String)]] =
     client.select(
       "select ID, ProblemID from Testings where Finish is null and ProblemID is not null and Submit = ? ordered by ID desc limit 1",
       submitId)(testingRow).map(_.headOption)
 
-  def getAnyTesting(submitId: Int): Future[Option[(Int, String)]] =
+  private def getAnyTesting(submitId: Int): Future[Option[(Int, String)]] =
     getTestingIdFromSubmit(submitId).flatMap { optTestingId =>
       optTestingId.map(getTestingFromSubmitAndId(submitId, _)).getOrElse(Future.None)
     }.flatMap { optTesting =>
@@ -142,7 +142,7 @@ class DBReporter(val client: ConnectionPool) {
           Future.value(optTesting)
     }
 
-  def getTestingState(testingId: Int): Future[Seq[(Int, Int)]] =
+  private def getTestingState(testingId: Int): Future[Seq[(Int, Int)]] =
     client.select("select Test, Result where UID = ? and Test > 0", testingId) { row =>
       (row.getInt("Test"), row.getInt("Result"))
     }
