@@ -252,6 +252,10 @@ object StatusCode {
   def apply(code: Int) = reasons.getOrElse(code, "Unknown status " + code)
 }
 
+class RestoredResult(val status: Int) extends Result {
+  def success: Boolean = status == 10
+}
+
 class TestResult(val solution: RunResult, val tester: Option[TesterRunResult]) extends Result {
   lazy val solutionStatus: Option[Int] =
     if (!solution.success)

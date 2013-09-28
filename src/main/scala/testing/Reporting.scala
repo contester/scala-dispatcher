@@ -27,6 +27,12 @@ object NullReporter extends SingleProgress {
   def finish(r: SolutionTestingResult): Future[Unit] = Future.Done
 }
 
+class CombinedSingleProgress(val db: DBSingleResultReporter, val raw: RawLogResultReporter) extends SingleProgress {
+  def compile(r: CompileResult): Future[Unit] = db.compile(r).join(raw.compile(r)).unit
+
+  def test(id: Int, r: TestResult): Future[Unit] = db.test(id, r).join(raw.test(id, r)).unit
+}
+
 object CombinedResultReporter {
   val fmt = ISODateTimeFormat.dateTime()
 
@@ -58,6 +64,23 @@ class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, v
       result.solution.memory, result.solution.returnCode,
       result.getTesterOutput, result.getTesterError,
       result.getTesterReturnCode).unit
+
+  private def finishTesting(testingId: Int) =
+    client.execute("update Testings set Finish = NOW() where ID = ?", testingId)
+
+  private def finishSubmit(submitId: Int, result: SolutionTestingResult) =
+    client.execute("Update Submits set Finished = 1, Taken = ?, Passed = ? where ID = ?",
+      result.tests.size, result.tests.filter(_._2.success).size, submitId)
+
+  /**
+   * Close the testing and update submits table
+   * @param result
+   * @param submitId
+   * @param testingId
+   * @return
+   */
+  def finish(result: SolutionTestingResult, submitId: Int, testingId: Int): Future[Unit] =
+    finishTesting(testingId).join(finishSubmit(submitId, result)).unit
 }
 
 class TestingInfo(val testingId: Int, val problemId: String, val state: Seq[(Int, Int)])
@@ -83,23 +106,6 @@ class DBReporter(val client: ConnectionPool) {
     client.execute(
       "Replace Submits (Contest, Arrived, Team, Task, ID, Ext, Computer, TestingID, Touched, Finished) values (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 0)",
       submit.contestId, submit.arrived, submit.teamId, submit.problemId, submit.id, submit.sourceModule.moduleType, submit.computer, testingId)
-
-  def finishTesting(testingId: Int) =
-    client.execute("update Testings set Finish = NOW() where ID = ?", testingId)
-
-  def finishSubmit(submitId: Int, result: SolutionTestingResult) =
-    client.execute("Update Submits set Finished = 1, Taken = ?, Passed = ? where ID = ?",
-      result.tests.size, result.tests.filter(_._2.success).size, submitId)
-
-  /**
-   * Close the testing and update submits table
-   * @param result
-   * @param submitId
-   * @param testingId
-   * @return
-   */
-  def finish(result: SolutionTestingResult, submitId: Int, testingId: Int): Future[Unit] =
-    finishTesting(testingId).join(finishSubmit(submitId, result)).unit
 
   private def testingRow(row: ResultSet): (Int, String) =
     (row.getInt("ID"), row.getString("ProblemID"))

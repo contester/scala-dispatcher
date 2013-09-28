@@ -2,11 +2,11 @@ package org.stingray.contester.dispatcher
 
 import java.sql.{Timestamp, ResultSet}
 import org.stingray.contester.db.{HasId, SelectDispatcher}
-import org.stingray.contester.common.{InstanceSubmitHandle, ByteBufferModule, Module, SubmitWithModule}
+import org.stingray.contester.common._
 import org.stingray.contester.invokers.TimeKey
 import com.twitter.util.Future
 import org.stingray.contester.polygon.PolygonURL
-import org.stingray.contester.testing.{TestingInfo, DBReporter}
+import org.stingray.contester.testing._
 import java.net.URL
 
 trait Submit extends TimeKey with HasId with SubmitWithModule {
@@ -65,13 +65,21 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
     val reporter = new DBReporter(parent.dbclient)
     reporter.getAnyTestingAndState(m.id).flatMap(_.map(Future.value).getOrElse {
       parent.getProblem(m.contestId, m.problemId).flatMap { problemHandle =>
-        reporter.allocateTesting(m.id, problemHandle.toProblemURI).map { testingId =>
-          new TestingInfo(testingId, problemHandle.toProblemURI, Seq())
+        reporter.allocateTesting(m.id, problemHandle.toProblemURI).flatMap { testingId =>
+          new RawLogResultReporter(parent.basePath, m).start.map { _ =>
+            new TestingInfo(testingId, problemHandle.toProblemURI, Seq())
+          }
         }
       }
     }).flatMap { testingInfo =>
-      parent.getProblem(PolygonURL(new URL(testingInfo.problemId))).flatMap { problemTuple =>
-        parent.invoker(m, m.sourceModule, problemTuple._2, ???, m.schoolMode, parent.store, new InstanceSubmitHandle(parent.storeId, m.id), testingInfo.testingId)
+      reporter.registerTestingOnly(m, testingInfo.testingId).flatMap { _ =>
+        val combinedProgress = new CombinedSingleProgress(new DBSingleResultReporter(parent.dbclient, m, testingInfo.testingId), new RawLogResultReporter(parent.basePath, m))
+        parent.getProblem(PolygonURL(new URL(testingInfo.problemId))).flatMap { problemTuple =>
+          parent.invoker(m, m.sourceModule, problemTuple._2, combinedProgress, m.schoolMode, parent.store, new InstanceSubmitHandle(parent.storeId, m.id), testingInfo.testingId,
+            testingInfo.state.toMap.mapValues(new RestoredResult(_))).flatMap { sr =>
+            combinedProgress.db.finish(sr, m.id, testingInfo.testingId).join(combinedProgress.raw.finish(sr)).unit
+          }
+        }
       }
     }
   }

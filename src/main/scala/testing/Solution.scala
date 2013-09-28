@@ -10,7 +10,7 @@ import scala.Some
 
 object Solution {
   type NumberedTest = (Int, Test)
-  type NumberedTestResult = (Int, TestResult)
+  type NumberedTestResult = (Int, Result)
   type EvaluatedTestResult = (Boolean, NumberedTestResult)
 }
 
@@ -18,17 +18,16 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
   // TODO(stingray): Restore the state.
   // TODO: Pass state from above, if exists. Skip compile, if needed.
   def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, progress: SingleProgress,
-      schoolMode: Boolean, store: GridfsObjectStore, storeHandle: InstanceSubmitHandle, testingId: Int): Future[Unit] = {
+      schoolMode: Boolean, store: GridfsObjectStore, storeHandle: InstanceSubmitHandle, testingId: Int, state: Map[Int, Result]): Future[SolutionTestingResult] = {
     val compiledModuleName = storeHandle.toGridfsPath + "/compiledModule"
     invoker.maybeCompile(submit, sourceModule, store, compiledModuleName)
       .flatMap { compiled =>
           progress.compile(compiled._1).flatMap { _ =>
             compiled._2.map { binary =>
               new BinarySolution(invoker, store, storeHandle.testing(testingId), submit, problem,
-                binary, progress, schoolMode).run
+                binary, progress, schoolMode, state).run
             }.getOrElse(Future.value(Nil)).map(x => SolutionTestingResult(compiled._1, x.map(v => v._2)))
           }
-
     }
   }
 
@@ -44,18 +43,21 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
 
 class BinarySolution(invoker: InvokerSimpleApi, store: GridfsObjectStore, storeHandle: InstanceSubmitTestingHandle,
     submit: SchedulingKey, problem: Problem,
-    binary: Module, reporter: SingleProgress, schoolMode: Boolean) extends Logging with TestingStrategy {
+    binary: Module, reporter: SingleProgress, schoolMode: Boolean, state: Map[Int, Result]) extends Logging with TestingStrategy {
   // TODO: as a state, we get a list of tests we don't need to test anymore.
   private def proceed(r: Solution.NumberedTestResult): Boolean =
     r._2.success || (schoolMode && r._1 != 1)
 
-  def test(test: Solution.NumberedTest): Future[Solution.EvaluatedTestResult] =
-    invoker.test(submit, binary, test._2, store, storeHandle.toGridfsPath + "/" + test._1 + "/output.txt")
-      .map(x => test._1 -> x)
-      .flatMap { result =>
-      reporter.test(result._1, result._2)
-        .map(_ => (proceed(result), result))
+  def test(test: Solution.NumberedTest): Future[Solution.EvaluatedTestResult] = {
+    state.get(test._1).map(r => Future.value((r.success, (test._1, r)))).getOrElse {
+      invoker.test(submit, binary, test._2, store, storeHandle.toGridfsPath + "/" + test._1 + "/output.txt")
+        .map(x => test._1 -> x)
+        .flatMap { result =>
+        reporter.test(result._1, result._2)
+          .map(_ => (proceed(result), result))
+      }
     }
+  }
 
   def run =
     if (schoolMode) school(problem.toSeq)
