@@ -233,4 +233,6 @@ private class PDBTest(val problem: PDBProblem, val testId: Int) extends Test wit
   def stdio: Boolean = problem.stdio
 }
 
-trait ProblemHandle
+trait ProblemHandle {
+  def toProblemURI: String
+}

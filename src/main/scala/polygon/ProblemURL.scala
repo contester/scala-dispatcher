@@ -58,5 +58,6 @@ class PolygonProblemHandle(val url: URL, val revision: Option[Int]) extends Prob
 
   override def toString = "PolygonProblemHandle(\"%s\"%s)".format(url, revision.map(", " + _).getOrElse(""))
 
-  def toProblemURI: String = (Seq("polygon+", url.toString) ++ revision.map("?revision=%d".format(_)).toSeq).mkString
+  def toProblemURI: String =
+    PolygonURL.withQuery(url, params.toMap).toString
 }
