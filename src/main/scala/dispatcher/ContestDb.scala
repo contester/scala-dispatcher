@@ -9,7 +9,7 @@ import org.stingray.contester.testing.SolutionTester
 import org.stingray.contester.common.GridfsObjectStore
 import java.net.URL
 import org.streum.configrity.Configuration
-import org.stingray.contester.polygon.PolygonProblemHandle
+import org.stingray.contester.polygon.PolygonProblem
 
 class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
                    val store: GridfsObjectStore, val storeId: String, polygonBase: URL) extends Logging {
@@ -20,11 +20,11 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
   def f2o[A](x: Option[Future[A]]): Future[Option[A]] =
     Future.collect(x.toSeq).map(_.headOption)
 
-  def getProblem(cid: Int, problem: String) =
-    pscanner(cid).flatMap(pdata.getProblemHandle(_, problem))
+  def getPolygonProblem(cid: Int, problem: String) =
+    pscanner(cid).flatMap(pdata.getPolygonProblem(_, problem))
 
-  def getProblem(problem: PolygonProblemHandle) =
-    pdata.getProblem(problem)
+  def sanitizeProblem(problem: PolygonProblem) =
+    pdata.sanitizeProblem(problem)
 
   def start =
     pscanner.rescan.join(dispatcher.scan).join(evaldispatcher.scan).unit

@@ -64,18 +64,19 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
   def run(m: SubmitObject) = {
     val reporter = new DBReporter(parent.dbclient)
     reporter.getAnyTestingAndState(m.id).flatMap(_.map(Future.value).getOrElse {
-      parent.getProblem(m.contestId, m.problemId).flatMap { problemHandle =>
-        reporter.allocateTesting(m.id, problemHandle.toProblemURI).flatMap { testingId =>
+      parent.getPolygonProblem(m.contestId, m.problemId).flatMap { polygonProblem =>
+        reporter.allocateTesting(m.id, polygonProblem.handle.toProblemURI).flatMap { testingId =>
           new RawLogResultReporter(parent.basePath, m).start.map { _ =>
-            new TestingInfo(testingId, problemHandle.toProblemURI, Seq())
+            new TestingInfo(testingId, polygonProblem.handle.toProblemURI, Seq())
           }
         }
       }
     }).flatMap { testingInfo =>
       reporter.registerTestingOnly(m, testingInfo.testingId).flatMap { _ =>
         val combinedProgress = new CombinedSingleProgress(new DBSingleResultReporter(parent.dbclient, m, testingInfo.testingId), new RawLogResultReporter(parent.basePath, m))
-        parent.getProblem(PolygonURL(new URL(testingInfo.problemId))).flatMap { problemTuple =>
-          parent.invoker(m, m.sourceModule, problemTuple._2, combinedProgress, m.schoolMode, parent.store, new InstanceSubmitHandle(parent.storeId, m.id), testingInfo.testingId,
+        parent.pdata.getPolygonProblem(PolygonURL(new URL(testingInfo.problemId)))
+            .flatMap(parent.pdata.sanitizeProblem).flatMap { problem =>
+          parent.invoker(m, m.sourceModule, problem, combinedProgress, m.schoolMode, parent.store, new InstanceSubmitHandle(parent.storeId, m.id), testingInfo.testingId,
             testingInfo.state.toMap.mapValues(new RestoredResult(_))).flatMap { sr =>
             combinedProgress.db.finish(sr, m.id, testingInfo.testingId).join(combinedProgress.raw.finish(sr)).unit
           }

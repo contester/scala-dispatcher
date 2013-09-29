@@ -23,11 +23,12 @@ class ProblemData(pclient: Service[PolygonClientRequest, ChannelBuffer], pdb: Va
     }).map(_.toMap)
   }
 
-  def getProblemHandle(contestPid: ContestHandle, problemId: String): Future[PolygonProblemHandle] =
-    polygonService.contests(contestPid).map(_.problems(problemId.toUpperCase))
+  def getPolygonProblem(contestPid: ContestHandle, problemId: String): Future[PolygonProblem] =
+    polygonService.contests(contestPid).map(_.problems(problemId.toUpperCase)).flatMap(getPolygonProblem)
 
-  def getProblem(handle: PolygonProblemHandle): Future[(PolygonProblem, Problem)] =
-    polygonService.problems(handle).flatMap { problem =>
-      sanitizer(problem).map((problem, _))
-    }
+  def getPolygonProblem(problem: PolygonProblemHandle) =
+    polygonService.problems(problem)
+
+  def sanitizeProblem(problem: PolygonProblem): Future[Problem] =
+    sanitizer(problem)
 }
