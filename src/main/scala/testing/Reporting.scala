@@ -125,7 +125,7 @@ class DBReporter(val client: ConnectionPool) {
   // Get most recent active testing
   private def getTestingFromSubmit(submitId: Int): Future[Option[(Int, String)]] =
     client.select(
-      "select ID, ProblemID from Testings where Finish is null and ProblemID is not null and Submit = ? ordered by ID desc limit 1",
+      "select ID, ProblemID from Testings where Finish is null and ProblemID is not null and Submit = ? order by ID desc limit 1",
       submitId)(testingRow).map(_.headOption)
 
   private def getAnyTesting(submitId: Int): Future[Option[(Int, String)]] =
