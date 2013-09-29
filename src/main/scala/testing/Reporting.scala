@@ -139,7 +139,7 @@ class DBReporter(val client: ConnectionPool) {
     }
 
   private def getTestingState(testingId: Int): Future[Seq[(Int, Int)]] =
-    client.select("select Test, Result where UID = ? and Test > 0", testingId) { row =>
+    client.select("select Test, Result from Results where UID = ? and Test > 0", testingId) { row =>
       (row.getInt("Test"), row.getInt("Result"))
     }
 
