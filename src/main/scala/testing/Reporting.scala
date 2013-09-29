@@ -110,14 +110,10 @@ class DBReporter(val client: ConnectionPool) {
   private def testingRow(row: ResultSet): (Int, String) =
     (row.getInt("ID"), row.getString("ProblemID"))
 
-  private def retrieveTestingBySubmit(submitId: Int): Future[Option[(Int, String)]] =
-    client.select("select ID, ProblemID from Testings where Finish is null and Submit = ? ordered by ID desc limit 1")(testingRow)
-        .map(_.headOption)
-
   // Get testing ID from submit row, or None
   private def getTestingIdFromSubmit(submitId: Int): Future[Option[Int]] =
     client.select("select TestingID from Submits where Id = ?", submitId) { row =>
-      Option(row.getInt("Id"))
+      Option(row.getInt("TestingID"))
     }.map(_.headOption.flatten)
 
   // Get active testing from testingId, or None
