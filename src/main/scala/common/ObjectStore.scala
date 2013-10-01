@@ -41,8 +41,18 @@ class InstanceSubmitTestingHandle(val handle: String, val submitId: Int, val tes
   def toGridfsPath: String = "submit/%s/%d/%d".format(handle, submitId, testingId)
 }
 
+/**
+ * Interface to the object store.
+ * @param fs gridfs to work on.
+ */
 class GridfsObjectStore(fs: GridFS) {
-  // Low-level direct access
+  /**
+   * Put byte array with metadata as a given name.
+   * @param name
+   * @param content
+   * @param metadata
+   * @return Item's checksum
+   */
   def put(name: String, content: Array[Byte], metadata: Map[String, Any]): Future[String] =
     Future {
       val checksum = "sha1:" + Blobs.bytesToString(Blobs.getSha1(content))
@@ -57,6 +67,11 @@ class GridfsObjectStore(fs: GridFS) {
 
   def get(name: String): Future[Option[(InputStream, String, Map[String, Any])]] = ???
 
+  /**
+   * Get metadata for a file name.
+   * @param name
+   * @return Future[Option[(checksum, Map[other,metadata])]]
+   */
   def getMetaData(name: String): Future[Option[(String, Map[String, Any])]] =
     Future {
       fs.findOne(name).map { file =>
@@ -66,9 +81,20 @@ class GridfsObjectStore(fs: GridFS) {
       }
     }
 
+  /**
+   * Check if file exists.
+   * @param name
+   * @return
+   */
   def exists(name: String): Future[Boolean] =
     getMetaData(name).map(_.isDefined)
 
+  /**
+   * Set metadata for a name.
+   * @param name
+   * @param f
+   * @return
+   */
   def setMetaData(name: String)(f: Map[String, Any] => Map[String, Any]): Future[Unit] =
     Future {
       fs.findOne(name).map { file =>
@@ -78,6 +104,14 @@ class GridfsObjectStore(fs: GridFS) {
       }
     }
 
+  /**
+   * Copy a file from sandbox.
+   * @param sandbox
+   * @param name
+   * @param remote
+   * @param metadata Not supported other than moduleType.
+   * @return
+   */
   def copyFromSandbox(sandbox: Sandbox, name: String, remote: RemoteFileName, metadata: Map[String, Any]): Future[String] = {
     val moduleType = metadata.get("moduleType").flatMap { x =>
       x match {
@@ -90,28 +124,61 @@ class GridfsObjectStore(fs: GridFS) {
     }
   }
 
+  /**
+   * Copy a file to sandbox.
+   * @param sandbox
+   * @param name
+   * @param destinationName
+   * @return
+   */
   def copyToSandbox(sandbox: Sandbox, name: String, destinationName: String): Future[InvokerRemoteFile] =
     sandbox.putGridfs(name, destinationName).map(_.get)
 
-  // Module operations
+  /**
+   * Put array[byte] as module.
+   * @param name
+   * @param moduleType
+   * @param content
+   * @return
+   */
   def putModule(name: String, moduleType: String, content: Array[Byte]): Future[Module] =
     put(name, content, Map("moduleType" -> moduleType)).map { checksum =>
       new ObjectStoreModule(name, moduleType, checksum)
     }
 
+  /**
+   * Put filename from sandbox as named module.
+   * @param sandbox
+   * @param name
+   * @param remote
+   * @param moduleType
+   * @return
+   */
   def putModule(sandbox: Sandbox, name: String, remote: RemoteFileName, moduleType: String): Future[Module] =
     copyFromSandbox(sandbox, name, remote, Map("moduleType" -> moduleType)).map { checksum =>
       new ObjectStoreModule(name, moduleType, checksum)
     }
 
+  /**
+   * Retrieve module with all attributes.
+   * @param name
+   * @return
+   */
   def getModuleEx(name: String): Future[Option[(Module, Map[String, Any])]] =
     getMetaData(name).map(_.map {
       case (checksum, metadata) =>
         (new ObjectStoreModule(name, ObjectStore.getMetadataString(metadata, "moduleType"), checksum), metadata)
     })
 
+  /**
+   * Retrieve just module.
+   * @param name
+   * @return
+   */
   def getModule(name: String): Future[Option[Module]] =
     getModuleEx(name).map(_.map(_._1))
+
+
 }
 
 trait Module {
