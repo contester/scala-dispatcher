@@ -38,7 +38,9 @@ abstract class SelectDispatcher[SubmitType <: HasId](db: ConnectionPool) extends
     }
 
   def finishWith(id: Int) =
-    activeItems.remove(id)
+    synchronized {
+      activeItems.remove(id)
+    }
 
   def markDone(id: Int) =
     db.execute(doneQuery, id).ensure(finishWith(id))
@@ -47,16 +49,14 @@ abstract class SelectDispatcher[SubmitType <: HasId](db: ConnectionPool) extends
     db.execute(failedQuery, id).ensure(finishWith(id))
 
   def add(item: SubmitType): Unit =
-    activeItems.synchronized {
-      if (!activeItems.contains(item.id)) {
-        activeItems(item.id) =
-          run(item).onFailure { e =>
-            error(item, e)
-            markFailed(item.id)
-          } .onSuccess { _ =>
-            markDone(item.id)
-          }
-      }
+    if (!activeItems.contains(item.id)) {
+      activeItems(item.id) =
+        run(item).onFailure { e =>
+          error(item, e)
+          markFailed(item.id)
+        } .onSuccess { _ =>
+          markDone(item.id)
+        }
     }
 
   def grabAll =
@@ -66,7 +66,11 @@ abstract class SelectDispatcher[SubmitType <: HasId](db: ConnectionPool) extends
 
   def rescanActive =
     select(selectAllActiveQuery)
-      .map(_.sortBy(_.id).map(add))
+      .map(_.sortBy(_.id)).map { items =>
+      synchronized {
+        items.foreach(add)
+      }
+    }
 
   def scan: Future[Unit] =
     grabAll.unit.flatMap { _ =>
