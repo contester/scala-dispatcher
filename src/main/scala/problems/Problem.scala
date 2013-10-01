@@ -185,7 +185,7 @@ class PDBProblem(val pdb: ProblemDb, val id: ProblemID, val testCount: Int, val 
   lazy val toBriefId = {
     val components = id.pid.split("/")
     val base = components.take(2) ++ Seq("...") ++ components.takeRight(2)
-    (base + id.revision.toString).mkString("/")
+    base.mkString("/") + "/" + id.revision.toString
   }
 
   override def toString = "PDBProblem(%s, %d)".format(id.pid, id.revision)
