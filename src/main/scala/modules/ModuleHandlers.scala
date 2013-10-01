@@ -7,6 +7,7 @@ import org.stingray.contester.common.Blobs
 import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
 import org.stingray.contester.invokers.{RemoteFileName, Sandbox, InvokerAPI}
 import org.stingray.contester.problems.TestLimits
+import org.stingray.contester.proto.Local.LocalExecutionParameters
 
 final class ModuleHandlerOps(val repr: Future[Seq[ModuleHandler]]) {
   def +(m: ModuleHandler): Future[Seq[ModuleHandler]] =
@@ -41,6 +42,10 @@ object ModuleFactory {
     new Win32ModuleFactory(api).generate.map(x => x.flatMap(y => y.moduleTypes.map(_ -> y)).toMap)
 }
 
+object ScriptLanguage {
+  val list = Set("py2", "py3")
+}
+
 class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
   def fvs(m: ModuleHandler): Future[Seq[ModuleHandler]] = Future.value(Seq(m))
   def fcf(s: Seq[Future[Seq[ModuleHandler]]]): Future[Seq[ModuleHandler]] = Future.collect(s).map(_.flatten)
@@ -59,6 +64,7 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     add(api.disks / "FPC" / "*" / "bin" / "i386-win32" / "fpc.exe", (x: String) => new FPCSourceHandler(x, false)) +
     add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
     add(api.disks / "WINDOWS" / "System32" / "cmd.exe", visualStudio(_)) +
+    add(api.disks / "Python3" / "Python.exe", new PythonModuleHandler("py3", _)) +
     java + p7z + new Win32BinaryHandler
 
   private def win16Compilers(cmd: String): Future[Seq[ModuleHandler]] =
@@ -78,6 +84,23 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
 
   private def p7z: Future[Seq[ModuleHandler]] =
     add(api.programFiles / "7-Zip" / "7z.exe", new SevenzipHandler(_))
+}
+
+class PythonModuleHandler(ext: String, val python: String) extends BinaryHandler {
+  def solutionName: String = "solution.py"
+
+  def getTesterParameters(sandbox: Sandbox, name: String,
+                          arguments: List[String]): Future[LocalExecutionParameters] =
+  sandbox.getExecutionParameters(
+    python,  ("-O":: name :: Nil) ++ arguments)
+
+  def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits): Future[LocalExecutionParameters] =
+    sandbox.getExecutionParameters(
+      python,  "-O":: "Solution.py" :: Nil)
+        .map(_.setSolution.setMemoryLimit(test.memoryLimit)
+        .setTimeLimitMicros(test.timeLimitMicros))
+
+  def moduleTypes: Iterable[String] = ext :: Nil
 }
 
 class LinuxBinaryHandler extends BinaryHandler {

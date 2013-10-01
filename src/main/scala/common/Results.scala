@@ -217,6 +217,10 @@ object AlreadyCompiledResult extends CompileResult {
   val success: Boolean = true
 }
 
+object ScriptingLanguageResult extends CompileResult {
+  val success: Boolean = true
+}
+
 object TestResult {
   def apply(solution: RunResult, tester: Option[TesterRunResult]) =
     new TestResult(solution, tester)

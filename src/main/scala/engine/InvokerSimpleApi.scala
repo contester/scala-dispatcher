@@ -4,6 +4,7 @@ import org.stingray.contester.invokers.{SchedulingKey, InvokerRegistry}
 import org.stingray.contester.problems.{ProblemManifest, Test}
 import org.stingray.contester.common._
 import com.twitter.util.Future
+import org.stingray.contester.modules.ScriptLanguage
 
 class InvokerSimpleApi(val invoker: InvokerRegistry) {
   def compile(key: SchedulingKey, m: Module, store: GridfsObjectStore,
@@ -22,12 +23,15 @@ class InvokerSimpleApi(val invoker: InvokerRegistry) {
 
   def maybeCompile(key: SchedulingKey, m: Module, store: GridfsObjectStore,
                    resultName: String): Future[(CompileResult, Option[Module])] = {
-    Compiler.checkIfCompiled(m, store, resultName).flatMap { maybeCompiled =>
-      if (maybeCompiled.isDefined)
-        Future.value((AlreadyCompiledResult, maybeCompiled))
-      else
-        compile(key, m, store, resultName)
-    }
+    if (ScriptLanguage.list(m.moduleType))
+      Future.value((ScriptingLanguageResult, Some(m)))
+    else
+      Compiler.checkIfCompiled(m, store, resultName).flatMap { maybeCompiled =>
+        if (maybeCompiled.isDefined)
+          Future.value((AlreadyCompiledResult, maybeCompiled))
+        else
+          compile(key, m, store, resultName)
+      }
   }
 
 }
