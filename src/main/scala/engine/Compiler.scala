@@ -39,7 +39,7 @@ object Compiler extends Logging {
   def checkIfCompiled(module: Module, store: GridfsObjectStore, storeName: String): Future[Option[Module]] =
     store.getModuleEx(storeName).map(_.flatMap {
       case (compiledModule, metadata) =>
-        if (ObjectStore.getMetadataString(metadata, "sourceChecksum") == compiledModule.moduleHash)
+        if (ObjectStore.getMetadataString(metadata, "sourceChecksum") == module.moduleHash)
           Some(compiledModule)
         else
           None
