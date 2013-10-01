@@ -10,13 +10,13 @@ object Compiler {
     module.putToSandbox(sandbox, handler.sourceName)
       .flatMap(_ => handler.compile(sandbox))
 
-  def storeCompiledModule(sandbox: Sandbox, store: GridfsObjectStore, storeName: String, sourceHash: String, optModule: Option[CompiledModule]) =
+  private def storeCompiledModule(sandbox: Sandbox, store: GridfsObjectStore, storeName: String, sourceHash: String, optModule: Option[CompiledModule]) =
     optModule.map { compiledModule =>
       store.putModule(sandbox, storeName, sandbox.sandboxId / compiledModule.filename, compiledModule.moduleType)
         .flatMap { result =>
         store.setMetaData(storeName) { meta =>
           meta.updated("sourceChecksum", sourceHash)
-        }.map(_ => result)
+        }.map(_ => Some(result))
       }
     }.getOrElse(Future.None)
 
@@ -24,14 +24,7 @@ object Compiler {
     justCompile(instance.unrestricted, instance.factory(module.moduleType).asInstanceOf[SourceHandler], module)
       .flatMap {
       case (compileResult, compiledModuleOption) =>
-        Future.collect(compiledModuleOption.map { compiledModule =>
-          store.putModule(instance.unrestricted, storeName, instance.unrestricted.sandboxId / compiledModule.filename, compiledModule.moduleType)
-            .flatMap { compModule =>
-            store.setMetaData(storeName) { meta =>
-              meta.updated("sourceChecksum", module.moduleHash)
-            }.map(_ => compModule)
-          }
-        }.toSeq).map(compileResult -> _.headOption)
+        storeCompiledModule(instance.unrestricted, store, storeName, module.moduleHash, compiledModuleOption).map(compileResult -> _)
     }
 
   /**
