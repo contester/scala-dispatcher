@@ -4,8 +4,9 @@ import org.stingray.contester.invokers.{InvokerInstance, Sandbox}
 import org.stingray.contester.modules.{CompiledModule, SourceHandler}
 import com.twitter.util.Future
 import org.stingray.contester.common._
+import grizzled.slf4j.Logging
 
-object Compiler {
+object Compiler extends Logging {
   private def justCompile(sandbox: Sandbox, handler: SourceHandler, module: Module) =
     module.putToSandbox(sandbox, handler.sourceName)
       .flatMap(_ => handler.compile(sandbox))
@@ -38,6 +39,7 @@ object Compiler {
   def checkIfCompiled(module: Module, store: GridfsObjectStore, storeName: String): Future[Option[Module]] =
     store.getModuleEx(storeName).map(_.flatMap {
       case (module, metadata) =>
+        trace((module, metadata, ObjectStore.getMetadataString(metadata, "sourceChecksum"), module.moduleHash))
         if (ObjectStore.getMetadataString(metadata, "sourceChecksum") == module.moduleHash)
           Some(module)
         else
