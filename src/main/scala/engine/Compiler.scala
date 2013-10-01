@@ -38,10 +38,9 @@ object Compiler extends Logging {
    */
   def checkIfCompiled(module: Module, store: GridfsObjectStore, storeName: String): Future[Option[Module]] =
     store.getModuleEx(storeName).map(_.flatMap {
-      case (module, metadata) =>
-        trace((module, metadata, ObjectStore.getMetadataString(metadata, "sourceChecksum"), module.moduleHash))
-        if (ObjectStore.getMetadataString(metadata, "sourceChecksum") == module.moduleHash)
-          Some(module)
+      case (compiledModule, metadata) =>
+        if (ObjectStore.getMetadataString(metadata, "sourceChecksum") == compiledModule.moduleHash)
+          Some(compiledModule)
         else
           None
     })
