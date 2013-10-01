@@ -206,13 +206,13 @@ class RealCompileResult(val steps: Seq[StepResult], override val success: Boolea
 }
 
 object AlreadyCompiledResult extends CompileResult {
-  val success: Boolean = true
+  def success: Boolean = true
 
   override def toString: String = super.toString + " (cached)"
 }
 
 object ScriptingLanguageResult extends CompileResult {
-  val success: Boolean = true
+  def success: Boolean = true
 
   override def toString: String = super.toString + " (script)"
 }
