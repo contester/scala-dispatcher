@@ -205,20 +205,16 @@ class RealCompileResult(val steps: Seq[StepResult], override val success: Boolea
   override def toMongoDBObject: Imports.DBObject = super.toMongoDBObject ++ MongoDBObject("steps" -> steps.map(_.toMongoDBObject))
 }
 
-object NoModuleCompileResult extends CompileResult {
-  val success: Boolean = false
-}
-
-object BinaryModuleCompileResult extends CompileResult {
-  val success: Boolean = true
-}
-
 object AlreadyCompiledResult extends CompileResult {
   val success: Boolean = true
+
+  override def toString: String = super.toString + " (cached)"
 }
 
 object ScriptingLanguageResult extends CompileResult {
   val success: Boolean = true
+
+  override def toString: String = super.toString + " (script)"
 }
 
 object TestResult {
