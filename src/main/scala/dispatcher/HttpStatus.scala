@@ -39,7 +39,7 @@ class DynamicServer(templateEngine: TemplateEngine, template: String, attributes
 }
 
 object HttpStatus {
-  def addHandlers = {
+  def addHandlers() = {
     HttpMuxer.addHandler("assets/", StaticServer)
   }
 

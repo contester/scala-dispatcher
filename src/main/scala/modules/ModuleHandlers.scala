@@ -294,8 +294,8 @@ class JavaSourceHandler(val javac: String, val jar: String, linux: Boolean) exte
           }.flatMap { classlist =>
             SourceHandler.stepAndCheck("JAR Creation", sandbox, jar, jarFlags ++ classlist, "Solution.jar")
               .map {
-              case (jarResult, success) =>
-                Seq(compileStepResult, jarResult) -> success
+              case (jarResult, locsuccess) =>
+                Seq(compileStepResult, jarResult) -> locsuccess
             }
           }
         } else

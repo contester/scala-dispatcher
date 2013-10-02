@@ -27,7 +27,7 @@ class InvokerRpcClient(val client: RpcClient) {
   def fileStat(names: Iterable[String], expand: Boolean, sandboxId: Option[String], calculateChecksum: Boolean) = {
     import collection.JavaConversions.asJavaIterable
     val v = StatRequest.newBuilder().addAllName(names).setExpand(expand)
-    sandboxId.foreach(v.setSandboxId(_))
+    sandboxId.foreach(v.setSandboxId)
     if (calculateChecksum)
       v.setCalculateChecksum(calculateChecksum)
     client.call[FileStats]("Contester.Stat", v.build())

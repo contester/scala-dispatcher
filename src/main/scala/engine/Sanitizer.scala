@@ -111,7 +111,7 @@ object Sanitizer extends Logging {
     sandbox.getExecutionParameters(p7z, p7zFlags ++ List("-o" + problem.destName, problem.zipName))
       .flatMap(sandbox.execute)
       .flatMap(_ => sandbox.stat(problem.destName, false))
-      .map(_.filter(_.isDir).headOption.getOrElse(throw new UnpackError))
+      .map(_.find(_.isDir).getOrElse(throw new UnpackError))
 
   // No need to get problem file; it will be already there - or we fail after putGridfs
   private[this] def sanitize(sandbox: Sandbox, problem: ProblemDescription, p7z: String) = {

@@ -124,7 +124,7 @@ private class RpcFramerEncoder extends SimpleChannelDownstreamHandler {
 
   private[this] def withLength(channel: Channel, x: Array[Byte]) = {
     val b = ChannelBuffers.wrappedBuffer(x)
-    val header = channel.getConfig().getBufferFactory().getBuffer(b.order(), 4)
+    val header = channel.getConfig.getBufferFactory.getBuffer(b.order(), 4)
     header.writeInt(b.readableBytes())
     ChannelBuffers.wrappedBuffer(header, b)
   }

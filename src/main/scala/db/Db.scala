@@ -15,7 +15,7 @@ class ConnectionPool(host: String, db: String, username: String, password: Strin
 
   private[this] val connections = new SimplePool[Connection](Seq())
 
-  private[this] def asyncNewConn: Unit =
+  private[this] def asyncNewConn(): Unit =
     Future { newConn }
       .onFailure { x => error("Creating new MySQL connection", x); asyncNewConn }
       .onSuccess { x =>

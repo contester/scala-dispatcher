@@ -1,6 +1,5 @@
 package org.stingray.contester.polygon
 
-import collection.mutable.HashMap
 import com.google.common.base.Charsets
 import com.twitter.finagle.{Filter, Service}
 import com.twitter.finagle.builder.ClientBuilder
@@ -17,6 +16,7 @@ import org.stingray.contester.engine.ProblemDescription
 import org.jboss.netty.buffer.ChannelBuffer
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import scala.util.matching.Regex
+import scala.collection.mutable
 
 class PolygonClientHttpException(reason: String) extends Throwable(reason)
 class PolygonAuthException(url: URL) extends Throwable(url.toString)
@@ -147,7 +147,7 @@ object BasicPolygonFilter extends Filter[PolygonAuthenticatedRequest, ChannelBuf
 
 class AuthPolygonFilter extends Filter[PolygonClientRequest, ChannelBuffer, PolygonAuthenticatedRequest, ChannelBuffer] with Logging {
   private val polygonBaseRe = new Regex("^(.*/)(c/\\d+/?.*|p/[^/]+/[^/]/?.*)$")
-  val bases = new HashMap[String, PolygonBase]()
+  val bases = new mutable.HashMap[String, PolygonBase]()
 
   def addPolygon(base: PolygonBase) =
     bases.put(base.url.toString, base)

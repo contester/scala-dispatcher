@@ -8,7 +8,7 @@ class FakeInvoker extends HasCaps[Int] {
   def caps: Iterable[Int] = 1 :: 2 :: Nil
 }
 
-case class FakeKey(val x: Int) extends Ordered[FakeKey] {
+case class FakeKey(x: Int) extends Ordered[FakeKey] {
   def compare(that: FakeKey): Int = x.compareTo(that.x)
 }
 

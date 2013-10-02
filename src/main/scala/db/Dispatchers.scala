@@ -34,7 +34,7 @@ abstract class SelectDispatcher[SubmitType <: HasId](db: ConnectionPool) extends
   private val activeItems = new mutable.HashMap[Int, Future[Unit]]()
 
   def select(query: String, params: Any*): Future[Seq[SubmitType]] =
-    db.select(query, params)(rowToSubmit(_))
+    db.select(query, params)(rowToSubmit)
       .onFailure(error(query, _))
       .rescue {
       case _ => Utils.later(10.seconds).flatMap(_ => select(query, params))

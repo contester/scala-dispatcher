@@ -17,7 +17,7 @@ class RemoteFileName(val components: Seq[String], pathSeparator: Option[String])
     new RemoteFileName(components :+ s, pathSeparator)
 
   def /(s: Iterable[String]): Iterable[RemoteFileName] =
-    s.map(this / _)
+    s.map(this /)
 
   def this(name: String, pathSeparator: Option[String]) =
     this(RemoteFileName.parse(name), pathSeparator)

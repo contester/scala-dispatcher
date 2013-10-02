@@ -9,9 +9,9 @@ trait ExecutionArguments {
 
 class ExecutionArgumentsList(val arguments: List[String]) extends ExecutionArguments {
   def get(applicationName: String) =
-    (applicationName :: arguments).map(CommandLineTools.quoteArgument(_)).mkString(" ")
+    (applicationName :: arguments).map(CommandLineTools.quoteArgument).mkString(" ")
   def getList(applicationName: String) =
-    (applicationName :: arguments)
+    applicationName :: arguments
 }
 
 class ExecutionArgumentsString(val commandLine: String) extends ExecutionArguments {
@@ -36,7 +36,7 @@ object CommandLineTools {
   }
 
   def quoteArguments(x: Iterable[String]) =
-    x.map(quoteArgument(_)).mkString(" ")
+    x.map(quoteArgument).mkString(" ")
 
   import org.stingray.contester.ContesterImplicits._
 

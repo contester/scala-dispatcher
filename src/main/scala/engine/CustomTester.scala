@@ -22,7 +22,7 @@ object CustomTester extends Logging {
 
   private def getOutput(sandbox: Sandbox, store: GridfsObjectStore, resultName: String): Future[Option[Blob]] =
     sandbox.stat(outputFileName, true)
-      .map(_.filter(_.size < maxOutputSize).headOption)
+      .map(_.find(_.size < maxOutputSize))
       .flatMap(_.map { remoteFile =>
       store.copyFromSandbox(sandbox, resultName, remoteFile, Map.empty[String, Any]).flatMap { _ =>
         sandbox.get(remoteFile).map(x => Some(x.getData))

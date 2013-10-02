@@ -55,7 +55,9 @@ class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, v
   def compile(r: CompileResult): Future[Unit] =
     client.execute("insert into Results (UID, Submit, Result, Test, Timex, Memory, TesterOutput, TesterError) values (?, ?, ?, ?, ?, ?, ?, ?)",
       testingId, submit.id, r.status, 0, 0,
-      0, r.stdOut, r.stdErr).unit.join(client.execute("Update Submits set Compiled = ? where ID = ?", (if (r.success) 1 else 0), submit.id))
+      0, r.stdOut, r.stdErr).unit.join(client.execute("Update Submits set Compiled = ? where ID = ?", if (r
+        .success) 1
+    else 0, submit.id))
       .unit
 
   def test(testId: Int, result: TestResult): Future[Unit] =
@@ -70,7 +72,7 @@ class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, v
 
   private def finishSubmit(submitId: Int, result: SolutionTestingResult) =
     client.execute("Update Submits set Finished = 1, Taken = ?, Passed = ? where ID = ?",
-      result.tests.size, result.tests.filter(_._2.success).size, submitId)
+      result.tests.size, result.tests.count(_._2.success), submitId)
 
   /**
    * Close the testing and update submits table

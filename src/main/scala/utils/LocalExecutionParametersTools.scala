@@ -24,16 +24,16 @@ final class RichLocalExecutionParameters(val repr: LocalExecutionParameters) {
   def win16 =
     noOutput.toBuilder.clearApplicationName().build()
 
-  def setCompiler =
+  def setCompiler() =
     outputToMemory.toBuilder.setTimeLimitHardMicros(30 * 1000000).build()
 
-  def setSolution =
+  def setSolution() =
     repr.toBuilder.setCheckIdleness(true).setRestrictUi(true).setProcessLimit(1).build()
 
-  def setSanitizer =
+  def setSanitizer() =
     repr.toBuilder.setNoJob(true).build()
 
-  def setTester =
+  def setTester() =
     outputToMemory.toBuilder.setTimeLimitHardMicros(120 * 1000000).setNoJob(true).build()
 
   def emulateStdio(s: Sandbox) = {

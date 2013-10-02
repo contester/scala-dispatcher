@@ -174,8 +174,8 @@ trait CompileResult extends Result {
   val time: Long = 0
   val memory: Long = 0
 
-  val stdOut = "".getBytes()
-  val stdErr = "".getBytes()
+  val stdOut = "".getBytes
+  val stdErr = "".getBytes
 
   def toMap: Map[String, Any] = Map()
 

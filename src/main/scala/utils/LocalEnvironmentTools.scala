@@ -13,7 +13,7 @@ object LocalEnvironmentTools {
   def envVarToTuple(v: LocalEnvironment.Variable) =
     v.getName -> v.getValue
 
-  def tupleToEnvVar(v: Tuple2[String, String]) =
+  def tupleToEnvVar(v: (String, String)) =
     LocalEnvironment.Variable.newBuilder().setName(v._1).setValue(v._2).build()
 
   def envToDict(env: LocalEnvironment) = {
