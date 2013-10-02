@@ -84,7 +84,7 @@ object DispatcherServer extends TwitterServer with Logging {
     config.get[List[String]]("dispatcher.moodles").map { names =>
       names.filter(x => config.contains(x + ".db")).map { name =>
         new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, problemDb, tester, mongoDb.objectStore)
-      }.foreach(_.scan)
+      }.foreach(_.start)
     }
 
   def main() {

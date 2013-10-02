@@ -50,6 +50,21 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester, 
       new ByteBufferModule(row.getString("ModuleId"), row.getBytes("Solution"))
     )
 
+  def selectAllNewQuery: String =
+    """
+      |select
+      |mdl_contester_submits.id as SubmitId,
+      |mdl_contester_languages.ext as ModuleId,
+      |mdl_contester_submits.solution as Solution,
+      |mdl_contester_submits.submitted as Arrived,
+      |mdl_contester_submits.problem as ProblemId
+      |from
+      |mdl_contester_submits, mdl_contester_languages
+      |where
+      |mdl_contester_submits.lang = mdl_contester_languages.id and
+      |mdl_contester_submits.processed is null
+    """.stripMargin
+
   def selectAllActiveQuery: String =
     """
       |select
@@ -64,9 +79,6 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester, 
       |mdl_contester_submits.lang = mdl_contester_languages.id and
       |mdl_contester_submits.processed = 1
     """.stripMargin
-
-  def grabAllQuery: String =
-    "update mdl_contester_submits set processed = 1 where processed is NULL"
 
   def grabOneQuery: String =
     "update mdl_contester_submits set processed = 1 where id = ?"

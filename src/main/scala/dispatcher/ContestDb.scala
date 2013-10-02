@@ -27,7 +27,7 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
     pdata.sanitizeProblem(problem)
 
   def start =
-    pscanner.rescan.join(dispatcher.scan).join(evaldispatcher.scan).unit
+    pscanner.rescan.join(dispatcher.start).join(evaldispatcher.start).unit
 }
 
 class DbConfig(conf: Configuration) {

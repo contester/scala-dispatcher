@@ -38,13 +38,23 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
       |and Contests.PolygonID != 0 and Processed = 1
     """.stripMargin
 
+  val selectAllNewQuery =
+    """
+      |select
+      |NewSubmits.ID, NewSubmits.Contest, NewSubmits.Team, NewSubmits.Problem,
+      |Languages.Ext, NewSubmits.Arrived, NewSubmits.Source, Contests.SchoolMode, NewSubmits.Computer,
+      |Contests.PolygonID
+      |from NewSubmits, Languages, Contests
+      |where NewSubmits.Contest = Languages.Contest and NewSubmits.SrcLang = Languages.ID
+      |and Contests.ID = NewSubmits.Contest
+      |and Contests.PolygonID != 0 and Processed is null
+    """.stripMargin
+
   val doneQuery = """
   update NewSubmits set Processed = 255 where ID = ?"""
 
   val failedQuery = """
   update NewSubmits set Processed = 254 where ID = ?"""
-
-  val grabAllQuery = """update NewSubmits set Processed = 1 where Processed is null"""
 
   val grabOneQuery = """update NewSubmits set Processed = 1 where ID = ?"""
 

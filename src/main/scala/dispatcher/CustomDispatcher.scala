@@ -21,16 +21,18 @@ class CustomTestDispatcher(db: ConnectionPool, invoker: SolutionTester, store: G
       row.getBytes("Input")
     )
 
+  val selectAllNewQuery: String =
+    """
+      |select ID, Ext, Arrived, Source, Input
+      |from Eval
+      |where Processed is null
+    """.stripMargin
+
   val selectAllActiveQuery =
     """
       |select ID, Ext, Arrived, Source, Input
       |from Eval
       |where Processed = 1
-    """.stripMargin
-
-  def grabAllQuery =
-    """
-      |update Eval set Processed = 1 where Processed is null
     """.stripMargin
 
   def grabOneQuery =
