@@ -74,29 +74,26 @@ abstract class SelectDispatcher[SubmitType <: HasId](db: ConnectionPool) extends
     }
   }
 
-  private def getNew =
-    select(selectAllNewQuery).flatMap { items =>
-      Future.collect(items.sortBy(_.id).map(add(_, true)))
+  private def getQ(query: String, grab: Boolean) =
+    dbMutex.acquire().flatMap { permit =>
+      select(query).flatMap { items =>
+        Future.collect(items.sortBy(_.id).map(add(_, true)))
+      }.ensure(permit.release())
     }
-
-  private def getOld =
-    select(selectAllActiveQuery).flatMap { items =>
-      Future.collect(items.sortBy(_.id).map(add(_, false)))
-    }
-
-  // TODO: Invent non-racy way to cancel testings.
 
   private def rescan: Future[Unit] =
-    getNew.rescue {
+    getQ(selectAllNewQuery, true).rescue {
       case e: Throwable =>
         error("Rescan", e)
         Future.Done
     }.flatMap(_ => Utils.later(5.seconds).flatMap(_ => rescan))
 
   def start: Future[Unit] =
-    getOld.rescue {
+    getQ(selectAllActiveQuery, false).rescue {
       case e: Throwable =>
       error("Initial scan", e)
       Utils.later(5.seconds).flatMap(_ => start)
     }.flatMap(_ => rescan)
+
+  def rejudge(id: Int) =
 }
