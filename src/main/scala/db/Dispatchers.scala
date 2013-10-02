@@ -94,6 +94,4 @@ abstract class SelectDispatcher[SubmitType <: HasId](db: ConnectionPool) extends
       error("Initial scan", e)
       Utils.later(5.seconds).flatMap(_ => start)
     }.flatMap(_ => rescan)
-
-  def rejudge(id: Int) =
 }
