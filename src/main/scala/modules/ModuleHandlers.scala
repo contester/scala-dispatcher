@@ -64,7 +64,7 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     add(api.disks / "FPC" / "*" / "bin" / "i386-win32" / "fpc.exe", (x: String) => new FPCSourceHandler(x, false)) +
     add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
     add(api.disks / "WINDOWS" / "System32" / "cmd.exe", visualStudio(_)) +
-    add(api.disks / "Python3" / "Python.exe", new PythonModuleHandler("py3", _)) +
+    add(api.disks / "Python33" / "Python.exe", new PythonModuleHandler("py3", _)) +
     java + p7z + new Win32BinaryHandler
 
   private def win16Compilers(cmd: String): Future[Seq[ModuleHandler]] =
@@ -171,9 +171,9 @@ class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean)
   private val linuxPrefix = if (linux) "linux-" else ""
   val ext = if (cplusplus) "cc" else "c"
   val moduleTypes = linuxPrefix + (if (cplusplus) "g++" else "gcc") :: Nil
-  val commonFlags =  "-fno-optimize-sibling-calls" :: "-fno-strict-aliasing" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
+  val commonFlags =  "-static -fno-optimize-sibling-calls" :: "-fno-strict-aliasing" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
      "-O2" :: "-o" :: "Solution." + binaryExt :: "Solution." + ext :: Nil
-  val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=33554432" :: commonFlags)
+  val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=268435456" :: commonFlags)
   val flags: ExecutionArguments = if (cplusplus) ("-x" :: "c++" :: platformFlags) else platformFlags
   val sourceName = "Solution." + ext
   val binary = "Solution." + binaryExt
