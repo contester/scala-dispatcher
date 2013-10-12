@@ -58,13 +58,13 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     new Win16BinaryHandler
 
   def generate: Future[Seq[ModuleHandler]] =
-    add(api.disks / "mingw" / "bin" / "gcc.exe", (x: String) => new GCCSourceHandler(x, false, false)) +
-    add(api.disks / "mingw" / "bin" / "g++.exe", (x: String) => new GCCSourceHandler(x, true, false)) +
+    add((api.disks / "mingw" / "bin" / "gcc.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "gcc.exe"), (x: String) => new GCCSourceHandler(x, false, false)) +
+    add((api.disks / "mingw" / "bin" / "g++.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "g++.exe"), (x: String) => new GCCSourceHandler(x, true, false)) +
     add(api.programFiles / "Borland" / "Delphi7" / "bin" / "dcc32.exe", (x: String) => new DelphiSourceHandler(x)) +
-    add(api.disks / "FPC" / "*" / "bin" / "i386-win32" / "fpc.exe", (x: String) => new FPCSourceHandler(x, false)) +
+    add((api.disks / "FPC" / "*" / "bin" / "i386-win32" / "fpc.exe") ++ (api.disks / "Programs" / "FP" / "bin" / "i386-win32" / "fpc.exe"), (x: String) => new FPCSourceHandler(x, false)) +
     add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
     add(api.disks / "WINDOWS" / "System32" / "cmd.exe", visualStudio(_)) +
-    add(api.disks / "Python3" / "Python.exe", new PythonModuleHandler("py3", _)) +
+    add((api.disks / "Python3" / "Python.exe") ++ (api.disks / "Programs" / "Python-3"), new PythonModuleHandler("py3", _)) +
     java + p7z + new Win32BinaryHandler
 
   private def win16Compilers(cmd: String): Future[Seq[ModuleHandler]] =
