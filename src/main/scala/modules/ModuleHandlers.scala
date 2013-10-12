@@ -253,12 +253,12 @@ class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler 
 
   private def getTestLimits(test: TestLimits): List[String] = {
     val ml = (test.memoryLimit / (1024 * 1024)).toString
-    ("-Xms" + ml + "M") :: ("-Xmx" + ml + "M") :: Nil
+    ("-Xmx" + ml + "M") :: Nil
   }
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     sandbox.getExecutionParameters(
-      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss32M" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
+      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss64M" :: "-Xms64M" :: "-server" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
         "-jar" :: "Solution.jar" :: Nil))
       .map(_.setTimeLimitMicros(test.timeLimitMicros).setSolution)
 }
