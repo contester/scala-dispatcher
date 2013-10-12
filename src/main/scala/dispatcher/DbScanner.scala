@@ -7,22 +7,34 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.db.ConnectionPool
 import org.stingray.contester.polygon.{ContestHandle, ContestWithProblems}
 import org.stingray.contester.utils.Utils
-import java.net.URL
 
-case class ContestRow(id: Int, name: String, polygonId: Int, schoolMode: Boolean, Language: String)
+object PolygonContestId {
+  def parseSource(source: String): (String, Int) = {
+    val splits = source.split(':')
+    if (splits.length == 1)
+      ("default", splits(0).toInt)
+    else
+      (splits(0), splits(1).toInt)
+  }
+
+  def apply(source: String): PolygonContestId = {
+    val parsed = parseSource(source)
+    PolygonContestId(parsed._1, parsed._2)
+  }
+
+}
+
+case class PolygonContestId(polygon: String, contestId: Int)
+
+case class ContestRow(id: Int, name: String, polygonId: PolygonContestId, schoolMode: Boolean, Language: String)
 case class ProblemRow(contest: Int, id: String, tests: Int, name: String, rating: Int)
 
 class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
-class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) extends Function[Int, Future[ContestHandle]] with Logging {
-  private def getContestHandle(id: Int): ContestHandle = {
-    val result = new ContestHandle(new URL(polygonBase, "c/" + id + "/"))
-    result
-  }
-
+class ContestTableScanner(d: ProblemData, db: ConnectionPool, contestResolver: PolygonContestId => ContestHandle) extends Function[Int, Future[ContestHandle]] with Logging {
   private def getContestsFromDb: Future[Seq[ContestRow]] =
     db.select("select ID, Name, SchoolMode, PolygonID, Language from Contests where PolygonID != 0") { row =>
-      ContestRow(row.getInt("ID"), row.getString("Name"), row.getInt("PolygonID"), row.getInt("SchoolMode") == 1, row.getString("Language").toLowerCase)
+      ContestRow(row.getInt("ID"), row.getString("Name"), PolygonContestId(row.getString("PolygonID")), row.getInt("SchoolMode") == 1, row.getString("Language").toLowerCase)
     }
 
   private def getProblemsFromDb: Future[Seq[ProblemRow]] =
@@ -61,12 +73,12 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) 
   }
 
   private def updateContests(contestList: Iterable[ContestRow]): Future[Unit] = {
-    d.getContests(contestList.map(_.polygonId).toSet.toSeq.map(getContestHandle)).join(getProblemsFromDb)
+    d.getContests(contestList.map(_.polygonId).toSet.toSeq.map(contestResolver)).join(getProblemsFromDb)
       .flatMap {
       case (contests, problems) =>
         Future.collect(contests.flatMap(x => contestList.filter {
           h =>
-            getContestHandle(h.polygonId) == x._1 // TODO: check without creating new handle
+            contestResolver(h.polygonId) == x._1 // TODO: check without creating new handle
         }.map(singleContest(_, x._2, problems))).toSeq)
     }.unit
   }
@@ -76,7 +88,7 @@ class ContestTableScanner(d: ProblemData, db: ConnectionPool, polygonBase: URL) 
 
   def apply(key: Int): Future[ContestHandle] =
     synchronized {
-      data.get(key).map(x => Future.value(getContestHandle(x.polygonId))).getOrElse(nextScan.map(_ => getContestHandle(data(key).polygonId)))
+      data.get(key).map(x => Future.value(contestResolver(x.polygonId))).getOrElse(nextScan.map(_ => contestResolver(data(key).polygonId)))
     }
 
   def scan: Future[Unit] = {

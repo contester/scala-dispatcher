@@ -62,15 +62,18 @@ object DispatcherServer extends TwitterServer with Logging {
   val dispatchers =
     config.get[List[String]]("dispatcher.standard").map { names =>
 
+      val polygonConfs = config.detach("polygons").detachAll
+      val contestResolver = new ContestResolver(polygonConfs.mapValues(c => new URL(c[String]("url"))))
+
       val authFilter = new AuthPolygonFilter
-      config.detach("polygons").detachAll.foreach {
+      polygonConfs.foreach {
         case (shortName, polygonConf) =>
         authFilter.addPolygon(new PolygonBase(shortName, new URL(polygonConf[String]("url")), polygonConf[String]("username"), polygonConf[String]("password")))
       }
 
       val client = authFilter andThen BasicPolygonFilter andThen CachedConnectionHttpService
       val problems = new ProblemData(client, polygonCache, problemDb, invokerApi)
-      val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester, mongoDb.objectStore)
+      val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester, mongoDb.objectStore, contestResolver(_))
 
       names.foreach { name =>
         if (config.contains(name + ".db")) {
