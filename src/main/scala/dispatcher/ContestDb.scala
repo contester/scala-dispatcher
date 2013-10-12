@@ -9,11 +9,16 @@ import org.stingray.contester.testing.SolutionTester
 import org.stingray.contester.common.GridfsObjectStore
 import java.net.URL
 import org.streum.configrity.Configuration
-import org.stingray.contester.polygon.PolygonProblem
+import org.stingray.contester.polygon.{ContestHandle, PolygonProblem}
+
+class ContestResolver(polygonResolver: (String) => URL) {
+  def apply(source: PolygonContestId): ContestHandle =
+    new ContestHandle(new URL(polygonResolver(source.polygon), "c/" + source.contestId + "/"))
+}
 
 class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
-                   val store: GridfsObjectStore, val storeId: String, polygonBase: URL) extends Logging {
-  val pscanner = new ContestTableScanner(pdata, dbclient, polygonBase)
+                   val store: GridfsObjectStore, val storeId: String, contestResolver: PolygonContestId => ContestHandle) extends Logging {
+  val pscanner = new ContestTableScanner(pdata, dbclient, contestResolver)
   val dispatcher = new SubmitDispatcher(this)
   val evaldispatcher = new CustomTestDispatcher(dbclient, invoker, store, storeId)
 
@@ -32,7 +37,6 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
 
 class DbConfig(conf: Configuration) {
   val short = conf.get[String]("short").getOrElse(conf[String]("db"))
-  val polygonBase = new URL(conf[String]("polygon"))
 
   def createConnectionPool =
     new ConnectionPool(conf[String]("host"),
@@ -41,13 +45,13 @@ class DbConfig(conf: Configuration) {
       conf[String]("password"))
 }
 
-class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: SolutionTester, val store: GridfsObjectStore) extends Logging {
+class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: SolutionTester, val store: GridfsObjectStore, contestResolver: PolygonContestId => ContestHandle) extends Logging {
   val dispatchers = new mutable.HashMap[DbConfig, DbDispatcher]()
   val scanners = new mutable.HashMap[DbDispatcher, Future[Unit]]()
 
   def add(conf: DbConfig) = {
     info(conf)
-    val d = new DbDispatcher(conf.createConnectionPool, pdata, new File(basePath, conf.short), invoker, store, conf.short, conf.polygonBase)
+    val d = new DbDispatcher(conf.createConnectionPool, pdata, new File(basePath, conf.short), invoker, store, conf.short, contestResolver)
     scanners(d) = d.start
   }
 }
