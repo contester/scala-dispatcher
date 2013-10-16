@@ -253,14 +253,17 @@ class PolygonProblem(val source: Elem, val externalUrl: Option[URL]) extends Pro
   lazy val revision =
     (source \ "@revision").text.toInt
 
+  lazy val mainTestSet =
+    (source \ "judging" \ "testset").filter(node => (node \ "@name").text == "tests")
+
   lazy val testCount =
-    (source \ "judging" \ "testset" \ "test-count").text.toInt
+    (mainTestSet \ "test-count").text.toInt
 
   lazy val timeLimit =
-    (source \ "judging" \ "testset" \ "time-limit").text.toInt
+    (mainTestSet \ "time-limit").text.toInt
 
   lazy val memoryLimit =
-    (source \ "judging" \ "testset" \ "memory-limit").text.toLong
+    (mainTestSet \ "memory-limit").text.toLong
 
   lazy val inputFile =
     (source \ "judging" \ "@input-file").text

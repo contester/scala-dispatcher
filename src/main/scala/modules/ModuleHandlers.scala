@@ -64,7 +64,7 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     add((api.disks / "FPC" / "*" / "bin" / "i386-win32" / "fpc.exe") ++ (api.disks / "Programs" / "FP" / "bin" / "i386-win32" / "fpc.exe"), (x: String) => new FPCSourceHandler(x, false)) +
     add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
     add(api.disks / "WINDOWS" / "System32" / "cmd.exe", visualStudio(_)) +
-    add((api.disks / "Python33" / "Python.exe") ++ (api.disks / "Programs" / "Python-3"), new PythonModuleHandler("py3", _)) +
+    add((api.disks / "Python33" / "Python.exe") ++ (api.disks / "Programs" / "Python-3" / "Python.exe"), new PythonModuleHandler("py3", _)) +
     java + p7z + new Win32BinaryHandler
 
   private def win16Compilers(cmd: String): Future[Seq[ModuleHandler]] =
@@ -77,8 +77,8 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
       (x: String) => Seq(new VisualStudioSourceHandler(cmd, x), new VisualCSharpSourceHandler(cmd, x)))
 
   private def java: Future[Seq[ModuleHandler]] =
-    add(api.programFiles / "Java" / "jdk*" / "bin" / "java.exe", (x: String) => new JavaBinaryHandler(x, false)) +
-    add(api.programFiles / "Java" / "jdk*" / "bin" / "javac.exe",
+    add((api.disks / "Programs" / "Java-7-32" / "bin" / "java.exe") ++ (api.programFiles / "Java" / "jdk*" / "bin" / "java.exe"), (x: String) => new JavaBinaryHandler(x, false)) +
+    add((api.disks / "Programs" / "Java-7-32" / "bin" / "javac.exe") ++ (api.programFiles / "Java" / "jdk*" / "bin" / "javac.exe"),
       (javac: String) =>
         add(api.programFiles / "Java" / "jdk*" / "bin" / "jar.exe", (x: String) => new JavaSourceHandler(javac, x, false)))
 
@@ -171,9 +171,9 @@ class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean)
   private val linuxPrefix = if (linux) "linux-" else ""
   val ext = if (cplusplus) "cc" else "c"
   val moduleTypes = linuxPrefix + (if (cplusplus) "g++" else "gcc") :: Nil
-  val commonFlags =  "-static -fno-optimize-sibling-calls" :: "-fno-strict-aliasing" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
+  val commonFlags =  "-static" :: "-fno-optimize-sibling-calls" :: "-fno-strict-aliasing" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
      "-O2" :: "-o" :: "Solution." + binaryExt :: "Solution." + ext :: Nil
-  val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=268435456" :: commonFlags)
+  val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=33554432" :: commonFlags)
   val flags: ExecutionArguments = if (cplusplus) ("-x" :: "c++" :: platformFlags) else platformFlags
   val sourceName = "Solution." + ext
   val binary = "Solution." + binaryExt
@@ -210,7 +210,7 @@ class VisualStudioSourceHandler(val compiler: String, vcvars: String) extends Si
 }
 
 class VisualCSharpSourceHandler(val compiler: String, vcvars: String) extends SimpleCompileHandler {
-  val clflags = "/out:Solution.exe" :: Nil
+  val clflags = "/out:Solution.exe" :: "/o+" :: "/d:ONLINE_JUDGE" :: "/r:System.Numerics.dll" :: Nil
   val bFlags = "/S" :: "/C" :: "\"" + (
     (CommandLineTools.quoteArgument(vcvars) :: "&&" :: "csc" :: Nil) ++
       clflags ++ ("Solution.cs" :: Nil)).mkString(" ") + "\"" :: Nil
@@ -258,7 +258,7 @@ class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler 
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     sandbox.getExecutionParameters(
-      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss64M" :: "-Xms64M" :: "-server" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
+      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss32M" :: "-Xms32M" :: "-server" :: "-DONLINE_JUDGE=true" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
         "-jar" :: "Solution.jar" :: Nil))
       .map(_.setTimeLimitMicros(test.timeLimitMicros).setSolution)
 }

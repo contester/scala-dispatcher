@@ -64,7 +64,7 @@ class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, v
     client.execute("Insert into Results (UID, Submit, Result, Test, Timex, Memory, Info, TesterOutput, TesterError, TesterExitCode) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       testingId, submit.id, result.status, testId, result.solution.time / 1000,
       result.solution.memory, result.solution.returnCode,
-      result.getTesterOutput, result.getTesterError,
+      result.getTesterOutput, new String(result.getTesterError, "windows-1251"),
       result.getTesterReturnCode).unit
 
   private def finishTesting(testingId: Int) =

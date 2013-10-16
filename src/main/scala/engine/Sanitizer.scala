@@ -75,8 +75,9 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemD
       sandbox.getGridfs(shrunkFileList).map { putResult =>
         val resultSet = putResult.map(x => problemFiles(x.name)).map(_._2).toSet
         val missing = ((((1 to problem.testCount).map(problem.inputName)) ++ List(problem.checkerName)).toSet -- resultSet)
-        if (missing.nonEmpty)
+        if (missing.nonEmpty) {
           throw new PdbStoreException(missing.head)
+	}
         (1 to problem.testCount).filter(i => resultSet(problem.answerName(i)))
       }
     }

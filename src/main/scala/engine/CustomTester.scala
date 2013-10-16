@@ -17,7 +17,7 @@ object CustomTestLimits extends TestLimits {
 
 object CustomTester extends Logging {
 
-  private[this] val maxOutputSize = 64 * 1024 * 1024
+  private[this] val maxOutputSize = 64 * 1024 * 10
   private[this] val outputFileName = "output.txt"
 
   private def getOutput(sandbox: Sandbox, store: GridfsObjectStore, resultName: String): Future[Option[Blob]] =
@@ -32,7 +32,7 @@ object CustomTester extends Logging {
   def apply(instance: InvokerInstance, module: Module, input: Array[Byte], store: GridfsObjectStore, resultName: String): Future[CustomTestResult] = {
     val moduleHandler = instance.factory(module.moduleType).asInstanceOf[BinaryHandler]
       instance.restricted.put(Blobs.storeBinary(input), "input.txt")
-        .flatMap{ _ => Tester.executeSolution(instance.restricted, moduleHandler, module, CustomTestLimits, false) }
+        .flatMap{ _ => Tester.executeSolution(instance.restricted, moduleHandler, module, CustomTestLimits, true) }
         .flatMap { solutionResult =>
         (if (solutionResult.success)
           getOutput(instance.restricted, store, resultName)
