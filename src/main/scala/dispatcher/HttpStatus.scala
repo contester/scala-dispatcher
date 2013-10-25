@@ -1,51 +1,23 @@
 package org.stingray.contester.dispatcher
 
 import com.twitter.finagle.Service
-import com.twitter.finagle.http.HttpMuxer
+import com.twitter.finagle.http.{Response, Request}
 import com.twitter.util.Future
-import java.net.URI
-import org.apache.commons.io.IOUtils
-import org.jboss.netty.handler.codec.http.HttpResponseStatus.{OK, NOT_FOUND}
+import org.jboss.netty.handler.codec.http.HttpResponseStatus.OK
 import org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1
-import org.jboss.netty.handler.codec.http.{DefaultHttpResponse, HttpResponse, HttpRequest}
 import org.jboss.netty.util.CharsetUtil.UTF_8
 import org.fusesource.scalate.TemplateEngine
 import org.jboss.netty.buffer.ChannelBuffers.copiedBuffer
 
-object StaticServer extends Service[HttpRequest, HttpResponse] {
-  def apply(request: HttpRequest): Future[HttpResponse] =
-    Future {
-      val path = HttpStatus.normalize(new URI(request.getUri).getPath)
-      val contents = Option(getClass.getResourceAsStream(path))
-      contents.map { c =>
-        val response = new DefaultHttpResponse(HTTP_1_1, OK)
-        response.setContent(copiedBuffer(IOUtils.toByteArray(c)))
-        response
-      }.getOrElse(new DefaultHttpResponse(HTTP_1_1, NOT_FOUND))
-    }
-
-}
-
 class DynamicServer(templateEngine: TemplateEngine, template: String, attributes: Map[String, Any])
-    extends Service[HttpRequest, HttpResponse] {
-  def apply(request: HttpRequest): Future[HttpResponse] = {
+    extends Service[Request, Response] {
+  def apply(request: Request): Future[Response] = {
     Future {
-      val response = new DefaultHttpResponse(HTTP_1_1, OK)
-      response.setContent(copiedBuffer(templateEngine.layout(
+      request.response.setProtocolVersion(HTTP_1_1)
+      request.response.setStatus(OK)
+      request.response.setContent(copiedBuffer(templateEngine.layout(
           template, attributes ++ Map("request" -> request)), UTF_8))
-      response
+      request.response
     }
-  }
-}
-
-object HttpStatus {
-  def addHandlers() = {
-    HttpMuxer.addHandler("assets/", StaticServer)
-  }
-
-  def normalize(path: String) = {
-    val suffix = if (path.endsWith("/")) "/" else ""
-    val p = path.split("/") filterNot(_.isEmpty) mkString "/"
-    "/" + p + suffix
   }
 }
