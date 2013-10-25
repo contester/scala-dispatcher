@@ -1,6 +1,5 @@
 package org.stingray.contester.dispatcher
 
-import grizzled.slf4j.Logging
 import java.io.File
 import java.net.{URL, InetSocketAddress}
 import java.util.concurrent.Executors
@@ -19,7 +18,7 @@ import org.fusesource.scalate.layout.DefaultLayoutStrategy
 import com.twitter.finagle.http.{Http, HttpMuxer}
 import com.twitter.finagle.builder.ServerBuilder
 
-object DispatcherServer extends App with Logging {
+object DispatcherServer extends App {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
 
   def createDbConfig(conf: Configuration) =
@@ -36,7 +35,6 @@ object DispatcherServer extends App with Logging {
 
   val config = Configuration.load("dispatcher.conf")
   val mHost = config[String]("pdb.mhost")
-  //val amqclient = AMQ.createConnection(config.detach("messaging"))
 
   val mongoDb = new MongoDBInstance(mHost, "contester")
 

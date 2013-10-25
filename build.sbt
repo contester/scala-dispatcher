@@ -50,10 +50,10 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
+  "org.stingray" %% "simpleweb" % "0.1-SNAPSHOT",
   "io.netty" % "netty" % "3.7.0.Final",
   "com.twitter" %% "finagle-core" % "6.7.4",
   "com.twitter" %% "finagle-http" % "6.7.4",
-  "com.twitter" %% "twitter-server" % "1.2.0",
   "org.streum" %% "configrity-core" % "1.0.0",
   "com.twitter" %% "util-core" % "6.7.0",
   "org.mongodb" %% "casbah" % "2.6.4",
