@@ -19,6 +19,12 @@ trait PermanentError extends RuntimeException
 // Too many errors
 class TooManyErrors(cause: RuntimeException) extends RuntimeException(cause)
 
+/**
+ * Brains behind InvokerRegistry.
+ * @tparam CapsType Type for capability ids.
+ * @tparam KeyType Type for keys.
+ * @tparam InvokerType Type for invokers. HasCaps[CapsType]
+ */
 trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps[CapsType]] extends Logging {
   protected type QueueEntry = (KeyType, Promise[InvokerType], AnyRef)
   private[this] object entryOrdering extends Ordering[QueueEntry] {
@@ -86,11 +92,18 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
       invokers.foreach(addInvoker)
     }
 
+  /**
+   * Remove empty queues for caps.
+   */
   private def discardEmptyQueues(): Unit =
     synchronized {
       waiting.filter(_._2.isEmpty).foreach(k => waiting.remove(k._1))
     }
 
+  /**
+   * Re-add invoker to the system, marking it as available or immediately scheduling the work on it.
+   * @param invoker Invoker to add.
+   */
   private[this] def addInvoker(invoker: InvokerType): Unit =
     if (stillAlive(invoker)) {
       trace("Adding " + invoker)
@@ -105,6 +118,11 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
       }
     }
 
+  /**
+   * Re-add invoker after being used by schedulingKey. Mark it as not used first, then re-add.
+   * @param invoker Invoker to re-add
+   * @param schedulingKey
+   */
   private[this] def reuseInvoker(invoker: InvokerType, schedulingKey: KeyType): Unit =
     synchronized {
       uselist.remove(invoker).foreach { _ =>
@@ -113,7 +131,10 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
       }
     }
 
-
+  /**
+   * Mark invoker as bad.
+   * @param invoker
+   */
   private[this] def badInvoker(invoker: InvokerType): Unit =
     synchronized {
       uselist.remove(invoker).foreach { _ =>
@@ -122,6 +143,10 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
       }
     }
 
+  /**
+   * Remove invokers.
+   * @param invokers
+   */
   protected def removeInvokers(invokers: Iterable[InvokerType]): Unit =
     synchronized {
       invokers.foreach { i =>

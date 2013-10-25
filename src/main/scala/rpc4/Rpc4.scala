@@ -1,6 +1,5 @@
 package org.stingray.contester.rpc4
 
-import actors.threadpool.AtomicInteger
 import com.google.protobuf.MessageLite
 import com.twitter.util.{Future, Promise}
 import org.jboss.netty.buffer.{ChannelBuffers, ChannelBuffer}
@@ -9,7 +8,7 @@ import org.jboss.netty.handler.codec.frame.FrameDecoder
 import org.stingray.contester.utils.ProtobufTools
 import org.stingray.contester.rpc4.proto.RpcFour
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.{AtomicInteger, AtomicBoolean}
 import grizzled.slf4j.Logging
 
 /** Connected server registry. Will be called for connected and disconnected channels.
