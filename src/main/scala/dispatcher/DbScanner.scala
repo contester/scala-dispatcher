@@ -8,7 +8,7 @@ import org.stingray.contester.db.ConnectionPool
 import org.stingray.contester.polygon.{ContestHandle, ContestWithProblems}
 import org.stingray.contester.utils.Utils
 
-object PolygonContestId {
+object PolygonContestId extends Logging {
   def parseSource(source: String): (String, Int) = {
     val splits = source.split(':')
     if (splits.length == 1)
@@ -19,6 +19,7 @@ object PolygonContestId {
 
   def apply(source: String): PolygonContestId = {
     val parsed = parseSource(source)
+    trace((source, parsed))
     PolygonContestId(parsed._1, parsed._2)
   }
 
@@ -33,7 +34,7 @@ class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
 class ContestTableScanner(d: ProblemData, db: ConnectionPool, contestResolver: PolygonContestId => ContestHandle) extends Function[Int, Future[ContestHandle]] with Logging {
   private def getContestsFromDb: Future[Seq[ContestRow]] =
-    db.select("select ID, Name, SchoolMode, PolygonID, Language from Contests where PolygonID != 0") { row =>
+    db.select("select ID, Name, SchoolMode, PolygonID, Language from Contests where PolygonID != ?", "") { row =>
       ContestRow(row.getInt("ID"), row.getString("Name"), PolygonContestId(row.getString("PolygonID")), row.getInt("SchoolMode") == 1, row.getString("Language").toLowerCase)
     }
 

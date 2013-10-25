@@ -35,7 +35,7 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
       |from NewSubmits, Languages, Contests
       |where NewSubmits.Contest = Languages.Contest and NewSubmits.SrcLang = Languages.ID
       |and Contests.ID = NewSubmits.Contest
-      |and Contests.PolygonID != 0 and Processed = 1
+      |and Contests.PolygonID != '' and Processed = 1
     """.stripMargin
 
   val selectAllNewQuery =
@@ -47,7 +47,7 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
       |from NewSubmits, Languages, Contests
       |where NewSubmits.Contest = Languages.Contest and NewSubmits.SrcLang = Languages.ID
       |and Contests.ID = NewSubmits.Contest
-      |and Contests.PolygonID != 0 and Processed is null
+      |and Contests.PolygonID != '' and Processed is null
     """.stripMargin
 
   val doneQuery = """
