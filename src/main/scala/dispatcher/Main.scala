@@ -15,12 +15,11 @@ import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.common.MongoDBInstance
 import org.stingray.contester.polygon._
 import org.stingray.contester.problems.CommonProblemDb
-import com.twitter.server.TwitterServer
-import com.twitter.util.Await
 import org.fusesource.scalate.layout.DefaultLayoutStrategy
-import com.twitter.finagle.http.HttpMuxer
+import com.twitter.finagle.http.{Http, HttpMuxer}
+import com.twitter.finagle.builder.ServerBuilder
 
-object DispatcherServer extends TwitterServer with Logging {
+object DispatcherServer extends App with Logging {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
 
   def createDbConfig(conf: Configuration) =
@@ -38,8 +37,6 @@ object DispatcherServer extends TwitterServer with Logging {
   val config = Configuration.load("dispatcher.conf")
   val mHost = config[String]("pdb.mhost")
   //val amqclient = AMQ.createConnection(config.detach("messaging"))
-
-  override def defaultHttpPort = config[Int]("dispatcher.port")
 
   val mongoDb = new MongoDBInstance(mHost, "contester")
 
@@ -90,11 +87,14 @@ object DispatcherServer extends TwitterServer with Logging {
       }.foreach(_.start)
     }
 
-  def main() {
-    HttpMuxer.addHandler("assets/", StaticServer)
-    HttpMuxer.addHandler("invokers", new DynamicServer(
-        templateEngine, "org/stingray/contester/invokers/InvokerRegistry.ssp", Map("invoker" -> invoker)))
-    bindInvokerTo(new InetSocketAddress(config[Int]("dispatcher.invokerPort", 9981)))
-    Await.ready(httpServer)
-  }
+  HttpMuxer.addHandler("assets/", StaticServer)
+  HttpMuxer.addHandler("invokers", new DynamicServer(
+      templateEngine, "org/stingray/contester/invokers/InvokerRegistry.ssp", Map("invoker" -> invoker)))
+  bindInvokerTo(new InetSocketAddress(config[Int]("dispatcher.invokerPort", 9981)))
+
+  val httpServer = ServerBuilder()
+      .codec(Http())
+  .bindTo(new InetSocketAddress(config[Int]("dispatcher.port")))
+  .name("httpserver")
+  .build(HttpMuxer)
 }
