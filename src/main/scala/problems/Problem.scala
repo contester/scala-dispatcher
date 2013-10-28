@@ -235,9 +235,7 @@ private class PDBTest(val problem: PDBProblem, val testId: Int) extends Test wit
 }
 
 trait ProblemHandle {
-  def toProblemURI: URI
+  def uri: URI
 }
 
-class DirectProblemHandle(val uri: URI) extends ProblemHandle {
-  def toProblemURI = uri
-}
+class DirectProblemHandle(val uri: URI) extends ProblemHandle
