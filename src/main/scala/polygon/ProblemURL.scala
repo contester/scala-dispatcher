@@ -61,3 +61,4 @@ class PolygonProblemHandle(val url: URL, val revision: Option[Int]) extends Prob
   def toProblemURI: String =
     PolygonURL.withQuery(url, params.toMap).toString
 }
+

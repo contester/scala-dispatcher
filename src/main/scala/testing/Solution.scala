@@ -18,13 +18,13 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
   // TODO(stingray): Restore the state.
   // TODO: Pass state from above, if exists. Skip compile, if needed.
   def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, progress: SingleProgress,
-      schoolMode: Boolean, store: GridfsObjectStore, storeHandle: InstanceSubmitHandle, testingId: Int, state: Map[Int, Result]): Future[SolutionTestingResult] = {
-    val compiledModuleName = storeHandle.toGridfsPath + "/compiledModule"
+      schoolMode: Boolean, store: GridfsObjectStore, storeHandle: InstanceSubmitTestingHandle, state: Map[Int, Result]): Future[SolutionTestingResult] = {
+    val compiledModuleName = storeHandle.submit.toGridfsPath + "/compiledModule"
     invoker.maybeCompile(submit, sourceModule, store, compiledModuleName)
       .flatMap { compiled =>
           progress.compile(compiled._1).flatMap { _ =>
             compiled._2.map { binary =>
-              new BinarySolution(invoker, store, storeHandle.testing(testingId), submit, problem,
+              new BinarySolution(invoker, store, storeHandle, submit, problem,
                 binary, progress, schoolMode, state).run
             }.getOrElse(Future.value(Nil)).map(x => SolutionTestingResult(compiled._1, x.map(v => v._2)))
           }

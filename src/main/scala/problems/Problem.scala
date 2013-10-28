@@ -3,6 +3,7 @@ package org.stingray.contester.problems
 import org.stingray.contester.invokers.Sandbox
 import com.twitter.util.Future
 import collection.immutable
+import java.net.URL
 
 /**
  * A proxy for parent problem to limit the test set.
@@ -157,7 +158,7 @@ trait ProblemID {
  * @param pid Problem pid.
  * @param revision Problem revision.
  */
-case class SimpleProblemID(override val pid: String, override val revision: Int) extends ProblemID
+class SimpleProblemID(override val pid: String, override val revision: Int) extends ProblemID
 
 /**
  * A problem from testing engine point of view, built from ProblemID and additional info
@@ -235,4 +236,8 @@ private class PDBTest(val problem: PDBProblem, val testId: Int) extends Test wit
 
 trait ProblemHandle {
   def toProblemURI: String
+}
+
+class DirectProblemHandle(val url: URL) extends ProblemHandle {
+  def toProblemURI: String = url.toString
 }

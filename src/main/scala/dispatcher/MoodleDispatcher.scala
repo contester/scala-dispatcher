@@ -4,8 +4,9 @@ import org.stingray.contester.db.{ConnectionPool, SelectDispatcher}
 import org.stingray.contester.common._
 import java.sql.{ResultSet, Timestamp}
 import com.twitter.util.Future
-import org.stingray.contester.problems.ProblemDb
+import org.stingray.contester.problems.{DirectProblemHandle, ProblemDb}
 import org.stingray.contester.testing.{SolutionTester, SolutionTestingResult, SingleProgress}
+import java.net.URL
 
 case class MoodleSubmit(id: Int, problemId: String, arrived: Timestamp, sourceModule: Module) extends Submit {
   val timestamp = arrived
@@ -89,8 +90,20 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester, 
   def failedQuery: String =
     "update mdl_contester_submits set processed = 254 where id = ?"
 
+  def findUnfinishedTesting(item: MoodleSubmit) =
+    db.select("select testingid from mdl_contester_testings where submitid = ? and finish is null", item.id) { row =>
+      row.getInt("submitid")
+    }.map(_.headOption)
+
+  def startNewTesting(item: MoodleSubmit) =
+    db.execute("Insert into mdl_contester_testings (submitid, start) values (?, NOW())", item.id)
+      .map(_.lastInsertId.get)
+
   def run(item: MoodleSubmit): Future[Unit] =
-    pdb.getMostRecentProblem("moodle/" + item.problemId).flatMap { problem =>
-      ??? //inv(item, item.sourceModule, problem.get, new MoodleResultReporter(db, item), true, store, new InstanceSubmitHandle("moodle", item.id))
+    pdb.getMostRecentProblem(new DirectProblemHandle(new URL("direct://school.sgu.ru/moodle/" + item.problemId))).flatMap { problem =>
+      startNewTesting(item).flatMap { testingId =>
+        val reporter = new MoodleSingleResult(db, item, testingId)
+        inv(item, item.sourceModule, problem.get, reporter, true, store, new InstanceSubmitTestingHandle("school.sgu.ru/moodle", item.id, testingId), Map.empty).flatMap(reporter.finish)
+      }
     }
 }

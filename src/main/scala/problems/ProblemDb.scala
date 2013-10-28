@@ -6,6 +6,7 @@ import org.stingray.contester.utils.Utils
 import grizzled.slf4j.Logging
 import com.google.common.collect.MapMaker
 import org.stingray.contester.common.GridfsObjectStore
+import java.net.URL
 
 case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
                            stdio: Boolean, testerName: String, answers: Iterable[Int], interactorName: Option[String]) {
@@ -39,7 +40,7 @@ object ProblemManifest {
 trait ProblemDb {
   def setProblem(problem: ProblemID, manifest: ProblemManifest): Future[Problem]
   def getProblem(problem: ProblemID): Future[Option[Problem]]
-  def getMostRecentProblem(problemId: String): Future[Option[Problem]]
+  def getMostRecentProblem(problem: ProblemHandle): Future[Option[Problem]]
 }
 
 trait ProblemFileStore {
@@ -97,17 +98,23 @@ class CommonProblemDb(mdb: MongoDB, mfs: GridfsObjectStore) extends SanitizeDb w
       else Future.Done
     }
 
-  def getMostRecentProblem(problemId: String): Future[Option[Problem]] =
+  def getPathPart(url: URL) =
+    url.getPath.stripPrefix("/").stripSuffix("/")
+
+  def getSimpleUrlId(url: URL) =
+    (url.getProtocol :: url.getHost :: (if (url.getPort != -1) url.getPort.toString :: getPathPart(url) :: Nil else getPathPart(url) :: Nil)).mkString("/")
+
+  def getMostRecentProblem(problem: ProblemHandle): Future[Option[Problem]] =
     Future {
-      mdb("manifest").find(MongoDBObject("id" -> problemId)).sort(MongoDBObject("revision" -> -1))
-        .take(1).toIterable.headOption.map { found =>
-        val revision = found.getAsOrElse[Int]("revision", 1)
-        localCache.get((problemId, revision)).getOrElse {
-          val pt = SimpleProblemID(problemId, revision)
-          val m = ProblemManifest(found)
-          val p = PDBProblem(this, pt, m)
-          localCache.putIfAbsent((problemId, revision), p).getOrElse(p)
-        }
+      problem match {
+        case directProblem: DirectProblemHandle =>
+          mdb("manifest").find(MongoDBObject("id" -> directProblem.url.toString)).sort(MongoDBObject("revision" -> -1))
+            .take(1).toIterable.headOption.map { found =>
+            val revision = found.getAsOrElse[Int]("revision", 1)
+            val pid = new SimpleProblemID(getSimpleUrlId(directProblem.url), revision)
+            val m = ProblemManifest(found)
+            PDBProblem(this, pid, m)
+          }
       }
     }
 }

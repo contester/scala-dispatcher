@@ -39,6 +39,8 @@ class InstanceSubmitHandle(val handle: String, val submitId: Int) extends HasGri
 
 class InstanceSubmitTestingHandle(val handle: String, val submitId: Int, val testingId: Int) extends HasGridfsPath {
   def toGridfsPath: String = "submit/%s/%d/%d".format(handle, submitId, testingId)
+
+  def submit = new InstanceSubmitHandle(handle, submitId)
 }
 
 /**
