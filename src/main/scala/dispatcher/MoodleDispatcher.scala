@@ -6,7 +6,7 @@ import java.sql.{ResultSet, Timestamp}
 import com.twitter.util.Future
 import org.stingray.contester.problems.{DirectProblemHandle, ProblemDb}
 import org.stingray.contester.testing.{SolutionTester, SolutionTestingResult, SingleProgress}
-import java.net.URL
+import java.net.URI
 
 case class MoodleSubmit(id: Int, problemId: String, arrived: Timestamp, sourceModule: Module) extends Submit {
   val timestamp = arrived
@@ -100,7 +100,7 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester, 
       .map(_.lastInsertId.get)
 
   def run(item: MoodleSubmit): Future[Unit] =
-    pdb.getMostRecentProblem(new DirectProblemHandle(new URL("direct://school.sgu.ru/moodle/" + item.problemId))).flatMap { problem =>
+    pdb.getMostRecentProblem(new DirectProblemHandle(new URI("direct://school.sgu.ru/moodle/" + item.problemId))).flatMap { problem =>
       startNewTesting(item).flatMap { testingId =>
         val reporter = new MoodleSingleResult(db, item, testingId)
         inv(item, item.sourceModule, problem.get, reporter, true, store, new InstanceSubmitTestingHandle("school.sgu.ru/moodle", item.id, testingId), Map.empty).flatMap(reporter.finish)

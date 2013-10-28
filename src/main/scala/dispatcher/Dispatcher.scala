@@ -73,9 +73,9 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
   def getTestingInfo(reporter: DBReporter, m: SubmitObject) =
     reporter.getAnyTestingAndState(m.id).flatMap(_.map(Future.value).getOrElse {
       parent.getPolygonProblem(m.contestId, m.problemId).flatMap { polygonProblem =>
-        reporter.allocateTesting(m.id, polygonProblem.handle.toProblemURI).flatMap { testingId =>
+        reporter.allocateTesting(m.id, polygonProblem.handle.toProblemURI.toString).flatMap { testingId =>
           new RawLogResultReporter(parent.basePath, m).start.map { _ =>
-            new TestingInfo(testingId, polygonProblem.handle.toProblemURI, Seq())
+            new TestingInfo(testingId, polygonProblem.handle.toProblemURI.toString, Seq())
           }
         }
       }

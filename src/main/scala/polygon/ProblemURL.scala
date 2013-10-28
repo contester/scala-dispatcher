@@ -1,6 +1,6 @@
 package org.stingray.contester.polygon
 
-import java.net.URL
+import java.net.{URI, URL}
 import org.apache.http.client.utils.URLEncodedUtils
 import org.apache.http.message.BasicNameValuePair
 import org.apache.http.NameValuePair
@@ -58,7 +58,7 @@ class PolygonProblemHandle(val url: URL, val revision: Option[Int]) extends Prob
 
   override def toString = "PolygonProblemHandle(\"%s\"%s)".format(url, revision.map(", " + _).getOrElse(""))
 
-  def toProblemURI: String =
-    PolygonURL.withQuery(url, params.toMap).toString
+  def toProblemURI: URI =
+    new URI(PolygonURL.withQuery(url, params.toMap).toString)
 }
 

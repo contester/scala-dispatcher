@@ -6,7 +6,7 @@ import org.stingray.contester.utils.Utils
 import grizzled.slf4j.Logging
 import com.google.common.collect.MapMaker
 import org.stingray.contester.common.GridfsObjectStore
-import java.net.URL
+import java.net.URI
 
 case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
                            stdio: Boolean, testerName: String, answers: Iterable[Int], interactorName: Option[String]) {
@@ -98,20 +98,20 @@ class CommonProblemDb(mdb: MongoDB, mfs: GridfsObjectStore) extends SanitizeDb w
       else Future.Done
     }
 
-  def getPathPart(url: URL) =
+  def getPathPart(url: URI) =
     url.getPath.stripPrefix("/").stripSuffix("/")
 
-  def getSimpleUrlId(url: URL) =
-    (url.getProtocol :: url.getHost :: (if (url.getPort != -1) url.getPort.toString :: getPathPart(url) :: Nil else getPathPart(url) :: Nil)).mkString("/")
+  def getSimpleUrlId(url: URI) =
+    (url.getScheme :: url.getHost :: (if (url.getPort != -1) url.getPort.toString :: getPathPart(url) :: Nil else getPathPart(url) :: Nil)).mkString("/")
 
   def getMostRecentProblem(problem: ProblemHandle): Future[Option[Problem]] =
     Future {
       problem match {
         case directProblem: DirectProblemHandle =>
-          mdb("manifest").find(MongoDBObject("id" -> directProblem.url.toString)).sort(MongoDBObject("revision" -> -1))
+          mdb("manifest").find(MongoDBObject("id" -> directProblem.uri.toString)).sort(MongoDBObject("revision" -> -1))
             .take(1).toIterable.headOption.map { found =>
             val revision = found.getAsOrElse[Int]("revision", 1)
-            val pid = new SimpleProblemID(getSimpleUrlId(directProblem.url), revision)
+            val pid = new SimpleProblemID(getSimpleUrlId(directProblem.uri), revision)
             val m = ProblemManifest(found)
             PDBProblem(this, pid, m)
           }

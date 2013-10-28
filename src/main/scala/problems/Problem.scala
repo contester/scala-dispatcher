@@ -3,7 +3,7 @@ package org.stingray.contester.problems
 import org.stingray.contester.invokers.Sandbox
 import com.twitter.util.Future
 import collection.immutable
-import java.net.URL
+import java.net.URI
 
 /**
  * A proxy for parent problem to limit the test set.
@@ -235,9 +235,9 @@ private class PDBTest(val problem: PDBProblem, val testId: Int) extends Test wit
 }
 
 trait ProblemHandle {
-  def toProblemURI: String
+  def toProblemURI: URI
 }
 
-class DirectProblemHandle(val url: URL) extends ProblemHandle {
-  def toProblemURI: String = url.toString
+class DirectProblemHandle(val uri: URI) extends ProblemHandle {
+  def toProblemURI = uri
 }
