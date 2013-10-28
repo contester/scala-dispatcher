@@ -4,6 +4,7 @@ import org.stingray.contester.db.{ConnectionPool, SelectDispatcher}
 import org.stingray.contester.common._
 import java.sql.{ResultSet, Timestamp}
 import com.twitter.util.Future
+import grizzled.slf4j.Logging
 import org.stingray.contester.problems.{DirectProblemHandle, ProblemDb}
 import org.stingray.contester.testing.{SolutionTester, SolutionTestingResult, SingleProgress}
 import java.net.URL
@@ -42,7 +43,7 @@ class MoodleResultReporter(client: ConnectionPool, val submit: MoodleSubmit) {
       .map(_.lastInsertId.get).map(new MoodleSingleResult(client, submit, _))
 }
 
-class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester, store: GridfsObjectStore) extends SelectDispatcher[MoodleSubmit](db) {
+class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester, store: GridfsObjectStore) extends SelectDispatcher[MoodleSubmit](db) with Logging {
   def rowToSubmit(row: ResultSet): MoodleSubmit =
     MoodleSubmit(
       row.getInt("SubmitId"),
@@ -99,11 +100,13 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester, 
     db.execute("Insert into mdl_contester_testings (submitid, start) values (?, NOW())", item.id)
       .map(_.lastInsertId.get)
 
-  def run(item: MoodleSubmit): Future[Unit] =
+  def run(item: MoodleSubmit): Future[Unit] = {
+    trace("Received %s".format(item))
     pdb.getMostRecentProblem(new DirectProblemHandle(new URL("direct://school.sgu.ru/moodle/" + item.problemId))).flatMap { problem =>
       startNewTesting(item).flatMap { testingId =>
         val reporter = new MoodleSingleResult(db, item, testingId)
         inv(item, item.sourceModule, problem.get, reporter, true, store, new InstanceSubmitTestingHandle("school.sgu.ru/moodle", item.id, testingId), Map.empty).flatMap(reporter.finish)
       }
     }
+  }
 }

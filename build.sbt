@@ -46,7 +46,8 @@ resolvers ++= Seq(
     "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases",
     "scala tools" at "http://scala-tools.org/repo-releases/",
     "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
-    "typesafe artefactory" at "http://typesafe.artifactoryonline.com/typesafe/repo"
+    "typesafe artefactory" at "http://typesafe.artifactoryonline.com/typesafe/repo",
+    "stingr.net" at "http://stingr.net/maven"
 )
 
 libraryDependencies ++= Seq(
