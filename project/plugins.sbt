@@ -1,6 +1,4 @@
-//resolvers += "gseitz@github" at "http://gseitz.github.com/maven/"
-
-//resolvers += Resolver.url("artifactory", url("http://scalasbt.artifactoryonline.com/scalasbt/sbt-plugin-releases"))(Resolver.ivyStylePatterns)
+libraryDependencies += "com.google.protobuf" % "protobuf-java" % "2.5.0"
 
 addSbtPlugin("com.github.gseitz" % "sbt-protobuf" % "0.3.0")
 

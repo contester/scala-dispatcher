@@ -1,6 +1,4 @@
-import AssemblyKeys._
 
-import ScalateKeys._
 
 import sbtprotobuf.{ProtobufPlugin=>PB}
 
@@ -52,7 +50,7 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
   "org.stingray" %% "simpleweb" % "0.1-SNAPSHOT",
-  "io.netty" % "netty" % "3.8.0.Final",
+  "io.netty" % "netty" % "3.9.0.Final",
   "com.twitter" %% "finagle-core" % "6.10.0",
   "com.twitter" %% "finagle-http" % "6.10.0",
   "org.streum" %% "configrity-core" % "1.0.0",
@@ -67,7 +65,7 @@ libraryDependencies ++= Seq(
   "commons-io" % "commons-io" % "2.4",
   "com.rabbitmq" % "amqp-client" % "3.2.2",
   "com.codahale" % "jerkson_2.9.1" % "0.5.0",
-  "mysql" % "mysql-connector-java" % "5.1.27",
+  "mysql" % "mysql-connector-java" % "5.1.28",
   "com.googlecode.protobuf-java-format" % "protobuf-java-format" % "1.2",
   "org.scalatest" %% "scalatest" % "1.9.2" % "test"
 )

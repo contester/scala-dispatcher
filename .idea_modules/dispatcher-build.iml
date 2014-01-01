@@ -27,6 +27,7 @@
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.10.3/org.scala-sbt/sbt/0.13.1/tracking-0.13.1.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.10.3/org.scala-sbt/sbt/0.13.1/main-settings-0.13.1.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.10.3/lib/scala-reflect.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.google.protobuf/protobuf-java/bundles/protobuf-java-2.5.0.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.10.3/org.scala-sbt/sbt/0.13.1/incremental-compiler-0.13.1.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.10.3/org.scala-sbt/sbt/0.13.1/api-0.13.1.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.10.3/org.scala-sbt/sbt/0.13.1/command-0.13.1.jar!/" />
