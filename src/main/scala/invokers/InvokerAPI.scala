@@ -6,7 +6,10 @@ import com.twitter.util.Future
 import org.stingray.contester.proto.Blobs.{Blob, FileBlob}
 import org.stingray.contester.modules.ModuleHandler
 
-class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) {
+trait InvokerAPI {
+  def client: InvokerRpcClient
+  def clientId: IdentifyResponse
+
   import collection.JavaConversions._
 
   val sandboxes = clientId.getSandboxesList.toIndexedSeq

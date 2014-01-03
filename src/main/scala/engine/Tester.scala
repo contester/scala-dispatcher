@@ -39,6 +39,8 @@ object Tester extends Logging {
       case e: RemoteError => throw new TransientError(e)
     }).map(asTesterRunResult(_))
 
+  // How to convert this to multi-sandbox model?
+  // We request 2 restricted sandboxes
   private def runInteractive(instance: InvokerInstance, handler: BinaryHandler, moduleType: String, test: Test) =
     test.prepareInteractorBinary(instance.unrestricted).flatMap { interactorName =>
       val testerHandler = instance.factory(FilenameUtils.getExtension(interactorName)).asInstanceOf[BinaryHandler]

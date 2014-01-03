@@ -12,6 +12,12 @@ trait ModuleHandler {
   def moduleTypes: Iterable[String]
 }
 
+// ModuleId - string
+
+trait ModuleType {
+  def apply(invoker: LowLevelInvoker): Traversable[ModuleHandler]
+}
+
 class CompiledModule(val filename: String, val moduleType: String)
 
 trait SourceHandler extends ModuleHandler {

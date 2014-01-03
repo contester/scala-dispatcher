@@ -6,6 +6,30 @@ import collection.mutable
 import com.twitter.util.Future
 import org.stingray.contester.modules.ModuleFactory
 import java.util.concurrent.ConcurrentHashMap
+import org.stingray.contester.proto.Local.IdentifyResponse
+
+/*
+LowLevelInvoker: platform, instances
+Invoker: + source modules, binary modules
+
+Module registry:
+- type, label
+*/
+
+
+
+class GetInstanceOptions(val exclusive: Boolean, val restricted: Traversable[Boolean])
+
+class InvokerInstances(val parent: NormalInvoker, instances: Seq[InvokerInstance]) extends Seq[InvokerInstance](instances)
+
+class NormalInvoker(val channel: RpcClient, val clientId: IdentifyResponse, val modules: ModuleFactory) extends InvokerRpcClient {
+  // This needs a concept of capacity/fullness.
+  def allocateSandboxes(restricted: Traversable[Boolean]): Future[InvokerInstances]
+}
+
+// Protobuf it? Allow remote changes.
+class InvokerRegistrySettings(val mongoHost: String)
+
 
 class InvokerRegistry(mongoHost: String) extends Registry with RequestStore[String, SchedulingKey, InvokerInstance] with Logging {
   private[this] val channelMap = {
@@ -15,7 +39,7 @@ class InvokerRegistry(mongoHost: String) extends Registry with RequestStore[Stri
 
   def register(client: RpcClient): Unit = {
     trace("Registering client: %s".format(client))
-    val invokerClient = new InvokerRpcClient(client)
+    val invokerClient = new PureInvokerRpcClient(client)
     invokerClient.identify("palevo", mongoHost, "contester")
       .map(new InvokerAPI(_, invokerClient))
       .flatMap { api =>
@@ -38,7 +62,7 @@ class InvokerRegistry(mongoHost: String) extends Registry with RequestStore[Stri
     }
 
   def stillAlive(invoker: InvokerInstance) =
-    channelMap.contains(invoker.invoker.api.client.client)
+    channelMap.contains(invoker.invoker.api.client.channel)
 
   def apply[T](m: String, key: SchedulingKey, extra: AnyRef)(f: InvokerInstance => Future[T]): Future[T] =
     get[T](m, key, extra)(i => i.clear.flatMap(f(_)))
