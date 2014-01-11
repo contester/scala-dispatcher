@@ -4,12 +4,21 @@ import com.twitter.util.Future
 import org.stingray.contester.common._
 import org.stingray.contester.proto.Local.LocalExecutionParameters
 import org.stingray.contester.utils.ExecutionArguments
-import org.stingray.contester.invokers.Sandbox
+import org.stingray.contester.invokers.{InvokerAPI, Sandbox}
 import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.problems.TestLimits
 
 trait ModuleHandler {
   def moduleTypes: Iterable[String]
+}
+
+/**
+ * In a new module factory system, this is a factory class to produce module handlers.
+ *
+ * @tparam A ModuleHandler subtype.
+ */
+trait ModuleType[A <: ModuleHandler] {
+  def apply(invoker: InvokerAPI): Future[A]
 }
 
 class CompiledModule(val filename: String, val moduleType: String)
@@ -40,7 +49,6 @@ class SevenzipHandler(val p7z: String) extends ModuleHandler {
   val moduleTypes = "zip" :: Nil
 }
 
-// TODO: Return module name instead of the module
 object SourceHandler {
   def step(stepName: String, sandbox: Sandbox, applicationName: String,
            arguments: ExecutionArguments): Future[StepResult] = {
