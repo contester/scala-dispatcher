@@ -1,9 +1,11 @@
-
-
 import sbtprotobuf.{ProtobufPlugin=>PB}
 
 import com.typesafe.sbt.SbtProguard._
 import com.typesafe.sbt.SbtProguard.ProguardKeys.proguard
+
+import ScalateKeys._
+
+import AssemblyKeys._
 
 assemblySettings
 
