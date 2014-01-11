@@ -35,13 +35,12 @@ object DispatcherServer extends App {
   }
 
   val config = Configuration.load("dispatcher.conf")
-  val mHost = config[String]("pdb.mhost")
-
-  val mongoDb = new MongoDBInstance(mHost, "contester")
+  val mongoUrl = config[String]("pdb.mongoUrl")
+  val mongoDb = MongoDBInstance(mongoUrl).right.get
 
   val polygonCache = new PolygonCache(mongoDb.db)
   val problemDb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
-  val invoker = new InvokerRegistry(mHost)
+  val invoker = new InvokerRegistry(mongoUrl)
 
   val invokerApi = new InvokerSimpleApi(invoker)
   val tester = new SolutionTester(invokerApi)
