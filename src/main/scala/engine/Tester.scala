@@ -93,7 +93,8 @@ object Tester extends Logging {
             storeFile(instance.restricted, store, resultName, instance.restricted.sandboxId / "output.txt")
             .flatMap { cachedOutput =>
                 test.key.flatMap { testKey =>
-                    objectCache.cacheGet(testKey + "/" + cachedOutput).flatMap { cachedValue =>
+                    val runKey = testKey.get + "/" + cachedOutput.get
+                    objectCache.cacheGet(runKey).flatMap { cachedValue =>
                         if (cachedValue.isEmpty) {
                             test.prepareInput(instance.restricted).flatMap { _ => test.prepareTester(instance.restricted)}
                             .flatMap(_ => test.prepareTesterBinary(instance.restricted))
@@ -104,7 +105,7 @@ object Tester extends Logging {
                               }
                         }.flatMap { testerResult =>
                               val lte = LocalExecution.newBuilder().setParameters(testerResult.params).setResult(testerResult.result).build()
-                              objectCache.cacheSet(testKey + "/" + cachedOutput, ChannelBuffers.wrappedBuffer(lte.toByteArray), None).map(_ => testerResult)
+                              objectCache.cacheSet(runKey, ChannelBuffers.wrappedBuffer(lte.toByteArray), None).map(_ => testerResult)
                             }
                         } else {
                           val lte = LocalExecution.parseFrom(asByteArray(cachedValue.get))
