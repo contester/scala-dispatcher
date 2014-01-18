@@ -1,7 +1,7 @@
 package org.stingray.contester.engine
 
 import grizzled.slf4j.Logging
-import org.stingray.contester.proto.Local.{LocalExecutionParameters, LocalExecutionResult}
+import org.stingray.contester.proto.Local.{LocalExecution, LocalExecutionParameters, LocalExecutionResult}
 import org.stingray.contester.common._
 import org.stingray.contester.invokers._
 import org.stingray.contester.modules.BinaryHandler
@@ -13,6 +13,7 @@ import org.stingray.contester.utils.Utils
 import java.util.concurrent.TimeUnit
 import org.stingray.contester.rpc4.RemoteError
 import scala.Some
+import org.jboss.netty.buffer.ChannelBuffer
 
 object Tester extends Logging {
   private def asRunResult(x: (LocalExecutionParameters, LocalExecutionResult), isJava: Boolean) =
@@ -71,29 +72,45 @@ object Tester extends Logging {
     sandbox.invoker.api.stat(Seq(storeWhat), true)
       .map(_.headOption).flatMap(_.map(_ => store.copyFromSandbox(sandbox, storeAs, storeWhat, Map.empty)))
 
-  def apply(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String): Future[TestResult] =
+  def apply(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String, objectCache: ObjectCache): Future[TestResult] =
     (if (test.interactive)
       testInteractive(instance, module, test)
     else
-      testOld(instance, module, test, store, resultName)).map(x => new TestResult(x._1, x._2))
+      testOld(instance, module, test, store, resultName, objectCache)).map(x => new TestResult(x._1, x._2))
 
-  private def testOld(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String): Future[(RunResult, Option[TesterRunResult])] = {
+  def asByteArray(buffer: ChannelBuffer) = {
+    val bufferBytes = new Array[Byte](buffer.readableBytes())
+    buffer.getBytes(buffer.readerIndex(), bufferBytes)
+    bufferBytes
+  }
+
+  private def testOld(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] = {
     val moduleHandler = instance.factory(module.moduleType).asInstanceOf[BinaryHandler]
     test.prepareInput(instance.restricted)
       .flatMap { _ => executeSolution(instance.restricted, moduleHandler, module, test.getLimits(module.moduleType), test.stdio) }
       .flatMap { solutionResult =>
         if (solutionResult.success) {
             storeFile(instance.restricted, store, resultName, instance.restricted.sandboxId / "output.txt")
-            .flatMap { _ => test.prepareInput(instance.restricted)}.flatMap { _ => test.prepareTester(instance.restricted)}
-            .flatMap(_ => test.prepareTesterBinary(instance.restricted))
-            .flatMap { testerName =>
-              Utils.later(Duration(500, TimeUnit.MILLISECONDS))
-                .flatMap { _ =>
-                  executeTester(instance.restricted, instance.factory(FilenameUtils.getExtension(testerName)).asInstanceOf[BinaryHandler], testerName)
-                }
-          }.map { testerResult =>
+            .flatMap { cachedOutput =>
+                test.key.flatMap { testKey =>
+                    objectCache.cacheGet(testKey + "/" + cachedOutput).flatMap { cachedValue =>
+                        if (cachedValue.isEmpty) {
+                            test.prepareInput(instance.restricted).flatMap { _ => test.prepareTester(instance.restricted)}
+                            .flatMap(_ => test.prepareTesterBinary(instance.restricted))
+                            .flatMap { testerName =>
+                            Utils.later(Duration(500, TimeUnit.MILLISECONDS))
+                              .flatMap { _ =>
+                                executeTester(instance.restricted, instance.factory(FilenameUtils.getExtension(testerName)).asInstanceOf[BinaryHandler], testerName)
+                              }
+                        }
+                        } else {
+                          val lte = LocalExecution.parseFrom(asByteArray(cachedValue.get))
+                          Future.value(TesterRunResult(lte.getParameters, lte.getResult))
+                        }
+                    }.map { testerResult =>
             (solutionResult, Some(testerResult))
           }
+            }}
         } else Future.value((solutionResult, None))
     }
   }

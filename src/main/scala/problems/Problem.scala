@@ -201,6 +201,9 @@ object PDBProblem {
 private class PDBTest(val problem: PDBProblem, val testId: Int) extends Test with TestLimits {
   override def toString = "PDBTest(%s, %d)".format(problem.toBriefId, testId)
 
+  val key: Future[Option[String]] =
+    Future.value(Some(problem.id.testPrefix(testId)))
+
   def memoryLimit: Long = problem.memoryLimit
 
   def timeLimitMicros: Long = problem.timeLimitMicros

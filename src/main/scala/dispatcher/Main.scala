@@ -11,7 +11,7 @@ import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.streum.configrity.Configuration
 import org.stingray.contester.testing.SolutionTester
 import org.stingray.contester.engine.InvokerSimpleApi
-import org.stingray.contester.common.MongoDBInstance
+import org.stingray.contester.common.{MemcachedObjectCache, MongoDBInstance}
 import org.stingray.contester.polygon._
 import org.stingray.contester.problems.CommonProblemDb
 import org.fusesource.scalate.layout.DefaultLayoutStrategy
@@ -38,11 +38,13 @@ object DispatcherServer extends App {
   val mongoUrl = config[String]("pdb.mongoUrl")
   val mongoDb = MongoDBInstance(mongoUrl).right.get
 
+  val objectCache = new MemcachedObjectCache(config[String]("cache.host"))
+
   val polygonCache = new PolygonCache(mongoDb.db)
   val problemDb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
   val invoker = new InvokerRegistry(mongoUrl)
 
-  val invokerApi = new InvokerSimpleApi(invoker)
+  val invokerApi = new InvokerSimpleApi(invoker, objectCache)
   val tester = new SolutionTester(invokerApi)
 
   private def bindInvokerTo(socket: InetSocketAddress) = {

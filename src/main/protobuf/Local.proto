@@ -63,6 +63,7 @@ message LocalExecuteConnectedResult {
 message LocalExecution {
     required LocalExecutionParameters parameters = 1;
     optional LocalExecutionResult result = 2;
+    optional bool cached = 3;
 };
 
 message BinaryTypeRequest {

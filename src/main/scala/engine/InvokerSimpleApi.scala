@@ -6,13 +6,13 @@ import org.stingray.contester.common._
 import com.twitter.util.Future
 import org.stingray.contester.modules.ScriptLanguage
 
-class InvokerSimpleApi(val invoker: InvokerRegistry) {
+class InvokerSimpleApi(val invoker: InvokerRegistry, val objectCache: ObjectCache) {
   def compile(key: SchedulingKey, m: Module, store: GridfsObjectStore,
               resultName: String): Future[(CompileResult, Option[Module])] =
     invoker(m.moduleType, key, "compile")(Compiler(_, m, store, resultName))
 
   def test(key: SchedulingKey, m: Module, t: Test, store: GridfsObjectStore, storePrefix: String): Future[TestResult] =
-    invoker(m.moduleType, key, t)(Tester(_, m, t, store, storePrefix))
+    invoker(m.moduleType, key, t)(Tester(_, m, t, store, storePrefix, objectCache))
 
   def custom(key: SchedulingKey, m: Module, input: Array[Byte], store: GridfsObjectStore,
              resultName: String): Future[CustomTestResult] =
