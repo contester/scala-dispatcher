@@ -1,7 +1,7 @@
 package org.stingray.contester.common
 
 import org.stingray.contester.proto.Blobs.Blob
-import org.stingray.contester.proto.Local.{LocalExecutionParameters, LocalExecutionResult}
+import org.stingray.contester.proto.Local.{StatusCodes, LocalExecution, LocalExecutionParameters, LocalExecutionResult}
 import com.googlecode.protobuf.format.JsonFormat
 import com.mongodb.util.JSON
 import com.mongodb.casbah.commons.{Imports, MongoDBObject}
@@ -19,8 +19,8 @@ trait Result {
  * Result of a single process run.
  */
 trait RunResult extends Result {
-  def status: Int
-  def success = status == StatusCode.Accepted
+  def status: StatusCodes
+  def success = status == StatusCodes.ACCEPTED
   def toMap: Map[String, Any]
   def time: Long
   def memory: Long
@@ -28,7 +28,10 @@ trait RunResult extends Result {
   def stdErr: Blob
 }
 
-class SingleRunResult(val params: LocalExecutionParameters, val result: LocalExecutionResult) extends RunResult {
+class SingleRunResult(val value: LocalExecution) extends RunResult {
+  lazy val params = value.getParameters
+  lazy val result = value.getResult
+
   lazy val returnCode = result.getReturnCode
 
   lazy val flags = result.getFlags
@@ -43,13 +46,13 @@ class SingleRunResult(val params: LocalExecutionParameters, val result: LocalExe
 
   def status =
     if (isTimeLimitExceeded)
-      StatusCode.TimeLimitExceeded
+      StatusCodes.TIME_LIMIT_EXCEEDED
     else if (isMemoryLimitExceeded)
-      StatusCode.MemoryLimitExceeded
+      StatusCodes.MEMORY_LIMIT_EXCEEDED
     else if (isRuntimeError)
-      StatusCode.RuntimeError
+      StatusCodes.RUNTIME_ERROR
     else
-      StatusCode.Accepted
+      StatusCodes.ACCEPTED
 
   def stdOut =
     result.getStdOut
@@ -73,71 +76,77 @@ class SingleRunResult(val params: LocalExecutionParameters, val result: LocalExe
     "result" -> JSON.parse(JsonFormat.printToString(result)))
 }
 
-class JavaRunResult(p: LocalExecutionParameters, r: LocalExecutionResult) extends SingleRunResult(p, r) {
+class JavaRunResult(v: LocalExecution) extends SingleRunResult(v) {
   override def status =
     super.status match {
-      case StatusCode.RuntimeError => returnCode match {
-        case 3 => StatusCode.MemoryLimitExceeded
-        case _ => StatusCode.RuntimeError
+      case StatusCodes.RUNTIME_ERROR => returnCode match {
+        case 3 => StatusCodes.MEMORY_LIMIT_EXCEEDED
+        case _ => StatusCodes.RUNTIME_ERROR
       }
       case _ => super.status
     }
 }
 
-class TesterRunResult(p: LocalExecutionParameters, r: LocalExecutionResult) extends SingleRunResult(p, r) {
+class TesterRunResult(v: LocalExecution) extends SingleRunResult(v) {
   override def status =
     super.status match {
-      case StatusCode.Accepted => StatusCode.Accepted
-      case StatusCode.RuntimeError => returnCode match {
-        case 1 => StatusCode.WrongAnswer
-        case 2 => StatusCode.PresentationError
-        case _ => StatusCode.TestingError
+      case StatusCodes.ACCEPTED => StatusCodes.ACCEPTED
+      case StatusCodes.RUNTIME_ERROR => returnCode match {
+        case 1 => StatusCodes.WRONG_ANSWER
+        case 2 => StatusCodes.PRESENTATION_ERROR
+        case _ => StatusCodes.TESTING_ERROR
       }
-      case _ => StatusCode.TestingError
+      case _ => StatusCodes.TESTING_ERROR
     }
 }
 
 object SingleRunResult {
-  def apply(params: LocalExecutionParameters, result: LocalExecutionResult) = new SingleRunResult(params, result)
+  def combine(params: LocalExecutionParameters, result: LocalExecutionResult) =
+    LocalExecution.newBuilder().setParameters(params).setResult(result).build()
+
+  def apply(params: LocalExecutionParameters, result: LocalExecutionResult) =
+    new SingleRunResult(combine(params, result))
 }
 
 object JavaRunResult {
-  def apply(params: LocalExecutionParameters, result: LocalExecutionResult) = new JavaRunResult(params, result)
+  def apply(params: LocalExecutionParameters, result: LocalExecutionResult) =
+    new JavaRunResult(SingleRunResult.combine(params, result))
 }
 
 object TesterRunResult {
-  def apply(params: LocalExecutionParameters, result: LocalExecutionResult) = new TesterRunResult(params, result)
+  def apply(params: LocalExecutionParameters, result: LocalExecutionResult) =
+    new TesterRunResult(SingleRunResult.combine(params, result))
 }
 
 class InteractiveRunResult(first: SingleRunResult, second: SingleRunResult) extends RunResult {
   def status =
     second.status match {
-      case StatusCode.Accepted =>
+      case StatusCodes.ACCEPTED =>
         first.status match {
-          case StatusCode.Accepted => StatusCode.Accepted
-          case StatusCode.RuntimeError => first.returnCode match {
-            case 1 => StatusCode.WrongAnswer
-            case 2 => StatusCode.PresentationError
-            case _ => StatusCode.TestingError
+          case StatusCodes.ACCEPTED => StatusCodes.ACCEPTED
+          case StatusCodes.RUNTIME_ERROR => first.returnCode match {
+            case 1 => StatusCodes.WRONG_ANSWER
+            case 2 => StatusCodes.PRESENTATION_ERROR
+            case _ => StatusCodes.TESTING_ERROR
           }
-          case StatusCode.TimeLimitExceeded => StatusCode.PresentationError
-          case _ => StatusCode.TestingError
+          case StatusCodes.TIME_LIMIT_EXCEEDED => StatusCodes.PRESENTATION_ERROR
+          case _ => StatusCodes.TESTING_ERROR
         }
-      case StatusCode.RuntimeError =>
+      case StatusCodes.RUNTIME_ERROR =>
         first.status match {
-          case StatusCode.Accepted => StatusCode.RuntimeError
-          case StatusCode.RuntimeError => first.returnCode match {
+          case StatusCodes.ACCEPTED => StatusCodes.RUNTIME_ERROR
+          case StatusCodes.RUNTIME_ERROR => first.returnCode match {
             case 2 => {
               val interactorError = new String(Blobs.getBinary(first.stdErr), "UTF-8")
               if (interactorError.contains("Unexpected end of file"))
-                StatusCode.RuntimeError
+                StatusCodes.RUNTIME_ERROR
               else
-                StatusCode.PresentationError
+                StatusCodes.PRESENTATION_ERROR
             }
-            case 1 => StatusCode.WrongAnswer
-            case _ => StatusCode.TestingError
+            case 1 => StatusCodes.WRONG_ANSWER
+            case _ => StatusCodes.TESTING_ERROR
           }
-          case _ => StatusCode.TestingError
+          case _ => StatusCodes.TESTING_ERROR
         }
       case _ => second.status
     }
@@ -153,7 +162,7 @@ class InteractiveRunResult(first: SingleRunResult, second: SingleRunResult) exte
   def stdErr = first.stdErr
 }
 
-class StepResult(val name: String, p: LocalExecutionParameters, r: LocalExecutionResult) extends SingleRunResult(p, r) {
+class StepResult(val name: String, v: LocalExecution) extends SingleRunResult(v) {
   import com.mongodb.casbah.Implicits._
   override def toMap = super.toMap.+("name" -> name)
 
@@ -162,11 +171,11 @@ class StepResult(val name: String, p: LocalExecutionParameters, r: LocalExecutio
 
 object StepResult {
   def apply(name: String, p: LocalExecutionParameters, r: LocalExecutionResult) =
-    new StepResult(name, p, r)
+    new StepResult(name, SingleRunResult.combine(p, r))
 }
 
 trait CompileResult extends Result {
-  val status = if (success) StatusCode.CompilationSuccessful else StatusCode.CompilationFailed
+  val status = if (success) StatusCodes.COMPILATION_SUCCESSFUL else StatusCodes.COMPILATION_FAILED
 
   override def toString =
     StatusCode(status)
@@ -249,7 +258,7 @@ object StatusCode {
     Rejected -> "Rejected"
   )
 
-  def apply(code: Int) = reasons.getOrElse(code, "Unknown status " + code)
+  def apply(code: StatusCodes) = reasons.getOrElse(code.getNumber, "Unknown status " + code)
 }
 
 class RestoredResult(val status: Int) extends Result {
@@ -257,28 +266,28 @@ class RestoredResult(val status: Int) extends Result {
 }
 
 class TestResult(val solution: RunResult, val tester: Option[TesterRunResult]) extends Result {
-  lazy val solutionStatus: Option[Int] =
+  lazy val solutionStatus: Option[StatusCodes] =
     if (!solution.success)
       Some(solution.status)
     else
       None
 
-  lazy val testerStatus: Int =
+  lazy val testerStatus: StatusCodes =
     tester.map { test =>
     val r = test.result.getReturnCode
     if (r == 0)
-      StatusCode.Accepted
+      StatusCodes.ACCEPTED
     else if (r == 1)
-      StatusCode.WrongAnswer
+      StatusCodes.WRONG_ANSWER
     else if (r == 2)
-      StatusCode.PresentationError
+      StatusCodes.PRESENTATION_ERROR
     else
-      StatusCode.TestingError
-  }.getOrElse(StatusCode.TestingError)
+      StatusCodes.TESTING_ERROR
+  }.getOrElse(StatusCodes.TESTING_ERROR)
 
   lazy val status = solutionStatus.getOrElse(testerStatus)
 
-  lazy val success = status == StatusCode.Accepted
+  lazy val success = status == StatusCodes.ACCEPTED
 
   def toMap = Map(
     "solution" -> solution.toMap
