@@ -13,7 +13,7 @@ import org.stingray.contester.utils.Utils
 import java.util.concurrent.TimeUnit
 import org.stingray.contester.rpc4.RemoteError
 import scala.Some
-import org.jboss.netty.buffer.ChannelBuffer
+import org.jboss.netty.buffer.{ChannelBuffers, WrappedChannelBuffer, ChannelBuffer}
 
 object Tester extends Logging {
   private def asRunResult(x: (LocalExecutionParameters, LocalExecutionResult), isJava: Boolean) =
@@ -102,7 +102,10 @@ object Tester extends Logging {
                               .flatMap { _ =>
                                 executeTester(instance.restricted, instance.factory(FilenameUtils.getExtension(testerName)).asInstanceOf[BinaryHandler], testerName)
                               }
-                        }
+                        }.flatMap { testerResult =>
+                              val lte = LocalExecution.newBuilder().setParameters(testerResult.params).setResult(testerResult.result).build()
+                              objectCache.cacheSet(testKey + "/" + cachedOutput, ChannelBuffers.wrappedBuffer(lte.toByteArray), None).map(_ => testerResult)
+                            }
                         } else {
                           val lte = LocalExecution.parseFrom(asByteArray(cachedValue.get))
                           Future.value(TesterRunResult(lte.getParameters, lte.getResult))
