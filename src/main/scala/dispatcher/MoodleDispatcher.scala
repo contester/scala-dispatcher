@@ -21,13 +21,13 @@ class MoodleSingleResult(client: ConnectionPool, val submit: MoodleSubmit, val t
   def compile(r: CompileResult): Future[Unit] =
     client.execute(
       "insert into mdl_contester_results (testingid, processed, result, test, timex, memory, testeroutput, testererror) values (?, NOW(), ?, ?, ?, ?, ?, ?)",
-      testingId, r.status, 0, r.time / 1000,
+      testingId, r.status.getNumber, 0, r.time / 1000,
       r.memory, r.stdOut, r.stdErr).unit
 
   def test(id: Int, r: TestResult): Future[Unit] =
     client.execute(
       "Insert into mdl_contester_results (testingid, processed, result, test, timex, memory, info, testeroutput, testererror, testerexitcode) values (?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)",
-      testingId, r.status, id, r.solution.time / 1000,
+      testingId, r.status.getNumber, id, r.solution.time / 1000,
       r.solution.memory, r.solution.returnCode,
       r.getTesterOutput, r.getTesterError,
       r.getTesterReturnCode).unit
