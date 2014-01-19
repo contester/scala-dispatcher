@@ -29,7 +29,7 @@ class ConnectionPool(host: String, db: String, username: String, password: Strin
     connections.reserve().flatMap { c =>
       f(c).onSuccess(_ => connections.release(c))
         .rescue {
-        case e @ (_: SQLRecoverableException | _: SQLNonTransientException) => {
+        case e: SQLRecoverableException => {
           error("Closing connection " + c, e)
           c.close()
           asyncNewConn

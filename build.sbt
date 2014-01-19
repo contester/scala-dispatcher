@@ -56,6 +56,7 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finagle-core" % "6.10.0",
   "com.twitter" %% "finagle-http" % "6.10.0",
   "com.twitter" %% "finagle-memcached" % "6.10.0",
+  "com.twitter" %% "finagle-mysql" % "6.10.0",
   "org.streum" %% "configrity-core" % "1.0.0",
   "com.twitter" %% "util-core" % "6.10.0",
   "org.mongodb" %% "casbah" % "2.6.4",
