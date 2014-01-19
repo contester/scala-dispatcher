@@ -104,12 +104,11 @@ object Tester extends Logging {
                                 executeTester(instance.restricted, instance.factory(FilenameUtils.getExtension(testerName)).asInstanceOf[BinaryHandler], testerName)
                               }
                         }.flatMap { testerResult =>
-                              val lte = LocalExecution.newBuilder().setParameters(testerResult.params).setResult(testerResult.result).build()
-                              objectCache.cacheSet(runKey, ChannelBuffers.wrappedBuffer(lte.toByteArray), None).map(_ => testerResult)
+                              objectCache.cacheSet(runKey, ChannelBuffers.wrappedBuffer(testerResult.value.toByteArray), None).map(_ => testerResult)
                             }
                         } else {
                           val lte = LocalExecution.parseFrom(asByteArray(cachedValue.get))
-                          Future.value(TesterRunResult(lte.getParameters, lte.getResult))
+                          Future.value(new TesterRunResult(lte))
                         }
                     }.map { testerResult =>
             (solutionResult, Some(testerResult))
