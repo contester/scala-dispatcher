@@ -33,7 +33,7 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
 
   def custom(submit: SchedulingKey, sourceModule: Module, input: Array[Byte], store: GridfsObjectStore,
       storeBase: String, testingId: Int): Future[CustomTestingResult] =
-    invoker.compile(submit, sourceModule, store, storeBase + "eval/%d/compiledModule".format(testingId)).flatMap {
+    invoker.maybeCompile(submit, sourceModule, store, storeBase + "eval/%d/compiledModule".format(testingId)).flatMap {
       case (compileResult, binaryOption) =>
         binaryOption.map { binary =>
           invoker.custom(submit, binary, input, store, storeBase + "eval/%d/output".format(testingId)).map(Some(_))
