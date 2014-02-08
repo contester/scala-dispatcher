@@ -28,9 +28,9 @@ class MoodleSingleResult(client: ConnectionPool, val submit: MoodleSubmit, val t
     client.execute(
       "Insert into mdl_contester_results (testingid, processed, result, test, timex, memory, info, testeroutput, testererror, testerexitcode) values (?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)",
       testingId, r.status.getNumber, id, r.solution.time / 1000,
-      r.solution.memory, r.solution.returnCode,
+      r.solution.memory, r.solution.returnCode.abs,
       r.getTesterOutput, r.getTesterError,
-      r.getTesterReturnCode).unit
+      r.getTesterReturnCode.abs).unit
 
   def finish(r: SolutionTestingResult): Future[Unit] =
     client.execute("update mdl_contester_testings set finish = NOW(), compiled = ?, taken = ?, passed = ? where ID = ?",
