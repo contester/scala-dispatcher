@@ -84,6 +84,11 @@ object Tester extends Logging {
     bufferBytes
   }
 
+  /*
+    We can cache the entire result on (module, testKey) here
+    We can cache the sha1 of the output here.
+   */
+
   private def testOld(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] = {
     val moduleHandler = instance.factory(module.moduleType).asInstanceOf[BinaryHandler]
     test.prepareInput(instance.restricted)
