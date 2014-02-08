@@ -18,10 +18,6 @@ object ObjectStore {
     }
 }
 
-trait HasMongoDBObject {
-  def toMongoDBObject: DBObject
-}
-
 trait HasGridfsPath {
   def toGridfsPath: String
 }

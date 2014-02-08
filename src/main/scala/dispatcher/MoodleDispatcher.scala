@@ -105,7 +105,8 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester, 
     pdb.getMostRecentProblem(new DirectProblemHandle(new URI("direct://school.sgu.ru/moodle/" + item.problemId))).flatMap { problem =>
       startNewTesting(item).flatMap { testingId =>
         val reporter = new MoodleSingleResult(db, item, testingId)
-        inv(item, item.sourceModule, problem.get, reporter, true, store, new InstanceSubmitTestingHandle("school.sgu.ru/moodle", item.id, testingId), Map.empty).flatMap(reporter.finish)
+        inv(item, item.sourceModule, problem.get, reporter, true, store,
+          new InstanceSubmitTestingHandle("school.sgu.ru/moodle", item.id, testingId), Map.empty).flatMap(reporter.finish)
       }
     }
   }
