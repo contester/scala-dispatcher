@@ -98,7 +98,7 @@ object Tester extends Logging {
             storeFile(instance.restricted, store, resultName, instance.restricted.sandboxId / "output.txt")
             .flatMap { cachedOutput =>
                 test.key.flatMap { testKey =>
-                    val runKey = testKey.get + "/" + cachedOutput.get
+                    val runKey = testKey.get + "/" + cachedOutput.getOrElse("None")
                     objectCache.cacheGet(runKey).flatMap { cachedValue =>
                         if (cachedValue.isEmpty) {
                             test.prepareInput(instance.restricted).flatMap { _ => test.prepareTester(instance.restricted)}
