@@ -29,7 +29,7 @@ class MoodleSingleResult(client: ConnectionPool, val submit: MoodleSubmit, val t
       "Insert into mdl_contester_results (testingid, processed, result, test, timex, memory, info, testeroutput, testererror, testerexitcode) values (?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)",
       testingId, r.status.getNumber, id, r.solution.time / 1000,
       r.solution.memory, r.solution.returnCode.abs,
-      r.getTesterOutput, r.getTesterError,
+      new String(r.getTesterOutput, "windows-1251"), new String(r.getTesterError, "windows-1251"),
       r.getTesterReturnCode.abs).unit
 
   def finish(r: SolutionTestingResult): Future[Unit] =
