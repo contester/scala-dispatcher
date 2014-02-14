@@ -2,6 +2,7 @@ package org.stingray.contester.utils
 
 import com.google.protobuf.Message
 import java.io.InputStream
+import org.jboss.netty.buffer.ChannelBuffer
 
 /** Parametrized functions to create protobufs.
   * You will usually do createProtobuf[MessageType](value).
@@ -10,6 +11,15 @@ import java.io.InputStream
 object ProtobufTools {
   private[this] val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
   private[this] val ARRAY_OF_INPUT_STREAM = Array[Class[_]](classOf[InputStream])
+
+  def asByteArray(buffer: ChannelBuffer) = {
+    val bufferBytes = new Array[Byte](buffer.readableBytes())
+    buffer.getBytes(buffer.readerIndex(), bufferBytes)
+    bufferBytes
+  }
+
+  def createProtobuf[I <: Message](buffer: ChannelBuffer)(implicit manifest: Manifest[I]): I =
+    createProtobuf(asByteArray(buffer))
 
   def createProtobuf[I <: Message](bytes: Array[Byte])(implicit manifest: Manifest[I]): I = {
     manifest.runtimeClass.getDeclaredMethod("parseFrom", ARRAY_OF_BYTE_ARRAY: _*).invoke(null, bytes).asInstanceOf[I]

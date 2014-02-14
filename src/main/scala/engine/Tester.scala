@@ -79,12 +79,6 @@ object Tester extends Logging {
     else
       testOld(instance, module, test, store, resultName, objectCache)).map(x => new TestResult(x._1, x._2))
 
-  def asByteArray(buffer: ChannelBuffer) = {
-    val bufferBytes = new Array[Byte](buffer.readableBytes())
-    buffer.getBytes(buffer.readerIndex(), bufferBytes)
-    bufferBytes
-  }
-
   /*
     We can cache the entire result on (module, testKey) here
     We can cache the sha1 of the output here.
@@ -101,20 +95,7 @@ object Tester extends Logging {
       }
     }
 
-  private def maybeCached[S, I <: Message](cache: ObjectCache, key: String,
-                                           fetch: () => Future[S], wrap: (I) => S,
-                                           unwrap: (S) => I)(implicit manifest: Manifest[I]): Future[S] =
-    cache.cacheGet(key).flatMap { optValue =>
-      optValue.map(asByteArray)
-        .map(ProtobufTools.createProtobuf[I](_))
-        .map(wrap)
-        .map(Future.value)
-        .getOrElse {
-          fetch().onSuccess { value =>
-            cache.cacheSet(key, ChannelBuffers.wrappedBuffer(unwrap(value).toByteArray), None)
-          }
-      }
-    }
+
 
   private def testOld(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] = {
     val moduleHandler = instance.factory(module.moduleType).asInstanceOf[BinaryHandler]
@@ -125,14 +106,13 @@ object Tester extends Logging {
             storeFile(instance.restricted, store, resultName, instance.restricted.sandboxId / "output.txt")
             .flatMap { cachedOutput =>
               test.key.flatMap { testKey =>
-                maybeCached[TesterRunResult, LocalExecution](
-                  objectCache, testKey.get + cachedOutput.getOrElse("None"),
-                  () => prepareAndRunTester(instance.restricted, instance.factory, test),
+                objectCache.maybeCached[TesterRunResult, LocalExecution](
+                  testKey.get + cachedOutput.getOrElse("None"), None,
+                  prepareAndRunTester(instance.restricted, instance.factory, test),
                   new TesterRunResult(_), _.value)
                     .map { testerResult =>
             (solutionResult, Some(testerResult))
-          }
-            }}
+          }}}
         } else Future.value((solutionResult, None))
     }
   }
