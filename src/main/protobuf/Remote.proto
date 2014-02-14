@@ -1,0 +1,16 @@
+import "Blobs.proto";
+import "Execution.proto";
+
+package contester.proto;
+option java_package = "org.stingray.contester.proto";
+
+message Submit {
+    optional FileBlob module_content = 1;
+    optional string module_type = 2;
+    optional string problem_handle = 3;
+    optional bool school_mode = 4;
+}
+
+message SubmitReceived {
+    optional uint64 submit_id = 1;
+}
