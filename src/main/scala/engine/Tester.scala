@@ -124,19 +124,12 @@ object Tester extends Logging {
         if (solutionResult.success) {
             storeFile(instance.restricted, store, resultName, instance.restricted.sandboxId / "output.txt")
             .flatMap { cachedOutput =>
-                test.key.flatMap { testKey =>
-                    val runKey = testKey.get + cachedOutput.getOrElse("None")
-                    objectCache.cacheGet(runKey).flatMap { cachedValue =>
-                        if (cachedValue.isEmpty) {
-                          prepareAndRunTester(instance.restricted, instance.factory, test)
-                            .flatMap { testerResult =>
-                              objectCache.cacheSet(runKey, ChannelBuffers.wrappedBuffer(testerResult.value.toByteArray), None).map(_ => testerResult)
-                            }
-                        } else {
-                          val lte = LocalExecution.parseFrom(asByteArray(cachedValue.get))
-                          Future.value(new TesterRunResult(lte))
-                        }
-                    }.map { testerResult =>
+              test.key.flatMap { testKey =>
+                maybeCached[TesterRunResult, LocalExecution](
+                  objectCache, testKey.get + cachedOutput.getOrElse("None"),
+                  () => prepareAndRunTester(instance.restricted, instance.factory, test),
+                  new TesterRunResult(_), _.value)
+                    .map { testerResult =>
             (solutionResult, Some(testerResult))
           }
             }}
