@@ -95,26 +95,37 @@ object Tester extends Logging {
       }
     }
 
-
-
-  private def testOld(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] = {
-    val moduleHandler = instance.factory(module.moduleType).asInstanceOf[BinaryHandler]
-    test.prepareInput(instance.restricted)
-      .flatMap { _ => executeSolution(instance.restricted, moduleHandler, module, test.getLimits(module.moduleType), test.stdio) }
+  private def executeAndStoreSuccess(sandbox: Sandbox, factory: (String) => ModuleHandler,
+                                     test: Test, module: Module, store: GridfsObjectStore, resultName: String,
+                                     cache: ObjectCache): Future[(RunResult, Option[String])] =
+    test.prepareInput(sandbox)
+      .flatMap { _ =>
+      executeSolution(sandbox, factory(module.moduleType).asInstanceOf[BinaryHandler],
+        module, test.getLimits(module.moduleType), test.stdio) }
       .flatMap { solutionResult =>
-        if (solutionResult.success) {
-            storeFile(instance.restricted, store, resultName, instance.restricted.sandboxId / "output.txt")
-            .flatMap { cachedOutput =>
-              test.key.flatMap { testKey =>
-                objectCache.maybeCached[TesterRunResult, LocalExecution](
-                  testKey.get + cachedOutput.getOrElse("None"), None,
-                  prepareAndRunTester(instance.restricted, instance.factory, test),
-                  new TesterRunResult(_), _.value)
-                    .map { testerResult =>
-            (solutionResult, Some(testerResult))
-          }}}
-        } else Future.value((solutionResult, None))
+    { if (solutionResult.success) {
+          storeFile(sandbox, store, resultName, sandbox.sandboxId / "output.txt")
+        } else {
+          Future.None
+        }}.map((solutionResult, _))
     }
-  }
+
+
+  private def testOld(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] =
+    executeAndStoreSuccess(instance.restricted, instance.factory, test, module, store, resultName, objectCache)
+      .flatMap {
+      case (solutionResult, optHash) =>
+        optHash.map { outputHash =>
+          test.key.flatMap { testKey =>
+            objectCache.maybeCached[TesterRunResult, LocalExecution](
+              testKey.get + outputHash, None,
+              prepareAndRunTester(instance.restricted, instance.factory, test),
+              new TesterRunResult(_), _.value)
+                .map { testerResult =>
+              (solutionResult, Some(testerResult))
+            }
+          }
+        }.getOrElse(Future.value(solutionResult, None))
+    }
 }
 
