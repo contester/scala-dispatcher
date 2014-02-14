@@ -11,7 +11,7 @@ object ProtobufTools {
   private[this] val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
   private[this] val ARRAY_OF_INPUT_STREAM = Array[Class[_]](classOf[InputStream])
 
-  private def createProtobuf[I <: Message](bytes: Array[Byte])(implicit manifest: Manifest[I]): I = {
+  def createProtobuf[I <: Message](bytes: Array[Byte])(implicit manifest: Manifest[I]): I = {
     manifest.runtimeClass.getDeclaredMethod("parseFrom", ARRAY_OF_BYTE_ARRAY: _*).invoke(null, bytes).asInstanceOf[I]
   }
 

@@ -4,16 +4,17 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.proto.Local.{LocalExecution, LocalExecutionParameters, LocalExecutionResult}
 import org.stingray.contester.common._
 import org.stingray.contester.invokers._
-import org.stingray.contester.modules.BinaryHandler
+import org.stingray.contester.modules.{ModuleHandler, BinaryHandler}
 import org.stingray.contester.problems.{Test, TestLimits}
 import org.apache.commons.io.FilenameUtils
 import com.twitter.util.{Duration, Future}
 import org.stingray.contester.ContesterImplicits._
-import org.stingray.contester.utils.Utils
+import org.stingray.contester.utils.{ProtobufTools, Utils}
 import java.util.concurrent.TimeUnit
 import org.stingray.contester.rpc4.RemoteError
 import scala.Some
 import org.jboss.netty.buffer.{ChannelBuffers, WrappedChannelBuffer, ChannelBuffer}
+import com.google.protobuf.Message
 
 object Tester extends Logging {
   private def asRunResult(x: (LocalExecutionParameters, LocalExecutionResult), isJava: Boolean) =
@@ -89,6 +90,32 @@ object Tester extends Logging {
     We can cache the sha1 of the output here.
    */
 
+  private def prepareAndRunTester(sandbox: Sandbox, factory: (String) => ModuleHandler, test: Test): Future[TesterRunResult] =
+    test.prepareInput(sandbox)
+      .flatMap { _ => test.prepareTester(sandbox)}
+      .flatMap { _ => test.prepareTesterBinary(sandbox)}
+      .flatMap { testerName =>
+      Utils.later(Duration(500, TimeUnit.MILLISECONDS))
+        .flatMap { _ =>
+        executeTester(sandbox, factory(FilenameUtils.getExtension(testerName)).asInstanceOf[BinaryHandler], testerName)
+      }
+    }
+
+  private def maybeCached[S, I <: Message](cache: ObjectCache, key: String,
+                                           fetch: () => Future[S], wrap: (I) => S,
+                                           unwrap: (S) => I)(implicit manifest: Manifest[I]): Future[S] =
+    cache.cacheGet(key).flatMap { optValue =>
+      optValue.map(asByteArray)
+        .map(ProtobufTools.createProtobuf[I](_))
+        .map(wrap)
+        .map(Future.value)
+        .getOrElse {
+          fetch().onSuccess { value =>
+            cache.cacheSet(key, ChannelBuffers.wrappedBuffer(unwrap(value).toByteArray), None)
+          }
+      }
+    }
+
   private def testOld(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] = {
     val moduleHandler = instance.factory(module.moduleType).asInstanceOf[BinaryHandler]
     test.prepareInput(instance.restricted)
@@ -101,14 +128,8 @@ object Tester extends Logging {
                     val runKey = testKey.get + cachedOutput.getOrElse("None")
                     objectCache.cacheGet(runKey).flatMap { cachedValue =>
                         if (cachedValue.isEmpty) {
-                            test.prepareInput(instance.restricted).flatMap { _ => test.prepareTester(instance.restricted)}
-                            .flatMap(_ => test.prepareTesterBinary(instance.restricted))
-                            .flatMap { testerName =>
-                            Utils.later(Duration(500, TimeUnit.MILLISECONDS))
-                              .flatMap { _ =>
-                                executeTester(instance.restricted, instance.factory(FilenameUtils.getExtension(testerName)).asInstanceOf[BinaryHandler], testerName)
-                              }
-                        }.flatMap { testerResult =>
+                          prepareAndRunTester(instance.restricted, instance.factory, test)
+                            .flatMap { testerResult =>
                               objectCache.cacheSet(runKey, ChannelBuffers.wrappedBuffer(testerResult.value.toByteArray), None).map(_ => testerResult)
                             }
                         } else {
