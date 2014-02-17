@@ -39,6 +39,13 @@ class InstanceSubmitTestingHandle(val handle: String, val submitId: Int, val tes
   def submit = new InstanceSubmitHandle(handle, submitId)
 }
 
+class GridfsPath(override val toGridfsPath: String) extends HasGridfsPath {
+  def this(parent: HasGridfsPath, name: String) =
+    this("%s/%s".format(parent.toGridfsPath, name))
+}
+
+class StoreHandle(val store: GridfsObjectStore, val handle: HasGridfsPath)
+
 /**
  * Interface to the object store.
  * @param fs gridfs to work on.

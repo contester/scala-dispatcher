@@ -63,6 +63,6 @@ class CustomTestDispatcher(db: ConnectionPool, invoker: SolutionTester, store: G
     else Future.Done
 
   def run(item: CustomTestObject) =
-    invoker.custom(item, item.sourceModule, item.input, store, storeId + "/eval/", item.id)
+    invoker.custom(item, item.sourceModule, item.input, store, new GridfsPath(storeId + "/eval"), item.id)
       .flatMap(recordResult(item, _))
 }

@@ -7,9 +7,8 @@ import com.twitter.util.Future
 import org.stingray.contester.modules.ScriptLanguage
 
 class InvokerSimpleApi(val invoker: InvokerRegistry, val objectCache: ObjectCache) {
-  def compile(key: SchedulingKey, m: Module, store: GridfsObjectStore,
-              resultName: String): Future[(CompileResult, Option[Module])] =
-    invoker(m.moduleType, key, "compile")(Compiler(_, m, store, resultName))
+  def compile(key: SchedulingKey, m: Module, stored: StoreHandle): Future[(CompileResult, Option[Module])] =
+    invoker(m.moduleType, key, "compile")(Compiler(_, m, stored))
 
   def test(key: SchedulingKey, m: Module, t: Test, store: GridfsObjectStore, storePrefix: String): Future[TestResult] =
     invoker(m.moduleType, key, t)(Tester(_, m, t, store, storePrefix, objectCache))
@@ -21,16 +20,15 @@ class InvokerSimpleApi(val invoker: InvokerRegistry, val objectCache: ObjectCach
   def sanitize(key: ProblemDescription): Future[ProblemManifest] =
     invoker("zip", key, "sanitize")(Sanitizer(_, key))
 
-  def maybeCompile(key: SchedulingKey, m: Module, store: GridfsObjectStore,
-                   resultName: String): Future[(CompileResult, Option[Module])] = {
+  def maybeCompile(key: SchedulingKey, m: Module, stored: StoreHandle): Future[(CompileResult, Option[Module])] = {
     if (ScriptLanguage.list(m.moduleType))
       Future.value((ScriptingLanguageResult, Some(m)))
     else
-      Compiler.checkIfCompiled(m, store, resultName).flatMap { maybeCompiled =>
+      Compiler.checkIfCompiled(m, stored).flatMap { maybeCompiled =>
         if (maybeCompiled.isDefined)
           Future.value((AlreadyCompiledResult, maybeCompiled))
         else
-          compile(key, m, store, resultName)
+          compile(key, m, stored)
       }
   }
 

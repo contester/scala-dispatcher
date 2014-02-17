@@ -11,33 +11,32 @@ object Compiler extends Logging {
     module.putToSandbox(sandbox, handler.sourceName)
       .flatMap(_ => handler.compile(sandbox))
 
-  private def storeCompiledModule(sandbox: Sandbox, store: GridfsObjectStore, storeName: String, sourceHash: String, optModule: Option[CompiledModule]) =
+  private def storeCompiledModule(sandbox: Sandbox, stored: StoreHandle, sourceHash: String, optModule: Option[CompiledModule]) =
     optModule.map { compiledModule =>
-      store.putModule(sandbox, storeName, sandbox.sandboxId / compiledModule.filename, compiledModule.moduleType)
+      stored.store.putModule(sandbox, stored.handle.toGridfsPath, sandbox.sandboxId / compiledModule.filename, compiledModule.moduleType)
         .flatMap { result =>
-        store.setMetaData(storeName) { meta =>
+        stored.store.setMetaData(stored.handle.toGridfsPath) { meta =>
           meta.updated("sourceChecksum", sourceHash)
         }.map(_ => Some(result))
       }
     }.getOrElse(Future.None)
 
-  def apply(instance: InvokerInstance, module: Module, store: GridfsObjectStore, storeName: String): Future[(CompileResult, Option[Module])] =
+  def apply(instance: InvokerInstance, module: Module, stored: StoreHandle): Future[(CompileResult, Option[Module])] =
     justCompile(instance.unrestricted, instance.factory(module.moduleType).asInstanceOf[SourceHandler], module)
       .flatMap {
       case (compileResult, compiledModuleOption) =>
-        storeCompiledModule(instance.unrestricted, store, storeName, module.moduleHash, compiledModuleOption).map(compileResult -> _)
+        storeCompiledModule(instance.unrestricted, stored, module.moduleHash, compiledModuleOption).map(compileResult -> _)
     }
 
   /**
    * Check if this module was already compiled. We use both checksum and storename.
    * TODO: Use memcached too.
    * @param module Source module. We compare module.moduleHash to (storeName).sourceChecksum.
-   * @param store Object store.
-   * @param storeName Name for compiled module.
+   * @param stored Handle for compiled module
    * @return Future(Some(compiled module) or None).
    */
-  def checkIfCompiled(module: Module, store: GridfsObjectStore, storeName: String): Future[Option[Module]] =
-    store.getModuleEx(storeName).map(_.flatMap {
+  def checkIfCompiled(module: Module, stored: StoreHandle): Future[Option[Module]] =
+    stored.store.getModuleEx(stored.handle.toGridfsPath).map(_.flatMap {
       case (compiledModule, metadata) =>
         if (ObjectStore.getMetadataString(metadata, "sourceChecksum") == module.moduleHash)
           Some(compiledModule)

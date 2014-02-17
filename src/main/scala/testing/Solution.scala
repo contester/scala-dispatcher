@@ -19,8 +19,8 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
   // TODO: Pass state from above, if exists. Skip compile, if needed.
   def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, progress: SingleProgress,
       schoolMode: Boolean, store: GridfsObjectStore, storeHandle: InstanceSubmitTestingHandle, state: Map[Int, Result]): Future[SolutionTestingResult] = {
-    val compiledModuleName = storeHandle.submit.toGridfsPath + "/compiledModule"
-    invoker.maybeCompile(submit, sourceModule, store, compiledModuleName)
+    invoker.maybeCompile(submit, sourceModule,
+      new StoreHandle(store, new GridfsPath(storeHandle.submit, "compiledModule")))
       .flatMap { compiled =>
           progress.compile(compiled._1).flatMap { _ =>
             compiled._2.map { binary =>
@@ -31,9 +31,10 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
     }
   }
 
+  // TODO: Move this to a different class
   def custom(submit: SchedulingKey, sourceModule: Module, input: Array[Byte], store: GridfsObjectStore,
-      storeBase: String, testingId: Int): Future[CustomTestingResult] =
-    invoker.maybeCompile(submit, sourceModule, store, storeBase + "eval/%d/compiledModule".format(testingId)).flatMap {
+      storeBase: HasGridfsPath, testingId: Int): Future[CustomTestingResult] =
+    invoker.maybeCompile(submit, sourceModule, new StoreHandle(store, new GridfsPath(storeBase, "%d/compiledModule".format(testingId)))).flatMap {
       case (compileResult, binaryOption) =>
         binaryOption.map { binary =>
           invoker.custom(submit, binary, input, store, storeBase + "eval/%d/output".format(testingId)).map(Some(_))
