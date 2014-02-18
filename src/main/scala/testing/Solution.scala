@@ -16,7 +16,7 @@ object Solution {
 
 class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
   def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, progress: SingleProgress,
-      schoolMode: Boolean, store: GridfsObjectStore, storeHandle: InstanceSubmitTestingHandle, state: Map[Int, Result]): Future[SolutionTestingResult] = {
+      schoolMode: Boolean, storeHandle: InstanceSubmitTestingHandle, state: Map[Int, Result]): Future[SolutionTestingResult] = {
     invoker.maybeCompile(submit, sourceModule,
       new GridfsPath(storeHandle.submit, "compiledModule"))
       .flatMap { compiled =>
@@ -30,7 +30,7 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
   }
 
   // TODO: Move this to a different class
-  def custom(submit: SchedulingKey, sourceModule: Module, input: Array[Byte], store: GridfsObjectStore,
+  def custom(submit: SchedulingKey, sourceModule: Module, input: Array[Byte],
       storeBase: HasGridfsPath, testingId: Int): Future[CustomTestingResult] =
     invoker.maybeCompile(submit, sourceModule, new GridfsPath(storeBase, "%d/compiledModule".format(testingId))).flatMap {
       case (compileResult, binaryOption) =>

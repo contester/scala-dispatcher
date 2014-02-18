@@ -17,10 +17,10 @@ class ContestResolver(polygonResolver: (String) => URL) {
 }
 
 class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
-                   val store: GridfsObjectStore, val storeId: String, contestResolver: PolygonContestId => ContestHandle) extends Logging {
+                   val storeId: String, contestResolver: PolygonContestId => ContestHandle) extends Logging {
   val pscanner = new ContestTableScanner(pdata, dbclient, contestResolver)
   val dispatcher = new SubmitDispatcher(this)
-  val evaldispatcher = new CustomTestDispatcher(dbclient, invoker, store, storeId)
+  val evaldispatcher = new CustomTestDispatcher(dbclient, invoker, storeId)
 
   def f2o[A](x: Option[Future[A]]): Future[Option[A]] =
     Future.collect(x.toSeq).map(_.headOption)
@@ -51,7 +51,7 @@ class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: Sol
 
   def add(conf: DbConfig) = {
     info(conf)
-    val d = new DbDispatcher(conf.createConnectionPool, pdata, new File(basePath, conf.short), invoker, store, conf.short, contestResolver)
+    val d = new DbDispatcher(conf.createConnectionPool, pdata, new File(basePath, conf.short), invoker, conf.short, contestResolver)
     scanners(d) = d.start
   }
 }

@@ -82,7 +82,7 @@ object DispatcherServer extends App {
   val moodles =
     config.get[List[String]]("dispatcher.moodles").map { names =>
       names.filter(x => config.contains(x + ".db")).map { name =>
-        new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, problemDb, tester, mongoDb.objectStore)
+        new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, problemDb, tester)
       }.foreach(_.start)
     }
 

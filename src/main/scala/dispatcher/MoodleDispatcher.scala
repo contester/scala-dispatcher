@@ -43,7 +43,7 @@ class MoodleResultReporter(client: ConnectionPool, val submit: MoodleSubmit) {
       .map(_.lastInsertId.get).map(new MoodleSingleResult(client, submit, _))
 }
 
-class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester, store: GridfsObjectStore) extends SelectDispatcher[MoodleSubmit](db) with Logging {
+class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester) extends SelectDispatcher[MoodleSubmit](db) with Logging {
   def rowToSubmit(row: ResultSet): MoodleSubmit =
     MoodleSubmit(
       row.getInt("SubmitId"),
@@ -105,7 +105,7 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester, 
     pdb.getMostRecentProblem(new DirectProblemHandle(new URI("direct://school.sgu.ru/moodle/" + item.problemId))).flatMap { problem =>
       startNewTesting(item).flatMap { testingId =>
         val reporter = new MoodleSingleResult(db, item, testingId)
-        inv(item, item.sourceModule, problem.get, reporter, true, store,
+        inv(item, item.sourceModule, problem.get, reporter, true,
           new InstanceSubmitTestingHandle("school.sgu.ru/moodle", item.id, testingId), Map.empty).flatMap(reporter.finish)
       }
     }

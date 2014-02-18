@@ -89,7 +89,7 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
         val combinedProgress = new CombinedSingleProgress(new DBSingleResultReporter(parent.dbclient, m, testingInfo.testingId), new RawLogResultReporter(parent.basePath, m))
         parent.pdata.getPolygonProblem(PolygonURL(new URL(testingInfo.problemId)))
             .flatMap(parent.pdata.sanitizeProblem).flatMap { problem =>
-          parent.invoker(m, m.sourceModule, problem, combinedProgress, m.schoolMode, parent.store, new InstanceSubmitTestingHandle(parent.storeId, m.id, testingInfo.testingId),
+          parent.invoker(m, m.sourceModule, problem, combinedProgress, m.schoolMode, new InstanceSubmitTestingHandle(parent.storeId, m.id, testingInfo.testingId),
             testingInfo.state.toMap.mapValues(new RestoredResult(_))).flatMap { sr =>
             combinedProgress.db.finish(sr, m.id, testingInfo.testingId).join(combinedProgress.raw.finish(sr)).unit
           }

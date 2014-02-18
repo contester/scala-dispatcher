@@ -12,7 +12,7 @@ case class CustomTestObject(id: Int, arrived: Timestamp, sourceModule: Module, i
   val timestamp = arrived
 }
 
-class CustomTestDispatcher(db: ConnectionPool, invoker: SolutionTester, store: GridfsObjectStore, storeId: String) extends SelectDispatcher[CustomTestObject](db) {
+class CustomTestDispatcher(db: ConnectionPool, invoker: SolutionTester, storeId: String) extends SelectDispatcher[CustomTestObject](db) {
   def rowToSubmit(row: ResultSet) =
     CustomTestObject(
       row.getInt("ID"),
@@ -63,6 +63,6 @@ class CustomTestDispatcher(db: ConnectionPool, invoker: SolutionTester, store: G
     else Future.Done
 
   def run(item: CustomTestObject) =
-    invoker.custom(item, item.sourceModule, item.input, store, new GridfsPath(storeId + "/eval"), item.id)
+    invoker.custom(item, item.sourceModule, item.input, new GridfsPath(storeId + "/eval"), item.id)
       .flatMap(recordResult(item, _))
 }
