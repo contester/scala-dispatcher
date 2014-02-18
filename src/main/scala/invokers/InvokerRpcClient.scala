@@ -36,9 +36,9 @@ class InvokerRpcClient(val client: RpcClient) {
     _.getEntriesList.asScala
   }
 
-  def identify(contesterId: String, mHost: String, mDb: String) =
+  def identify(contesterId: String, mHost: String) =
     client.call[IdentifyResponse]("Contester.Identify",
-      IdentifyRequest.newBuilder().setContesterId(contesterId).setMongoHost(mHost).setMongoDb(mDb).build())
+      IdentifyRequest.newBuilder().setContesterId(contesterId).setMongoHost(mHost).build())
 
   def gridfsCopy(operations: Iterable[CopyOperation], sandboxId: String): Future[Iterable[FileStat]] = {
     import collection.JavaConversions.asJavaIterable

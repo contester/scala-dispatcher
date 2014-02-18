@@ -11,21 +11,21 @@ object Compiler extends Logging {
     module.putToSandbox(sandbox, handler.sourceName)
       .flatMap(_ => handler.compile(sandbox))
 
-  private def storeCompiledModule(sandbox: Sandbox, stored: StoreHandle, sourceHash: String, optModule: Option[CompiledModule]) =
+  private def storeCompiledModule(sandbox: Sandbox, store: GridfsObjectStore, stored: HasGridfsPath, sourceHash: String, optModule: Option[CompiledModule]) =
     optModule.map { compiledModule =>
-      stored.store.putModule(sandbox, stored.handle.toGridfsPath, sandbox.sandboxId / compiledModule.filename, compiledModule.moduleType)
+      store.putModule(sandbox, stored.toGridfsPath, sandbox.sandboxId / compiledModule.filename, compiledModule.moduleType)
         .flatMap { result =>
-        stored.store.setMetaData(stored.handle.toGridfsPath) { meta =>
+        store.setMetaData(stored.toGridfsPath) { meta =>
           meta.updated("sourceChecksum", sourceHash)
         }.map(_ => Some(result))
       }
     }.getOrElse(Future.None)
 
-  def apply(instance: InvokerInstance, module: Module, stored: StoreHandle): Future[(CompileResult, Option[Module])] =
+  def apply(instance: InvokerInstance, module: Module, store: GridfsObjectStore, stored: HasGridfsPath): Future[(CompileResult, Option[Module])] =
     justCompile(instance.unrestricted, instance.factory(module.moduleType).asInstanceOf[SourceHandler], module)
       .flatMap {
       case (compileResult, compiledModuleOption) =>
-        storeCompiledModule(instance.unrestricted, stored, module.moduleHash, compiledModuleOption).map(compileResult -> _)
+        storeCompiledModule(instance.unrestricted, store, stored, module.moduleHash, compiledModuleOption).map(compileResult -> _)
     }
 
   /**
@@ -35,8 +35,8 @@ object Compiler extends Logging {
    * @param stored Handle for compiled module
    * @return Future(Some(compiled module) or None).
    */
-  def checkIfCompiled(module: Module, stored: StoreHandle): Future[Option[Module]] =
-    stored.store.getModuleEx(stored.handle.toGridfsPath).map(_.flatMap {
+  def checkIfCompiled(module: Module, store: GridfsObjectStore, stored: HasGridfsPath): Future[Option[Module]] =
+    store.getModuleEx(stored.toGridfsPath).map(_.flatMap {
       case (compiledModule, metadata) =>
         if (ObjectStore.getMetadataString(metadata, "sourceChecksum") == module.moduleHash)
           Some(compiledModule)

@@ -15,16 +15,14 @@ object Solution {
 }
 
 class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
-  // TODO(stingray): Restore the state.
-  // TODO: Pass state from above, if exists. Skip compile, if needed.
   def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, progress: SingleProgress,
       schoolMode: Boolean, store: GridfsObjectStore, storeHandle: InstanceSubmitTestingHandle, state: Map[Int, Result]): Future[SolutionTestingResult] = {
     invoker.maybeCompile(submit, sourceModule,
-      new StoreHandle(store, new GridfsPath(storeHandle.submit, "compiledModule")))
+      new GridfsPath(storeHandle.submit, "compiledModule"))
       .flatMap { compiled =>
           progress.compile(compiled._1).flatMap { _ =>
             compiled._2.map { binary =>
-              new BinarySolution(invoker, store, storeHandle, submit, problem,
+              new BinarySolution(invoker, storeHandle, submit, problem,
                 binary, progress, schoolMode, state).run
             }.getOrElse(Future.value(Nil)).map(x => SolutionTestingResult(compiled._1, x.map(v => v._2)))
           }
@@ -34,24 +32,23 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
   // TODO: Move this to a different class
   def custom(submit: SchedulingKey, sourceModule: Module, input: Array[Byte], store: GridfsObjectStore,
       storeBase: HasGridfsPath, testingId: Int): Future[CustomTestingResult] =
-    invoker.maybeCompile(submit, sourceModule, new StoreHandle(store, new GridfsPath(storeBase, "%d/compiledModule".format(testingId)))).flatMap {
+    invoker.maybeCompile(submit, sourceModule, new GridfsPath(storeBase, "%d/compiledModule".format(testingId))).flatMap {
       case (compileResult, binaryOption) =>
         binaryOption.map { binary =>
-          invoker.custom(submit, binary, input, store, storeBase + "eval/%d/output".format(testingId)).map(Some(_))
+          invoker.custom(submit, binary, input, new GridfsPath(storeBase, "%d/output".format(testingId))).map(Some(_))
         }.getOrElse(Future.None).map(x => CustomTestingResult(compileResult, x))
     }
 }
 
-class BinarySolution(invoker: InvokerSimpleApi, store: GridfsObjectStore, storeHandle: InstanceSubmitTestingHandle,
+class BinarySolution(invoker: InvokerSimpleApi, storeHandle: InstanceSubmitTestingHandle,
     submit: SchedulingKey, problem: Problem,
     binary: Module, reporter: SingleProgress, schoolMode: Boolean, state: Map[Int, Result]) extends Logging with TestingStrategy {
-  // TODO: as a state, we get a list of tests we don't need to test anymore.
   private def proceed(r: Solution.NumberedTestResult): Boolean =
     r._2.success || (schoolMode && r._1 != 1)
 
   def test(test: Solution.NumberedTest): Future[Solution.EvaluatedTestResult] = {
     state.get(test._1).map(r => Future.value((r.success, (test._1, r)))).getOrElse {
-      invoker.test(submit, binary, test._2, store, storeHandle.toGridfsPath + "/" + test._1 + "/output.txt")
+      invoker.test(submit, binary, test._2, new GridfsPath(storeHandle, "%d/output.txt".format(test._1)))
         .map(x => test._1 -> x)
         .flatMap { result =>
         reporter.test(result._1, result._2)

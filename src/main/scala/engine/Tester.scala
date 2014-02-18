@@ -69,11 +69,11 @@ object Tester extends Logging {
     }
   }
 
-  private def storeFile(sandbox: Sandbox, store: GridfsObjectStore, storeAs: String, storeWhat: RemoteFileName): Future[Option[String]] =
+  private def storeFile(sandbox: Sandbox, store: GridfsObjectStore, storeAs: HasGridfsPath, storeWhat: RemoteFileName): Future[Option[String]] =
     sandbox.invoker.api.stat(Seq(storeWhat), true)
-      .map(_.headOption).flatMap(_.map(_ => store.copyFromSandbox(sandbox, storeAs, storeWhat, Map.empty)))
+      .map(_.headOption).flatMap(_.map(_ => store.copyFromSandbox(sandbox, storeAs.toGridfsPath, storeWhat, Map.empty)))
 
-  def apply(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String, objectCache: ObjectCache): Future[TestResult] =
+  def apply(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: HasGridfsPath, objectCache: ObjectCache): Future[TestResult] =
     (if (test.interactive)
       testInteractive(instance, module, test)
     else
@@ -96,7 +96,7 @@ object Tester extends Logging {
     }
 
   private def executeAndStoreSuccess(sandbox: Sandbox, factory: (String) => ModuleHandler,
-                                     test: Test, module: Module, store: GridfsObjectStore, resultName: String,
+                                     test: Test, module: Module, store: GridfsObjectStore, resultName: HasGridfsPath,
                                      cache: ObjectCache): Future[(RunResult, Option[String])] =
     test.prepareInput(sandbox)
       .flatMap { _ =>
@@ -111,7 +111,7 @@ object Tester extends Logging {
     }
 
 
-  private def testOld(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: String, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] =
+  private def testOld(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: HasGridfsPath, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] =
     executeAndStoreSuccess(instance.restricted, instance.factory, test, module, store, resultName, objectCache)
       .flatMap {
       case (solutionResult, optHash) =>

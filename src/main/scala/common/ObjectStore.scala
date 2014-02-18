@@ -182,8 +182,6 @@ class GridfsObjectStore(fs: GridFS) {
    */
   def getModule(name: String): Future[Option[Module]] =
     getModuleEx(name).map(_.map(_._1))
-
-
 }
 
 trait Module {
