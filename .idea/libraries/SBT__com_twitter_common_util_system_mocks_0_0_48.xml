@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="SBT: com.twitter.common:util-system-mocks:0.0.48">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/com.twitter.common/util-system-mocks/jars/util-system-mocks-0.0.48.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.ivy2/cache/com.twitter.common/util-system-mocks/docs/util-system-mocks-0.0.48-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/com.twitter.common/util-system-mocks/srcs/util-system-mocks-0.0.48-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

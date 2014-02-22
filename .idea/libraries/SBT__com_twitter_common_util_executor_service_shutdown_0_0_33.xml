@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="SBT: com.twitter.common:util-executor-service-shutdown:0.0.33">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/com.twitter.common/util-executor-service-shutdown/jars/util-executor-service-shutdown-0.0.33.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.ivy2/cache/com.twitter.common/util-executor-service-shutdown/docs/util-executor-service-shutdown-0.0.33-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/com.twitter.common/util-executor-service-shutdown/srcs/util-executor-service-shutdown-0.0.33-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

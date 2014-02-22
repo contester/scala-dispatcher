@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="SBT: com.twitter.common.zookeeper:group:0.0.44">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/com.twitter.common.zookeeper/group/jars/group-0.0.44.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.ivy2/cache/com.twitter.common.zookeeper/group/docs/group-0.0.44-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.ivy2/cache/com.twitter.common.zookeeper/group/srcs/group-0.0.44-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
