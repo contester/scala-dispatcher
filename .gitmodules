@@ -1,3 +1,0 @@
-[submodule "src/main/protobuf"]
-	path = src/main/protobuf
-	url = git@github.com:contester/contester-proto.git
