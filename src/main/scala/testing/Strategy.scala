@@ -51,4 +51,7 @@ trait TestingStrategy {
           Future.value(Nil)
       }.map(x => first ++ x)
     }
+
+  def moodle(tests: Seq[Solution.NumberedTest]): Future[List[Solution.EvaluatedTestResult]] =
+    parallel(tests)
 }
