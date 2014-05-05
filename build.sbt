@@ -25,7 +25,7 @@ fork in (Compile, run) := true
 
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m", "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
 
 version := "0.1"
 
@@ -52,26 +52,26 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
   "org.stingray" %% "simpleweb" % "0.1-SNAPSHOT",
-  "io.netty" % "netty" % "3.9.0.Final",
-  "com.twitter" %% "finagle-core" % "6.10.0",
-  "com.twitter" %% "finagle-http" % "6.10.0",
-  "com.twitter" %% "finagle-memcached" % "6.10.0",
-  "com.twitter" %% "finagle-mysql" % "6.10.0",
+  "io.netty" % "netty" % "3.9.1.Final",
+  "com.twitter" %% "finagle-core" % "6.15.0",
+  "com.twitter" %% "finagle-http" % "6.15.0",
+  "com.twitter" %% "finagle-memcached" % "6.15.0",
+  "com.twitter" %% "finagle-mysql" % "6.15.0",
   "org.streum" %% "configrity-core" % "1.0.0",
-  "com.twitter" %% "util-core" % "6.10.0",
-  "org.mongodb" %% "casbah" % "2.6.4",
+  "com.twitter" %% "util-core" % "6.15.0",
+  "org.mongodb" %% "casbah" % "2.7.1",
   "org.clapper" % "avsl_2.10" % "1.0.1",
-  "org.clapper" % "grizzled-slf4j_2.10" % "1.0.1",
+  "org.clapper" % "grizzled-slf4j_2.10" % "1.0.2",
   "joda-time" % "joda-time" % "2.3",
-  "org.joda" % "joda-convert" % "1.5",
+  "org.joda" % "joda-convert" % "1.6",
   "org.fusesource.scalate" %% "scalate-core" % "1.6.1",
-  "org.apache.httpcomponents" % "httpclient" % "4.3.1",
+  "org.apache.httpcomponents" % "httpclient" % "4.3.3",
   "commons-io" % "commons-io" % "2.4",
-  "com.rabbitmq" % "amqp-client" % "3.2.2",
+  "com.rabbitmq" % "amqp-client" % "3.3.1",
   "com.codahale" % "jerkson_2.9.1" % "0.5.0",
-  "mysql" % "mysql-connector-java" % "5.1.28",
+  "mysql" % "mysql-connector-java" % "5.1.30",
   "com.googlecode.protobuf-java-format" % "protobuf-java-format" % "1.2",
-  "org.scalatest" %% "scalatest" % "1.9.2" % "test"
+  "org.scalatest" %% "scalatest" % "2.1.5" % "test"
 )
 
 // Scalate Precompilation and Bindings
