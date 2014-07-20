@@ -51,27 +51,28 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
+  "com.foursquare" %% "twitter-util-async" % "1.0.0",
   "org.stingray" %% "simpleweb" % "0.1-SNAPSHOT",
-  "io.netty" % "netty" % "3.9.1.Final",
-  "com.twitter" %% "finagle-core" % "6.15.0",
-  "com.twitter" %% "finagle-http" % "6.15.0",
-  "com.twitter" %% "finagle-memcached" % "6.15.0",
-  "com.twitter" %% "finagle-mysql" % "6.15.0",
+  "io.netty" % "netty" % "3.9.2.Final",
+  "com.twitter" %% "finagle-core" % "6.18.0",
+  "com.twitter" %% "finagle-http" % "6.18.0",
+  "com.twitter" %% "finagle-memcached" % "6.18.0",
+  "com.twitter" %% "finagle-mysql" % "6.18.0",
   "org.streum" %% "configrity-core" % "1.0.0",
-  "com.twitter" %% "util-core" % "6.15.0",
-  "org.mongodb" %% "casbah" % "2.7.1",
-  "org.clapper" % "avsl_2.10" % "1.0.1",
-  "org.clapper" % "grizzled-slf4j_2.10" % "1.0.2",
+  "com.twitter" %% "util-core" % "6.18.0",
+  "org.mongodb" %% "casbah" % "2.7.2",
+  "org.clapper" %% "avsl" % "1.0.1",
+  "org.clapper" %% "grizzled-slf4j" % "1.0.2",
   "joda-time" % "joda-time" % "2.3",
   "org.joda" % "joda-convert" % "1.6",
   "org.fusesource.scalate" %% "scalate-core" % "1.6.1",
   "org.apache.httpcomponents" % "httpclient" % "4.3.3",
   "commons-io" % "commons-io" % "2.4",
-  "com.rabbitmq" % "amqp-client" % "3.3.1",
+  "com.rabbitmq" % "amqp-client" % "3.3.4",
   "com.codahale" % "jerkson_2.9.1" % "0.5.0",
-  "mysql" % "mysql-connector-java" % "5.1.30",
+  "mysql" % "mysql-connector-java" % "5.1.31",
   "com.googlecode.protobuf-java-format" % "protobuf-java-format" % "1.2",
-  "org.scalatest" %% "scalatest" % "2.1.5" % "test"
+  "org.scalatest" %% "scalatest" % "2.1.7" % "test"
 )
 
 // Scalate Precompilation and Bindings
