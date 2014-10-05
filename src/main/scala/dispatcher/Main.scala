@@ -55,6 +55,8 @@ object DispatcherServer extends App {
     bs.bind(socket)
   }
 
+  println("before dispatchers")
+
   val dispatchers =
     config.get[List[String]]("dispatcher.standard").map { names =>
 
@@ -85,6 +87,8 @@ object DispatcherServer extends App {
         new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, problemDb, tester)
       }.foreach(_.start)
     }
+
+  println("after dispatchers")
 
   HttpMuxer.addRichHandler("assets/", new StaticService[Request])
   HttpMuxer.addRichHandler("invokers", new DynamicServer(

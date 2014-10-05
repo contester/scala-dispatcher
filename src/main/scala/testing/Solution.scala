@@ -58,6 +58,6 @@ class BinarySolution(invoker: InvokerSimpleApi, storeHandle: InstanceSubmitTesti
   }
 
   def run =
-    if (schoolMode) moodle(problem.toSeq)
+    if (schoolMode) parallel(problem.toSeq)
     else sequential(problem.toSeq)
 }
