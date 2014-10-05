@@ -252,7 +252,8 @@ class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler 
         "-jar" :: name :: arguments)
 
   private def getTestLimits(test: TestLimits): List[String] = {
-    val ml = (test.memoryLimit / (1024 * 1024)).toString
+    val ml0 = test.memoryLimit / (1024 * 1024)
+    val ml = (if (ml0 < 32) 32 else ml0).toString
     ("-Xmx" + ml + "M") :: Nil
   }
 

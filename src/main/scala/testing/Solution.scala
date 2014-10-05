@@ -60,6 +60,6 @@ class BinarySolution(invoker: InvokerSimpleApi, store: GridfsObjectStore, storeH
   }
 
   def run =
-    if (schoolMode) school(problem.toSeq)
+    if (schoolMode) parallel(problem.toSeq)
     else sequential(problem.toSeq)
 }
