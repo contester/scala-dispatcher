@@ -25,7 +25,7 @@ object CustomTester extends Logging {
     sandbox.stat(outputFileName, true)
       .map(_.find(_.size < maxOutputSize))
       .flatMap(_.map { remoteFile =>
-      store.copyFromSandbox(sandbox, resultName.toGridfsPath, remoteFile, Map.empty[String, Any]).flatMap { _ =>
+      store.copyFromSandbox(sandbox, resultName.toGridfsPath, remoteFile, None).flatMap { _ =>
         sandbox.get(remoteFile).map(x => Some(x.getData))
       }
     }.getOrElse(Future.None))
