@@ -71,7 +71,7 @@ object Tester extends Logging {
 
   private def storeFile(sandbox: Sandbox, store: GridfsObjectStore, storeAs: HasGridfsPath, storeWhat: RemoteFileName): Future[Option[String]] =
     sandbox.invoker.api.stat(Seq(storeWhat), true)
-      .map(_.headOption).flatMap(_.map(_ => store.copyFromSandbox(sandbox, storeAs.toGridfsPath, storeWhat, Map.empty)))
+      .map(_.headOption).flatMap(_.map(_ => store.copyFromSandbox(sandbox, storeAs.toGridfsPath, storeWhat, Map.empty)).getOrElse(Future.None))
 
   def apply(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: HasGridfsPath, objectCache: ObjectCache): Future[TestResult] =
     (if (test.interactive)

@@ -14,21 +14,22 @@ object Compiler extends Logging {
     await(handler.compile(sandbox))
   }
 
-  private def storeCompiledModule(sandbox: Sandbox, store: GridfsObjectStore, stored: HasGridfsPath, sourceHash: String, optModule: Option[CompiledModule]) =
-    optModule.map { compiledModule =>
-      store.putModule(sandbox, stored.toGridfsPath, sandbox.sandboxId / compiledModule.filename, compiledModule.moduleType)
-        .flatMap { result =>
-        store.setMetaData(stored.toGridfsPath) { meta =>
-          meta.updated("sourceChecksum", sourceHash)
-        }.map(_ => Some(result))
-      }
-    }.getOrElse(Future.None)
+  private def storeCompiledModule(sandbox: Sandbox, store: GridfsObjectStore, stored: HasGridfsPath, sourceHash: String,
+                                  module: CompiledModule): Future[Option[Module]] =
+    store.putModule(sandbox, stored.toGridfsPath, sandbox.sandboxId / module.filename, module.moduleType)
+      .flatMap { storedModule =>
+      storedModule.map(_ => store.setMetaData(stored.toGridfsPath) { meta =>
+        meta.updated("sourceChecksum", sourceHash)
+      }).getOrElse(Future.None).map(_ => storedModule)
+    }
 
   def apply(instance: InvokerInstance, module: Module, store: GridfsObjectStore, stored: HasGridfsPath): Future[(CompileResult, Option[Module])] =
     justCompile(instance.unrestricted, instance.factory(module.moduleType).asInstanceOf[SourceHandler], module)
       .flatMap {
       case (compileResult, compiledModuleOption) =>
-        storeCompiledModule(instance.unrestricted, store, stored, module.moduleHash, compiledModuleOption).map(compileResult -> _)
+        compiledModuleOption.map(storeCompiledModule(instance.unrestricted, store, stored, module.moduleHash, _))
+            .getOrElse(Future.None)
+            .map(compileResult -> _)
     }
 
   /**

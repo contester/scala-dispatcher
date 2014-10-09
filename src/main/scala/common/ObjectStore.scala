@@ -117,7 +117,7 @@ class GridfsObjectStore(fs: GridFS) {
    * @param metadata Not supported other than moduleType.
    * @return
    */
-  def copyFromSandbox(sandbox: Sandbox, name: String, remote: RemoteFileName, metadata: Map[String, Any]): Future[String] = {
+  def copyFromSandbox(sandbox: Sandbox, name: String, remote: RemoteFileName, metadata: Map[String, Any]): Future[Option[String]] = {
     val moduleType = metadata.get("moduleType").flatMap { x =>
       x match {
        case s: String => Some(s)
@@ -125,7 +125,7 @@ class GridfsObjectStore(fs: GridFS) {
       }
     }
     sandbox.getGridfs(Seq((remote, name, moduleType))).map { files =>
-      files.head.checksum.get
+      files.headOption.map(_.checksum.getOrElse("deadbeef"))
     }
   }
 
@@ -159,9 +159,9 @@ class GridfsObjectStore(fs: GridFS) {
    * @param moduleType
    * @return
    */
-  def putModule(sandbox: Sandbox, name: String, remote: RemoteFileName, moduleType: String): Future[Module] =
+  def putModule(sandbox: Sandbox, name: String, remote: RemoteFileName, moduleType: String): Future[Option[Module]] =
     copyFromSandbox(sandbox, name, remote, Map("moduleType" -> moduleType)).map { checksum =>
-      new ObjectStoreModule(name, moduleType, checksum)
+        checksum.map(new ObjectStoreModule(name, moduleType, _))
     }
 
   /**
