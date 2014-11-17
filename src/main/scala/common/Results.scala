@@ -198,7 +198,8 @@ class RealCompileResult(val steps: Seq[StepResult], override val success: Boolea
 
   def getStd(mapper: LocalExecutionResult => Blob) =
     steps.map(x => mapper(x.result))
-      .map(Blobs.getBinary(_)).map(x => new String(x, "UTF-8")).mkString("===\n").getBytes("UTF-8")
+      .map(Blobs.getBinary)
+      .reduce((x, y) => x ++ y)
 
   override val stdOut =
     getStd(_.getStdOut)

@@ -54,15 +54,15 @@ object CombinedResultReporter {
 class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, val testingId: Int) extends SingleProgress {
   def compile(r: CompileResult): Future[Unit] =
     client.execute("insert into Results (UID, Submit, Result, Test, Timex, Memory, TesterOutput, TesterError) values (?, ?, ?, ?, ?, ?, ?, ?)",
-      testingId, submit.id, r.status, 0, 0,
-      0, r.stdOut, r.stdErr).unit.join(client.execute("Update Submits set Compiled = ? where ID = ?", if (r
+      testingId, submit.id, r.status.getNumber, 0, 0,
+      0, new String(r.stdOut, "cp866"), new String(r.stdErr, "cp866")).unit.join(client.execute("Update Submits set Compiled = ? where ID = ?", if (r
         .success) 1
     else 0, submit.id))
       .unit
 
   def test(testId: Int, result: TestResult): Future[Unit] =
     client.execute("Insert into Results (UID, Submit, Result, Test, Timex, Memory, Info, TesterOutput, TesterError, TesterExitCode) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      testingId, submit.id, result.status, testId, result.solution.time / 1000,
+      testingId, submit.id, result.status.getNumber, testId, result.solution.time / 1000,
       result.solution.memory, result.solution.returnCode,
       result.getTesterOutput, new String(result.getTesterError, "windows-1251"),
       result.getTesterReturnCode).unit

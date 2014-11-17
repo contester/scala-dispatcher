@@ -17,6 +17,7 @@ import org.jboss.netty.buffer.ChannelBuffer
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import scala.util.matching.Regex
 import scala.collection.mutable
+import javax.net.ssl.SSLContext
 
 class PolygonClientHttpException(reason: String) extends Throwable(reason)
 class PolygonAuthException(url: URL) extends Throwable(url.toString)
@@ -91,7 +92,7 @@ object CachedConnectionHttpService extends Service[(URL, HttpRequest), HttpRespo
   private object PolygonClientCacheLoader extends CacheLoader[(Option[String], InetSocketAddress), Service[HttpRequest, HttpResponse]] {
     private def createSSL(addr: InetSocketAddress, hostname: String) = ClientBuilder()
         .codec(Http().maxResponseSize(new StorageUnit(64*1024*1024)))
-        .tls(hostname)
+        .tls(SSLContext.getDefault())
         .hosts(addr)
         .hostConnectionLimit(1)
         .tcpConnectTimeout(Duration(5, TimeUnit.SECONDS))

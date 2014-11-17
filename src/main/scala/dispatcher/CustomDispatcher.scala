@@ -57,7 +57,7 @@ class CustomTestDispatcher(db: ConnectionPool, invoker: SolutionTester, storeId:
         result.test.get.run.time / 1000,
         result.test.get.run.memory,
         result.test.get.run.returnCode,
-        result.test.get.run.status,
+        result.test.get.run.status.getNumber,
         item.id
       ).unit
     else Future.Done
