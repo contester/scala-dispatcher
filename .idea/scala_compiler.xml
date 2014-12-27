@@ -1,13 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ScalaCompilerConfiguration">
-    <option name="warnings" value="true"/>
-    <option name="deprecationWarnings" value="true"/>
-    <option name="uncheckedWarnings" value="true"/>
-    <option name="optimiseBytecode" value="false"/>
-    <option name="explainTypeErrors" value="false"/>
-    <option name="continuations" value="false"/>
-    <option name="debuggingInfoLevel" value="Vars"/>
-    <parameters> </parameters>
-    <plugins> </plugins>
+    <option name="deprecationWarnings" value="true" />
+    <option name="uncheckedWarnings" value="true" />
+    <option name="optimiseBytecode" value="true" />
+    <option name="explainTypeErrors" value="true" />
+    <parameters>
+      <parameter value="-Xcheck-null" />
+      <parameter value="-Xcheckinit" />
+      <parameter value="-Xdivergence211" />
+      <parameter value="-Xlint" />
+    </parameters>
   </component>
 </project>

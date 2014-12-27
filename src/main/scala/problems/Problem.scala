@@ -36,6 +36,15 @@ trait Problem extends immutable.SortedMap[Int, Test] {
   def iterator: Iterator[(Int, Test)] =
     tests.flatMap(i => get(i).map(i -> _)).iterator
 
+  def keysIteratorFrom(start: Int): Iterator[Int] =
+    tests.filter(_ >= start).filter(get(_).isDefined).iterator
+
+  def valuesIteratorFrom(start: Int): Iterator[Test] =
+    iteratorFrom(start).map(_._2)
+
+  def iteratorFrom(start: Int): Iterator[(Int, Test)] =
+    tests.filter(_ >= start).flatMap(i => get(i).map(i -> _)).iterator
+
   def rangeImpl(from: Option[Int], until: Option[Int]): immutable.SortedMap[Int, Test] = {
     val left = from.map(l => tests.filter(_ >= l)).getOrElse(tests)
     val right = until.map(r => left.filter(_ <= r)).getOrElse(left)

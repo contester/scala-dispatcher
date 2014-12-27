@@ -1,14 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
   <component name="FacetManager">
-    <facet type="scala" name="Scala">
-      <configuration>
-        <option name="compilerLibraryLevel" value="Project" />
-        <option name="compilerLibraryName" value="SBT: scala:2.10.4" />
-        <option name="deprecationWarnings" value="true" />
-        <option name="fsc" value="true" />
-        <option name="uncheckedWarnings" value="true" />
-      </configuration>
+    <facet type="protobuf" name="Protobuf Facet">
+      <configuration />
     </facet>
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="false">
@@ -33,7 +27,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="SBT: org.scala-lang:scala-library:2.10.4" level="project" />
     <orderEntry type="library" name="SBT: com.google.protobuf:protobuf-java:2.5.0" level="project" />
     <orderEntry type="library" name="SBT: com.foursquare:twitter-util-async_2.10:1.0.0" level="project" />
     <orderEntry type="library" name="SBT: org.scala-lang.modules:scala-async_2.10:0.9.1" level="project" />
@@ -132,6 +125,6 @@
     <orderEntry type="library" name="SBT: org.codehaus.jackson:jackson-mapper-asl:1.9.13" level="project" />
     <orderEntry type="library" name="SBT: mysql:mysql-connector-java:5.1.31" level="project" />
     <orderEntry type="library" name="SBT: com.googlecode.protobuf-java-format:protobuf-java-format:1.2" level="project" />
+    <orderEntry type="library" name="SBT: org.scala-lang:scala-library:2.10.4" level="project" />
   </component>
 </module>
-
