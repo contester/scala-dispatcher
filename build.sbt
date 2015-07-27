@@ -32,7 +32,7 @@ version := "0.1"
 organization := "org.stingray.contester"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-optimise", "-explaintypes", "-Xcheckinit",
-  "-Xlint")
+  "-Xlint", "-Ybackend:o3", "-Yclosurify:delegating")
 
 // javacOptions in Compile ++= Seq("-source", "1.6",  "-target", "1.7")
 

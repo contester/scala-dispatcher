@@ -2,11 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea_modules/dispatcher.iml" filepath="$PROJECT_DIR$/.idea_modules/dispatcher.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea_modules/dispatcher-build.iml" filepath="$PROJECT_DIR$/.idea_modules/dispatcher-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/scala-dispatcher.iml" filepath="$PROJECT_DIR$/.idea/modules/scala-dispatcher.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/scala-dispatcher-build.iml" filepath="$PROJECT_DIR$/.idea/modules/scala-dispatcher-build.iml" />
     </modules>
   </component>
 </project>
-

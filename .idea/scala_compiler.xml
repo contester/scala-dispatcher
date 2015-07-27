@@ -6,9 +6,7 @@
     <option name="optimiseBytecode" value="true" />
     <option name="explainTypeErrors" value="true" />
     <parameters>
-      <parameter value="-Xcheck-null" />
       <parameter value="-Xcheckinit" />
-      <parameter value="-Xdivergence211" />
       <parameter value="-Xlint" />
     </parameters>
   </component>

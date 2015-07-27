@@ -31,10 +31,7 @@ class Sandbox(val instance: InvokerInstance, val restricted: Boolean, val path: 
     i.getGridfs(items, sandboxId.name)
 
   def get(f: RemoteFileName): Future[FileBlob] =
-    i.get(f)
-
-  def get(name: String): Future[FileBlob] =
-    get(sandboxId / name)
+    i.client.get(f.name(i.pathSeparator))
 
   def glob(name: String, calculateSha1: Boolean) =
     i.glob(sandboxId / name :: Nil, calculateSha1)

@@ -42,9 +42,6 @@ class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) {
   def stat(what: Iterable[RemoteFileName], calculateSha1: Boolean): Future[Iterable[InvokerRemoteFile]] =
     fileStat(what, false, None, calculateSha1)
 
-  def get(file: RemoteFileName): Future[FileBlob] =
-    client.get(file.name(pathSeparator))
-
   def put(remote: RemoteFileName, blob: Blob) =
     client.put(FileBlob.newBuilder().setName(remote.name).setData(blob).build()).map(file)
 

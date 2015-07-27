@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="SBT: com.googlecode.protobuf-java-format:protobuf-java-format:1.2">
-    <CLASSES>
-      <root url="jar://$USER_HOME$/.ivy2/cache/com.googlecode.protobuf-java-format/protobuf-java-format/jars/protobuf-java-format-1.2.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
