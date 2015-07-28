@@ -47,7 +47,6 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finagle-http" % "6.26.0",
   "com.twitter" %% "finagle-memcached" % "6.24.0",
   "com.twitter" %% "finagle-mysql" % "6.24.0",
-  "org.streum" %% "configrity-core" % "1.0.1",
   "com.twitter" %% "util-core" % "6.23.0",
   "org.mongodb" %% "casbah" % "2.7.4",
   "org.clapper" %% "avsl" % "1.0.2",
@@ -62,6 +61,7 @@ libraryDependencies ++= Seq(
   "mysql" % "mysql-connector-java" % "5.1.34",
   "com.typesafe.play" %% "play" % "2.4.2",
   "com.typesafe.play" %% "play-netty-server" % "2.4.2",
+  "com.typesafe" % "config" % "1.3.0",
   "com.googlecode.protobuf-java-format" % "protobuf-java-format" % "1.2",
   "org.scalatest" %% "scalatest" % "2.2.3" % "test"
 )

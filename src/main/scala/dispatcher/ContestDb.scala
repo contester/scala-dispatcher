@@ -1,5 +1,7 @@
 package org.stingray.contester.dispatcher
 
+import com.typesafe.config.Config
+
 import collection.mutable
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
@@ -8,7 +10,6 @@ import org.stingray.contester.db.ConnectionPool
 import org.stingray.contester.testing.SolutionTester
 import org.stingray.contester.common.GridfsObjectStore
 import java.net.URL
-import org.streum.configrity.Configuration
 import org.stingray.contester.polygon.{ContestHandle, PolygonProblem}
 
 class ContestResolver(polygonResolver: (String) => URL) {
@@ -35,14 +36,18 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
     pscanner.rescan.join(dispatcher.start).join(evaldispatcher.start).unit
 }
 
-class DbConfig(conf: Configuration) {
-  val short = conf.get[String]("short").getOrElse(conf[String]("db"))
+class DbConfig(conf: Config) {
+  val short =
+    if (conf.hasPath("short"))
+      conf.getString("short")
+    else
+      conf.getString("db")
 
   def createConnectionPool =
-    new ConnectionPool(conf[String]("host"),
-      conf[String]("db"),
-      conf[String]("username"),
-      conf[String]("password"))
+    new ConnectionPool(conf.getString("host"),
+      conf.getString("db"),
+      conf.getString("username"),
+      conf.getString("password"))
 }
 
 class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: SolutionTester, val store: GridfsObjectStore, contestResolver: PolygonContestId => ContestHandle) extends Logging {

@@ -9,7 +9,6 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.rpc4.ServerPipelineFactory
-import org.streum.configrity.Configuration
 import org.stingray.contester.testing.SolutionTester
 import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.common.{MemcachedObjectCache, MongoDBInstance}
@@ -17,10 +16,12 @@ import org.stingray.contester.polygon._
 import org.stingray.contester.problems.CommonProblemDb
 import org.fusesource.scalate.layout.DefaultLayoutStrategy
 
+import com.typesafe.config.{Config, ConfigFactory}
+
 object DispatcherServer extends App {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
 
-  def createDbConfig(conf: Configuration) =
+  def createDbConfig(conf: Config) =
     new DbConfig(conf)
 
   val templateEngine = {
@@ -32,10 +33,10 @@ object DispatcherServer extends App {
     e
   }
 
-  val config = Configuration.load("dispatcher.conf")
-  val mongoDb = MongoDBInstance(config[String]("pdb.mongoUrl")).right.get
+  val config = ConfigFactory.load()
+  val mongoDb = MongoDBInstance(config.getString("pdb.mongoUrl")).right.get
 
-  val objectCache = new MemcachedObjectCache(config[String]("cache.host"))
+  val objectCache = new MemcachedObjectCache(config.getString("cache.host"))
 
   val polygonCache = new PolygonCache(mongoDb.db)
   val problemDb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
@@ -55,36 +56,37 @@ object DispatcherServer extends App {
 
   println("before dispatchers")
 
-  val dispatchers =
-    config.get[List[String]]("dispatcher.standard").map { names =>
+  import scala.collection.JavaConversions._
 
-      val polygonConfs = config.detach("polygons").detachAll
-      val contestResolver = new ContestResolver(polygonConfs.mapValues(c => new URL(c[String]("url"))))
+  val dispatchers = {
+      val polygonBase = config.atKey("polygons")
+      val polygonNames = polygonBase.root().keys
+      val contestResolver = new ContestResolver(polygonNames.map(n => n -> new URL(polygonBase.atKey(n).getString("url"))).toMap)
 
       val authFilter = new AuthPolygonFilter
-      polygonConfs.foreach {
-        case (shortName, polygonConf) =>
-        authFilter.addPolygon(new PolygonBase(shortName, new URL(polygonConf[String]("url")), polygonConf[String]("username"), polygonConf[String]("password")))
+      polygonNames.foreach { shortName =>
+        val polygonConf = polygonBase.atKey(shortName)
+        authFilter.addPolygon(new PolygonBase(shortName, new URL(polygonConf.getString("url")),
+          polygonConf.getString("username"), polygonConf.getString("password")))
       }
 
       val client = authFilter andThen BasicPolygonFilter andThen CachedConnectionHttpService
       val problems = new ProblemData(client, polygonCache, problemDb, invokerApi)
-      val result = new DbDispatchers(problems, new File(config[String]("reporting.base")), tester, mongoDb.objectStore, contestResolver(_))
+      val result = new DbDispatchers(problems, new File(config.getString("reporting.base")),
+        tester, mongoDb.objectStore, contestResolver(_))
 
-      names.foreach { name =>
-        if (config.contains(name + ".db")) {
-          result.add(createDbConfig(config.detach(name)))
+      config.getStringList("dispatcher.standard").foreach { name =>
+        if (config.hasPath(name + ".db")) {
+          result.add(createDbConfig(config.atKey(name)))
 	}
       }
       result
     }
 
   val moodles =
-    config.get[List[String]]("dispatcher.moodles").map { names =>
-      names.filter(x => config.contains(x + ".db")).map { name =>
-        new MoodleDispatcher(createDbConfig(config.detach(name)).createConnectionPool, problemDb, tester)
+    config.getStringList("dispatcher.moodles").filter(x => config.hasPath(x + ".db")).map { name =>
+        new MoodleDispatcher(createDbConfig(config.atKey(name)).createConnectionPool, problemDb, tester)
       }.foreach(_.start)
-    }
 
   println("after dispatchers")
 
@@ -98,5 +100,5 @@ object DispatcherServer extends App {
       Results.Ok(html.invokers(invoker))
     }
   }
-  bindInvokerTo(new InetSocketAddress(config[Int]("dispatcher.invokerPort", 9981)))
+  bindInvokerTo(new InetSocketAddress(config.getInt("dispatcher.invokerPort")))
 }
