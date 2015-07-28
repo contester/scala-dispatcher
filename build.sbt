@@ -5,10 +5,6 @@ import com.typesafe.sbt.SbtProguard.ProguardKeys.proguard
 
 import ScalateKeys._
 
-import AssemblyKeys._
-
-assemblySettings
-
 proguardSettings
 
 javaOptions in (Proguard, proguard) := Seq("-Xmx2G")
@@ -25,7 +21,7 @@ fork in (Compile, run) := true
 
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m", "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
-scalaVersion := "2.11.4"
+scalaVersion := "2.11.7"
 
 version := "0.1"
 
