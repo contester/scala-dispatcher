@@ -4,7 +4,6 @@ import java.io.File
 import java.net.{URL, InetSocketAddress}
 import java.util.concurrent.Executors
 import controllers.Assets
-import html.invokers
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
@@ -17,9 +16,6 @@ import org.stingray.contester.common.{MemcachedObjectCache, MongoDBInstance}
 import org.stingray.contester.polygon._
 import org.stingray.contester.problems.CommonProblemDb
 import org.fusesource.scalate.layout.DefaultLayoutStrategy
-import com.twitter.finagle.http.{Request, Http, HttpMuxer}
-import com.twitter.finagle.builder.ServerBuilder
-import org.stingray.simpleweb.StaticService
 
 object DispatcherServer extends App {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
@@ -102,15 +98,5 @@ object DispatcherServer extends App {
       Results.Ok(html.invokers(invoker))
     }
   }
-
-
-  HttpMuxer.addRichHandler("invokers", new DynamicServer(
-      templateEngine, "org/stingray/contester/invokers/InvokerRegistry.ssp", Map("invoker" -> invoker)))
   bindInvokerTo(new InetSocketAddress(config[Int]("dispatcher.invokerPort", 9981)))
-
-  val httpServer = ServerBuilder()
-      .codec(Http())
-      .bindTo(new InetSocketAddress(config[Int]("dispatcher.port")))
-      .name("httpserver")
-      .build(HttpMuxer)
 }

@@ -42,7 +42,6 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
   "com.foursquare" %% "twitter-util-async" % "1.1.0-SNAPSHOT",
-  "org.stingray" %% "simpleweb" % "0.1-SNAPSHOT",
   "io.netty" % "netty" % "3.10.1.Final",
   "com.twitter" %% "finagle-core" % "6.26.0",
   "com.twitter" %% "finagle-http" % "6.26.0",
