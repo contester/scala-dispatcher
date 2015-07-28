@@ -49,13 +49,14 @@ object DispatcherServer extends App {
   import scala.collection.JavaConversions._
 
   val dispatchers = {
-      val polygonBase = config.atKey("polygons")
+      val polygonBase = config.getConfig("polygons")
       val polygonNames = polygonBase.root().keys
-      val contestResolver = new ContestResolver(polygonNames.map(n => n -> new URL(polygonBase.atKey(n).getString("url"))).toMap)
+      println(polygonNames)
+      val contestResolver = new ContestResolver(polygonNames.map(n => n -> new URL(polygonBase.getConfig(n).getString("url"))).toMap)
 
       val authFilter = new AuthPolygonFilter
       polygonNames.foreach { shortName =>
-        val polygonConf = polygonBase.atKey(shortName)
+        val polygonConf = polygonBase.getConfig(shortName)
         authFilter.addPolygon(new PolygonBase(shortName, new URL(polygonConf.getString("url")),
           polygonConf.getString("username"), polygonConf.getString("password")))
       }
@@ -67,16 +68,19 @@ object DispatcherServer extends App {
 
       config.getStringList("dispatcher.standard").foreach { name =>
         if (config.hasPath(name + ".db")) {
-          result.add(createDbConfig(config.atKey(name)))
+          result.add(createDbConfig(config.getConfig(name)))
 	}
       }
       result
     }
 
   val moodles =
-    config.getStringList("dispatcher.moodles").filter(x => config.hasPath(x + ".db")).map { name =>
-        new MoodleDispatcher(createDbConfig(config.atKey(name)).createConnectionPool, problemDb, tester)
-      }.foreach(_.start)
+    if (config.hasPath("dispatcher.moodles"))
+      config.getStringList("dispatcher.moodles").filter(x => config.hasPath(x + ".db")).map { name =>
+          new MoodleDispatcher(createDbConfig(config.getConfig(name)).createConnectionPool, problemDb, tester)
+        }.foreach(_.start)
+    else
+      ()
 
   println("after dispatchers")
 
@@ -84,7 +88,8 @@ object DispatcherServer extends App {
   import play.api.routing.sird._
   import play.api.mvc._
 
-  val server = NettyServer.fromRouter() {
+  val server = NettyServer.fromRouter(ServerConfig(
+  port = Some(config.getInt("dispatcher.port")))) {
     case GET(p"/assets/$file*") => Assets.versioned(path = "/public", file)
     case GET(p"/invokers") => Action {
       Results.Ok(html.invokers(invoker))
