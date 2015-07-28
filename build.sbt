@@ -8,6 +8,8 @@ seq(PB.protobufSettings: _*)
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
 
+enablePlugins(JavaAppPackaging)
+
 name := "dispatcher"
 
 fork in (Compile, run) := true
