@@ -9,8 +9,6 @@
       <parameters>
         <parameter value="-Xcheckinit" />
         <parameter value="-Xlint" />
-        <parameter value="-Ybackend:o3" />
-        <parameter value="-Yclosurify:delegating" />
       </parameters>
     </profile>
   </component>

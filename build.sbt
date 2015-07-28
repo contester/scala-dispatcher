@@ -28,7 +28,7 @@ version := "0.1"
 organization := "org.stingray.contester"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-optimise", "-explaintypes", "-Xcheckinit",
-  "-Xlint", "-Ybackend:o3", "-Yclosurify:delegating")
+  "-Xlint")
 
 // javacOptions in Compile ++= Seq("-source", "1.6",  "-target", "1.7")
 
@@ -50,9 +50,9 @@ resolvers ++= Seq(
 libraryDependencies ++= Seq(
   "com.foursquare" %% "twitter-util-async" % "1.1.0-SNAPSHOT",
   "org.stingray" %% "simpleweb" % "0.1-SNAPSHOT",
-  "io.netty" % "netty" % "3.10.0.Final",
-  "com.twitter" %% "finagle-core" % "6.24.0",
-  "com.twitter" %% "finagle-http" % "6.24.0",
+  "io.netty" % "netty" % "3.10.1.Final",
+  "com.twitter" %% "finagle-core" % "6.26.0",
+  "com.twitter" %% "finagle-http" % "6.26.0",
   "com.twitter" %% "finagle-memcached" % "6.24.0",
   "com.twitter" %% "finagle-mysql" % "6.24.0",
   "org.streum" %% "configrity-core" % "1.0.1",
