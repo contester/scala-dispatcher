@@ -2,6 +2,7 @@ package org.stingray.contester.utils
 
 import com.google.protobuf.Message
 import java.io.InputStream
+import com.twitter.io.Buf
 import org.jboss.netty.buffer.ChannelBuffer
 
 /** Parametrized functions to create protobufs.
@@ -20,6 +21,10 @@ object ProtobufTools {
 
   def createProtobuf[I <: Message](buffer: ChannelBuffer)(implicit manifest: Manifest[I]): I =
     createProtobuf(asByteArray(buffer))
+
+
+  def createProtobuf[I <: Message](buffer: Buf)(implicit manifest: Manifest[I]): I =
+    createProtobuf(Buf.ByteArray.Shared.extract(buffer))
 
   def createProtobuf[I <: Message](bytes: Array[Byte])(implicit manifest: Manifest[I]): I = {
     manifest.runtimeClass.getDeclaredMethod("parseFrom", ARRAY_OF_BYTE_ARRAY: _*).invoke(null, bytes).asInstanceOf[I]
