@@ -14,7 +14,6 @@ import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.common.{MemcachedObjectCache, MongoDBInstance}
 import org.stingray.contester.polygon._
 import org.stingray.contester.problems.CommonProblemDb
-import org.fusesource.scalate.layout.DefaultLayoutStrategy
 
 import com.typesafe.config.{Config, ConfigFactory}
 
@@ -23,15 +22,6 @@ object DispatcherServer extends App {
 
   def createDbConfig(conf: Config) =
     new DbConfig(conf)
-
-  val templateEngine = {
-    import org.fusesource.scalate.TemplateEngine
-    val templatePath = getClass.getResource("/templates").getPath
-    val e = new TemplateEngine(List(new java.io.File(templatePath)))
-    e.allowReload = false
-    e.layoutStrategy =  new DefaultLayoutStrategy(e, "layouts/default.ssp")
-    e
-  }
 
   val config = ConfigFactory.load()
   val mongoDb = MongoDBInstance(config.getString("pdb.mongoUrl")).right.get

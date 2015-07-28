@@ -1,9 +1,5 @@
 import sbtprotobuf.{ProtobufPlugin=>PB}
 
-import ScalateKeys._
-
-seq(scalateSettings:_*)
-
 seq(PB.protobufSettings: _*)
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
@@ -16,7 +12,8 @@ name := "dispatcher"
 
 fork in (Compile, run) := true
 
-javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m", "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
+javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m",
+  "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
 scalaVersion := "2.11.7"
 
@@ -53,7 +50,6 @@ libraryDependencies ++= Seq(
   "org.clapper" %% "grizzled-slf4j" % "1.0.2",
   "joda-time" % "joda-time" % "2.6",
   "org.joda" % "joda-convert" % "1.7",
-  "org.scalatra.scalate" %% "scalate-core" % "1.7.0",
   "org.apache.httpcomponents" % "httpclient" % "4.3.6",
   "commons-io" % "commons-io" % "2.4",
   "com.rabbitmq" % "amqp-client" % "3.4.2",
@@ -65,16 +61,6 @@ libraryDependencies ++= Seq(
   "com.googlecode.protobuf-java-format" % "protobuf-java-format" % "1.2",
   "org.scalatest" %% "scalatest" % "2.2.3" % "test"
 )
-
-// Scalate Precompilation and Bindings
-scalateTemplateConfig in Compile <<= (sourceDirectory in Compile){ base =>
-  Seq(
-    TemplateConfig(
-      base / "resources" / "templates",
-      Seq(),
-      Seq(),
-      Some("")
-    ))}
 
 excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
   cp.filter { p =>
