@@ -1,0 +1,59 @@
+@(invoker: org.stingray.contester.invokers.InvokerRegistry)
+
+@main(title = "Invoker status") {
+
+<table class="table table-bordered table-striped">
+    <thead>
+    <tr>
+        <th colspan=4>Invokers</th>
+    </tr>
+    </thead>
+    <tbody>
+    @for(b <- invoker.getInvokers) {
+    <tr>
+        <td>@(b._1.api.name)</td>
+        <td></td>
+        <td>@(b._1.api.platform)</td>
+        <td>@(b._1.caps.mkString(" "))</td>
+    </tr>
+    @for(item <- b._2) {
+    <tr>
+        <td></td>
+        <td>@(item._1.index)</td>
+        <td>@(item._2._1)</td>
+        <td>@(item._2._2.getOrElse(""))</td>
+    </tr>
+    }
+    }
+    </tbody>
+</table>
+
+<table class="table table-bordered table-striped">
+    <thead>
+    <tr>
+        <th>Type</th>
+        <th>What</th>
+        <th>Count</th>
+    </tr>
+    </thead>
+    <tbody>
+    @for(c <- invoker.getWaiting) {
+    <tr>
+        <td colspan=2>@(c._1)></td>
+        <td>@(c._2._1)</td>
+    </tr>
+    @for(i <- c._2._2.take(15)) {
+    <tr>
+        <td></td>
+        <td>@(i._1)</td>
+        <td>@(i._2)</td>
+    </tr>
+    }
+    @if(c._2._2.size > 15) {
+    <tr><td colspan=3>...</td></tr>
+    }
+    }
+    </tbody>
+</table>
+
+}

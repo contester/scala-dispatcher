@@ -3,6 +3,8 @@ package org.stingray.contester.dispatcher
 import java.io.File
 import java.net.{URL, InetSocketAddress}
 import java.util.concurrent.Executors
+import controllers.Assets
+import html.invokers
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
@@ -90,7 +92,18 @@ object DispatcherServer extends App {
 
   println("after dispatchers")
 
-  HttpMuxer.addRichHandler("assets/", new StaticService[Request])
+  import play.core.server._
+  import play.api.routing.sird._
+  import play.api.mvc._
+
+  val server = NettyServer.fromRouter() {
+    case GET(p"/assets/$file*") => Assets.versioned(path = "/public", file)
+    case GET(p"/invokers") => Action {
+      Results.Ok(html.invokers(invoker))
+    }
+  }
+
+
   HttpMuxer.addRichHandler("invokers", new DynamicServer(
       templateEngine, "org/stingray/contester/invokers/InvokerRegistry.ssp", Map("invoker" -> invoker)))
   bindInvokerTo(new InetSocketAddress(config[Int]("dispatcher.invokerPort", 9981)))
