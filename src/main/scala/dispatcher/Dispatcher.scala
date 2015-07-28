@@ -1,6 +1,7 @@
 package org.stingray.contester.dispatcher
 
 import java.sql.{Timestamp, ResultSet}
+import com.spingo.op_rabbit.QueueMessage
 import org.stingray.contester.db.{HasId, SelectDispatcher}
 import org.stingray.contester.common._
 import org.stingray.contester.invokers.TimeKey
@@ -8,6 +9,8 @@ import com.twitter.util.Future
 import org.stingray.contester.polygon.PolygonURL
 import org.stingray.contester.testing._
 import java.net.URL
+import com.spingo.op_rabbit.PlayJsonSupport._
+import play.api.libs.json.Json
 
 trait Submit extends TimeKey with HasId with SubmitWithModule {
   def schoolMode: Boolean = false
@@ -20,6 +23,8 @@ case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
   override def toString =
     "Submit(%d, %d, %s, %s)".format(id, contestId, problemId, arrived)
 }
+
+case class FinishedTesting(id: Int)
 
 class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObject](parent.dbclient) {
   // startup: scan all started
@@ -81,17 +86,26 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
       }
     })
 
+  implicit val finishedTestingFormat = Json.format[FinishedTesting]
+
   // main test entry point
   def run(m: SubmitObject) = {
     val reporter = new DBReporter(parent.dbclient)
     getTestingInfo(reporter, m).flatMap { testingInfo =>
       reporter.registerTestingOnly(m, testingInfo.testingId).flatMap { _ =>
-        val combinedProgress = new CombinedSingleProgress(new DBSingleResultReporter(parent.dbclient, m, testingInfo.testingId), new RawLogResultReporter(parent.basePath, m))
+        val combinedProgress = new CombinedSingleProgress(
+          new DBSingleResultReporter(parent.dbclient, m, testingInfo.testingId),
+          new RawLogResultReporter(parent.basePath, m))
+
         parent.pdata.getPolygonProblem(PolygonURL(new URL(testingInfo.problemId)))
-            .flatMap(parent.pdata.sanitizeProblem).flatMap { problem =>
-          parent.invoker(m, m.sourceModule, problem, combinedProgress, m.schoolMode, new InstanceSubmitTestingHandle(parent.storeId, m.id, testingInfo.testingId),
+          .flatMap(parent.pdata.sanitizeProblem).flatMap { problem =>
+          parent.invoker(m, m.sourceModule, problem, combinedProgress, m.schoolMode,
+            new InstanceSubmitTestingHandle(parent.storeId, m.id, testingInfo.testingId),
             testingInfo.state.toMap.mapValues(new RestoredResult(_))).flatMap { sr =>
             combinedProgress.db.finish(sr, m.id, testingInfo.testingId).join(combinedProgress.raw.finish(sr)).unit
+            .map {_ =>
+              parent.rabbitMq ! QueueMessage(FinishedTesting(m.id), queue = "contester.finished")
+            }
           }
         }
       }

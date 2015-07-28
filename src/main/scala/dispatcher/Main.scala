@@ -3,6 +3,8 @@ package org.stingray.contester.dispatcher
 import java.io.File
 import java.net.{URL, InetSocketAddress}
 import java.util.concurrent.Executors
+import akka.actor.{Props, ActorSystem}
+import com.spingo.op_rabbit.RabbitControl
 import controllers.Assets
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
@@ -45,6 +47,9 @@ object DispatcherServer extends App {
     bs.bind(socket)
   }
 
+  implicit val actorSystem = ActorSystem("such-system")
+  val rabbitMq = actorSystem.actorOf(Props[RabbitControl])
+
   Logger.info("Initializing dispatchers")
 
   import scala.collection.JavaConversions._
@@ -65,7 +70,7 @@ object DispatcherServer extends App {
     val client = authFilter andThen BasicPolygonFilter andThen CachedConnectionHttpService
     val problems = new ProblemData(client, polygonCache, problemDb, invokerApi)
     val result = new DbDispatchers(problems, new File(config.getString("reporting.base")),
-      tester, mongoDb.objectStore, contestResolver(_))
+      tester, mongoDb.objectStore, contestResolver(_), rabbitMq)
 
     config.getStringList("dispatcher.standard").foreach { name =>
       if (config.hasPath(name + ".db")) {

@@ -34,11 +34,16 @@ resolvers ++= Seq(
     "scala tools" at "http://scala-tools.org/repo-releases/",
     "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
     "typesafe artefactory" at "http://typesafe.artifactoryonline.com/typesafe/repo",
+    "SpinGo OSS" at "http://spingo-oss.s3.amazonaws.com/repositories/releases",
     "stingr.net" at "http://stingr.net/maven"
 )
 
+val opRabbitVersion = "1.0.0-M11"
+
 libraryDependencies ++= Seq(
   "com.foursquare" %% "twitter-util-async" % "1.1.0-SNAPSHOT",
+  "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
+  "com.spingo" %% "op-rabbit-play-json"   % opRabbitVersion,
   "io.netty" % "netty" % "3.10.1.Final",
   "com.twitter" %% "finagle-core" % "6.26.0",
   "com.twitter" %% "finagle-http" % "6.26.0",

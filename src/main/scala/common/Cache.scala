@@ -1,9 +1,7 @@
 package org.stingray.contester.common
 
-import com.twitter.finagle.Name
 import com.twitter.io.Buf
 import com.twitter.util.{Time, Future}
-import org.jboss.netty.buffer.{ChannelBuffers, ChannelBuffer}
 import com.twitter.finagle.Memcachedx
 import grizzled.slf4j.Logging
 import com.google.protobuf.Message
