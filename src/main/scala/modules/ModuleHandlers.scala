@@ -62,9 +62,11 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     add((api.disks / "mingw" / "bin" / "g++.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "g++.exe"), (x: String) => new GCCSourceHandler(x, true, false)) +
     add(api.programFiles / "Borland" / "Delphi7" / "bin" / "dcc32.exe", (x: String) => new DelphiSourceHandler(x)) +
     add((api.disks / "FPC" / "*" / "bin" / "i386-win32" / "fpc.exe") ++ (api.disks / "Programs" / "FP" / "bin" / "i386-win32" / "fpc.exe"), (x: String) => new FPCSourceHandler(x, false)) +
+    add((api.programFiles / "PascalABC.NET" / "pabcnetcclear.exe") ++ (api.disks / "Programs" / "PascalABC.NET" / "pabcnetcclear.exe"), (x: String) => new PascalABCSourceHandler(x)) +
     add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
     add(api.disks / "WINDOWS" / "System32" / "cmd.exe", visualStudio(_)) +
     add((api.disks / "Python33" / "Python.exe") ++ (api.disks / "Programs" / "Python-3" / "Python.exe"), new PythonModuleHandler("py3", _)) +
+    add((api.disks / "Python27" / "Python.exe") ++ (api.disks / "Programs" / "Python-2" / "Python.exe"), new PythonModuleHandler("py2", _)) +
     java + p7z + new Win32BinaryHandler
 
   private def win16Compilers(cmd: String): Future[Seq[ModuleHandler]] =
@@ -196,6 +198,13 @@ class FPCSourceHandler(val compiler: String, linux: Boolean) extends SimpleCompi
   def binary = "Solution.exe"
 }
 
+class PascalABCSourceHandler(val compiler: String) extends SimpleCompileHandler {
+  val binaryExt = "exe"
+  val moduleTypes = "pascalabc" :: Nil
+  val sourceName = "Solution.pas"
+  val binary = "Solution.exe"
+  def flags: ExecutionArguments = "Solution.pas" :: Nil
+}
 
 class VisualStudioSourceHandler(val compiler: String, vcvars: String) extends SimpleCompileHandler {
   val clflags = "/W4" :: "/F33554432" :: "/EHsc" :: "/O2" :: "/DONLINE_JUDGE" :: Nil

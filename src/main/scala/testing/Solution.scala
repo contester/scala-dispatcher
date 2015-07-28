@@ -58,6 +58,6 @@ class BinarySolution(invoker: InvokerSimpleApi, storeHandle: InstanceSubmitTesti
   }
 
   def run =
-    if (schoolMode) parallel(problem.toSeq)
+    if (schoolMode) school(problem.toSeq)
     else sequential(problem.toSeq)
 }
