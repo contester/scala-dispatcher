@@ -16,21 +16,22 @@ import org.stingray.contester.polygon._
 import org.stingray.contester.problems.CommonProblemDb
 
 import com.typesafe.config.{Config, ConfigFactory}
+import play.api.Logger
 
 object DispatcherServer extends App {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
 
-  def createDbConfig(conf: Config) =
+  private def createDbConfig(conf: Config) =
     new DbConfig(conf)
 
-  val config = ConfigFactory.load()
-  val mongoDb = MongoDBInstance(config.getString("pdb.mongoUrl")).right.get
+  private val config = ConfigFactory.load()
+  private val mongoDb = MongoDBInstance(config.getString("pdb.mongoUrl")).right.get
 
-  val objectCache = new MemcachedObjectCache(config.getString("cache.host"))
+  private val objectCache = new MemcachedObjectCache(config.getString("cache.host"))
 
-  val polygonCache = new PolygonCache(mongoDb.db)
-  val problemDb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
-  val invoker = new InvokerRegistry("contester", mongoDb)
+  private val polygonCache = new PolygonCache(mongoDb.db)
+  private val problemDb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
+  private val invoker = new InvokerRegistry("contester", mongoDb)
 
   val invokerApi = new InvokerSimpleApi(invoker, objectCache)
   val tester = new SolutionTester(invokerApi)
@@ -44,35 +45,35 @@ object DispatcherServer extends App {
     bs.bind(socket)
   }
 
-  println("before dispatchers")
+  Logger.info("Initializing dispatchers")
 
   import scala.collection.JavaConversions._
 
   val dispatchers = {
-      val polygonBase = config.getConfig("polygons")
-      val polygonNames = polygonBase.root().keys
-      println(polygonNames)
-      val contestResolver = new ContestResolver(polygonNames.map(n => n -> new URL(polygonBase.getConfig(n).getString("url"))).toMap)
+    val polygonBase = config.getConfig("polygons")
+    val polygonNames = polygonBase.root().keys
+    println(polygonNames)
+    val contestResolver = new ContestResolver(polygonNames.map(n => n -> new URL(polygonBase.getConfig(n).getString("url"))).toMap)
 
-      val authFilter = new AuthPolygonFilter
-      polygonNames.foreach { shortName =>
-        val polygonConf = polygonBase.getConfig(shortName)
-        authFilter.addPolygon(new PolygonBase(shortName, new URL(polygonConf.getString("url")),
-          polygonConf.getString("username"), polygonConf.getString("password")))
-      }
-
-      val client = authFilter andThen BasicPolygonFilter andThen CachedConnectionHttpService
-      val problems = new ProblemData(client, polygonCache, problemDb, invokerApi)
-      val result = new DbDispatchers(problems, new File(config.getString("reporting.base")),
-        tester, mongoDb.objectStore, contestResolver(_))
-
-      config.getStringList("dispatcher.standard").foreach { name =>
-        if (config.hasPath(name + ".db")) {
-          result.add(createDbConfig(config.getConfig(name)))
-	}
-      }
-      result
+    val authFilter = new AuthPolygonFilter
+    polygonNames.foreach { shortName =>
+      val polygonConf = polygonBase.getConfig(shortName)
+      authFilter.addPolygon(new PolygonBase(shortName, new URL(polygonConf.getString("url")),
+        polygonConf.getString("username"), polygonConf.getString("password")))
     }
+
+    val client = authFilter andThen BasicPolygonFilter andThen CachedConnectionHttpService
+    val problems = new ProblemData(client, polygonCache, problemDb, invokerApi)
+    val result = new DbDispatchers(problems, new File(config.getString("reporting.base")),
+      tester, mongoDb.objectStore, contestResolver(_))
+
+    config.getStringList("dispatcher.standard").foreach { name =>
+      if (config.hasPath(name + ".db")) {
+        result.add(createDbConfig(config.getConfig(name)))
+      }
+    }
+    result
+  }
 
   val moodles =
     if (config.hasPath("dispatcher.moodles"))
@@ -82,7 +83,7 @@ object DispatcherServer extends App {
     else
       ()
 
-  println("after dispatchers")
+  Logger.info("Starting serving")
 
   import play.core.server._
   import play.api.routing.sird._
