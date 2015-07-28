@@ -9,9 +9,11 @@
       <sourceFolder url="file://$MODULE_DIR$/../../src/main/scala" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../../target/scala-2.11/src_managed/main" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../../target/scala-2.11/src_managed/main/compiled_protobuf" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../target/scala-2.11/twirl/main" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../../src/test/java" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/../../src/test/scala" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/../../target/scala-2.11/src_managed/test" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/../../target/scala-2.11/twirl/test" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/../../src/main/resources" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/../../target/scala-2.11/resource_managed/main" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/../../src/test/resources" type="java-test-resource" />
@@ -19,22 +21,18 @@
       <excludeFolder url="file://$MODULE_DIR$/../../target/protobuf_external" />
       <excludeFolder url="file://$MODULE_DIR$/../../target/resolution-cache" />
       <excludeFolder url="file://$MODULE_DIR$/../../target/streams" />
+      <excludeFolder url="file://$MODULE_DIR$/../../target/universal" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="SBT: aopalliance:aopalliance:1.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: asm:asm:3.1:jar" level="project" />
     <orderEntry type="library" name="SBT: com.codahale:jerkson_2.9.1:0.5.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.fasterxml.jackson.core:jackson-annotations:2.4.4:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.fasterxml.jackson.core:jackson-core:2.4.4:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.fasterxml.jackson.core:jackson-databind:2.4.4:jar" level="project" />
     <orderEntry type="library" name="SBT: com.fasterxml.jackson.module:jackson-module-scala_2.11:2.4.4:jar" level="project" />
     <orderEntry type="library" name="SBT: com.foursquare:twitter-util-async_2.11:1.1.0-SNAPSHOT:jar" level="project" />
     <orderEntry type="library" name="SBT: com.github.nscala-time:nscala-time_2.11:1.0.0:jar" level="project" />
     <orderEntry type="library" name="SBT: com.google.code.findbugs:jsr305:2.0.1:jar" level="project" />
     <orderEntry type="library" name="SBT: com.google.code.gson:gson:2.2.4:jar" level="project" />
     <orderEntry type="library" name="SBT: com.google.guava:guava:16.0.1:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.google.inject:guice:3.0:jar" level="project" />
     <orderEntry type="library" name="SBT: com.google.protobuf:protobuf-java:2.6.1:jar" level="project" />
     <orderEntry type="library" name="SBT: com.googlecode.protobuf-java-format:protobuf-java-format:1.2:jar" level="project" />
     <orderEntry type="library" name="SBT: com.rabbitmq:amqp-client:3.4.2:jar" level="project" />
@@ -84,7 +82,6 @@
     <orderEntry type="library" name="SBT: com.twitter.common.zookeeper:client:0.0.60:jar" level="project" />
     <orderEntry type="library" name="SBT: com.twitter.common.zookeeper:group:0.0.78:jar" level="project" />
     <orderEntry type="library" name="SBT: com.twitter.common.zookeeper:server-set:1.0.83:jar" level="project" />
-    <orderEntry type="library" name="SBT: commons-codec:commons-codec:1.6:jar" level="project" />
     <orderEntry type="library" name="SBT: commons-collections:commons-collections:3.2.1:jar" level="project" />
     <orderEntry type="library" name="SBT: commons-io:commons-io:2.4:jar" level="project" />
     <orderEntry type="library" name="SBT: commons-lang:commons-lang:2.6:jar" level="project" />
@@ -94,7 +91,6 @@
     <orderEntry type="library" name="SBT: javax.inject:javax.inject:1:jar" level="project" />
     <orderEntry type="library" name="SBT: javax.mail:mail:1.4.3:jar" level="project" />
     <orderEntry type="library" name="SBT: jline:jline:2.6:jar" level="project" />
-    <orderEntry type="library" name="SBT: joda-time:joda-time:2.6:jar" level="project" />
     <orderEntry type="library" name="SBT: log4j:log4j:1.2.15:jar" level="project" />
     <orderEntry type="library" name="SBT: mysql:mysql-connector-java:5.1.34:jar" level="project" />
     <orderEntry type="library" name="SBT: org.apache.httpcomponents:httpclient:4.3.6:jar" level="project" />
@@ -114,7 +110,6 @@
     <orderEntry type="library" name="SBT: org.mongodb:mongo-java-driver:2.12.4:jar" level="project" />
     <orderEntry type="library" name="SBT: org.scala-lang:scala-compiler:2.11.0:jar" level="project" />
     <orderEntry type="library" name="SBT: org.scala-lang:scala-library:2.11.7:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.scala-lang:scala-reflect:2.11.2:jar" level="project" />
     <orderEntry type="library" name="SBT: org.scala-lang.modules:scala-async_2.11:0.9.4:jar" level="project" />
     <orderEntry type="library" name="SBT: org.scala-lang.modules:scala-parser-combinators_2.11:1.0.2:jar" level="project" />
     <orderEntry type="library" name="SBT: org.scala-lang.modules:scala-xml_2.11:1.0.1:jar" level="project" />
@@ -122,10 +117,41 @@
     <orderEntry type="library" scope="TEST" name="SBT: org.scalatest:scalatest_2.11:2.2.3:jar" level="project" />
     <orderEntry type="library" name="SBT: org.scalatra.scalate:scalate-core_2.11:1.7.0:jar" level="project" />
     <orderEntry type="library" name="SBT: org.scalatra.scalate:scalate-util_2.11:1.7.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.slf4j:slf4j-api:1.7.7:jar" level="project" />
     <orderEntry type="library" name="SBT: org.slf4j:slf4j-jdk14:1.6.1:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.sonatype.sisu.inject:cglib:2.2.1-v20090111:jar" level="project" />
     <orderEntry type="library" name="SBT: org.stingray:simpleweb_2.11:0.1-SNAPSHOT:jar" level="project" />
     <orderEntry type="library" name="SBT: org.streum:configrity-core_2.11:1.0.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: ch.qos.logback:logback-classic:1.1.3:jar" level="project" />
+    <orderEntry type="library" name="SBT: ch.qos.logback:logback-core:1.1.3:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.fasterxml.jackson.core:jackson-annotations:2.5.4:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.fasterxml.jackson.core:jackson-core:2.5.4:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.fasterxml.jackson.core:jackson-databind:2.5.4:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.5.4:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.5.4:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.google.inject:guice:4.0:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.google.inject.extensions:guice-assistedinject:4.0:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe:config:1.3.0:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.akka:akka-actor_2.11:2.3.11:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.akka:akka-slf4j_2.11:2.3.11:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:build-link:2.4.2:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-datacommons_2.11:2.4.2:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-exceptions:2.4.2:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-functional_2.11:2.4.2:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-iteratees_2.11:2.4.2:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-json_2.11:2.4.2:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-netty-utils:2.4.2:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play_2.11:2.4.2:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:twirl-api_2.11:1.1.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: commons-codec:commons-codec:1.10:jar" level="project" />
+    <orderEntry type="library" name="SBT: javax.transaction:jta:1.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: joda-time:joda-time:2.8.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.apache.commons:commons-lang3:3.4:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.javassist:javassist:3.19.0-GA:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.scala-lang:scala-reflect:2.11.6:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.scala-stm:scala-stm_2.11:0.7:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.slf4j:jcl-over-slf4j:1.7.12:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.slf4j:jul-to-slf4j:1.7.12:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.slf4j:slf4j-api:1.7.12:jar" level="project" />
+    <orderEntry type="library" name="SBT: xerces:xercesImpl:2.11.0:jar" level="project" />
+    <orderEntry type="library" name="SBT: xml-apis:xml-apis:1.4.01:jar" level="project" />
   </component>
 </module>

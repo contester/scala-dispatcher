@@ -10,6 +10,8 @@ net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 enablePlugins(JavaAppPackaging)
 
+enablePlugins(SbtTwirl)
+
 name := "dispatcher"
 
 fork in (Compile, run) := true
@@ -59,6 +61,7 @@ libraryDependencies ++= Seq(
   "com.rabbitmq" % "amqp-client" % "3.4.2",
   "com.codahale" % "jerkson_2.9.1" % "0.5.0",
   "mysql" % "mysql-connector-java" % "5.1.34",
+  "com.typesafe.play" %% "play" % "2.4.2",
   "com.googlecode.protobuf-java-format" % "protobuf-java-format" % "1.2",
   "org.scalatest" %% "scalatest" % "2.2.3" % "test"
 )
