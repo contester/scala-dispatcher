@@ -85,7 +85,7 @@ class DBSingleResultReporter(client: ConnectionPool, val submit: SubmitObject, v
     finishTesting(testingId).join(finishSubmit(submitId, result)).unit
 }
 
-class TestingInfo(val testingId: Int, val problemId: String, val state: Seq[(Int, Int)])
+case class TestingInfo(val testingId: Int, val problemId: String, val state: Seq[(Int, Int)])
 
 class DBReporter(val client: ConnectionPool) {
   /**

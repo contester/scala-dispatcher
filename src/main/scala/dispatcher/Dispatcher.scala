@@ -10,7 +10,7 @@ import org.stingray.contester.polygon.PolygonURL
 import org.stingray.contester.testing._
 import java.net.URL
 import com.spingo.op_rabbit.PlayJsonSupport._
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Writes, Json}
 
 trait Submit extends TimeKey with HasId with SubmitWithModule {
   def schoolMode: Boolean = false
@@ -24,7 +24,7 @@ case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
     "Submit(%d, %d, %s, %s)".format(id, contestId, problemId, arrived)
 }
 
-case class FinishedTesting(id: Int)
+case class FinishedTesting(submit: SubmitObject, testingId: Int, compiled: Boolean, passed: Int, taken: Int)
 
 class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObject](parent.dbclient) {
   // startup: scan all started
@@ -86,7 +86,35 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
       }
     })
 
-  implicit val finishedTestingFormat = Json.format[FinishedTesting]
+  def calculateTestingResult(m: SubmitObject, ti: TestingInfo, sr: SolutionTestingResult) = {
+    val taken = sr.tests.length
+    val passed = sr.tests.count(x => x._2.success)
+
+    FinishedTesting(m, ti.testingId, sr.compilation.success, passed, taken)
+  }
+
+  implicit val submitObjectWrites = new Writes[SubmitObject] {
+    override def writes(o: SubmitObject): JsValue =
+      Json.obj(
+        "id" -> o.id,
+        "team" -> o.teamId,
+        "contest" -> o.contestId,
+        "problem" -> o.problemId,
+        "schoolMode" -> o.schoolMode
+      )
+  }
+  //implicit val finishedTestingFormat = Json.format[FinishedTesting]
+
+  implicit val finishedTestingWrites = new Writes[FinishedTesting] {
+    override def writes(o: FinishedTesting): JsValue =
+      Json.obj(
+        "submit" -> o.submit,
+        "testingId" -> o.testingId,
+        "compiled" -> o.compiled,
+        "passed" -> o.passed,
+        "taken" -> o.taken
+      )
+  }
 
   // main test entry point
   def run(m: SubmitObject) = {
@@ -97,14 +125,14 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
           new DBSingleResultReporter(parent.dbclient, m, testingInfo.testingId),
           new RawLogResultReporter(parent.basePath, m))
 
-        parent.pdata.getPolygonProblem(PolygonURL(new URL(testingInfo.problemId)))
+        parent.pdata.getPolygonProblem(PolygonURL(testingInfo.problemId))
           .flatMap(parent.pdata.sanitizeProblem).flatMap { problem =>
           parent.invoker(m, m.sourceModule, problem, combinedProgress, m.schoolMode,
             new InstanceSubmitTestingHandle(parent.storeId, m.id, testingInfo.testingId),
             testingInfo.state.toMap.mapValues(new RestoredResult(_))).flatMap { sr =>
             combinedProgress.db.finish(sr, m.id, testingInfo.testingId).join(combinedProgress.raw.finish(sr)).unit
             .map {_ =>
-              parent.rabbitMq ! QueueMessage(FinishedTesting(m.id), queue = "contester.finished")
+              parent.rabbitMq ! QueueMessage(calculateTestingResult(m, testingInfo, sr), queue = "contester.finished")
             }
           }
         }

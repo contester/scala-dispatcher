@@ -26,12 +26,15 @@ object PolygonURL {
       new URL(stripQuery(url), "?" + newQuery)
     }
 
-  def apply(url: URL) = {
+  def apply(url: URL): PolygonProblemHandle = {
     val params = getParams(url)
     val revision = params.get("revision").map(_.toInt)
 
     new PolygonProblemHandle(stripQuery(url), revision)
   }
+
+  def apply(urlString: String): PolygonProblemHandle =
+    apply(new URL(urlString))
 
   def shortId(url: URL) =
     url.getPath.split("/").takeRight(2).mkString("/")
