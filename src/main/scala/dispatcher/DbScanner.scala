@@ -76,14 +76,14 @@ class ContestTableScanner(d: ProblemData, db: JdbcBackend#DatabaseDef, contestRe
   private def singleContest(r: ContestRow, c: ContestWithProblems, oldp: Seq[ProblemRow]): Future[Unit] = {
     val m = oldp.filter(_.contest == r.id).map(v => v.id.toUpperCase -> v).toMap
 
-    info(s"Updating contest $r with $c")
+    trace(s"Updating contest $r with $c")
 
     c.problems.values.foreach(d.sanitizer)
 
     val nameChange = maybeUpdateContestName(r.id, r.name, c.getName(r.Language))
 
-    val deletes = Future.sequence((m.keySet -- c.problems.keySet).toSeq.map { contestId =>
-      db.run(sqlu"delete from Problems where Contest = ${r.id} and ID = $contestId")
+    val deletes = Future.sequence((m.keySet -- c.problems.keySet).toSeq.map { problemId =>
+      db.run(sqlu"delete from Problems where Contest = ${r.id} and ID = $problemId")
     })
 
     val updates =
@@ -119,19 +119,19 @@ class ContestTableScanner(d: ProblemData, db: JdbcBackend#DatabaseDef, contestRe
 
   override def receive = {
     case ContestMap(map) =>
-      info("Contest map received")
+      trace("Contest map received")
       data = map
 
     case GetContest(cid) =>
       sender ! GetContestResponse(contestResolver(data(cid).polygonId))
 
     case Rescan =>
-      info("Starting contest rescan")
+      trace("Starting contest rescan")
       getNewContestMap.foreach { newMap =>
-        info(s"Contest rescan done, $newMap")
+        trace(s"Contest rescan done, $newMap")
         self ! ContestMap(newMap)
         updateContests(newMap.values).onComplete { _ =>
-          info("Scheduling next rescan")
+          trace("Scheduling next rescan")
           context.system.scheduler.scheduleOnce(60 seconds, self, Rescan)
         }
       }
