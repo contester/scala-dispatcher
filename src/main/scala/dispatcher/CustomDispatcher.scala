@@ -3,29 +3,37 @@ package org.stingray.contester.dispatcher
 import java.sql.{ResultSet, Timestamp}
 import org.stingray.contester.invokers.TimeKey
 import org.stingray.contester.common._
-import com.twitter.util.Future
 import org.stingray.contester.db.{HasId, SelectDispatcher, ConnectionPool}
 import org.stingray.contester.testing.SolutionTester
 import org.stingray.contester.testing.CustomTestingResult
+import scala.concurrent.ExecutionContext.Implicits.global
+import slick.jdbc.JdbcBackend
+
+import scala.concurrent.Future
 
 case class CustomTestObject(id: Int, arrived: Timestamp, sourceModule: Module, input: Array[Byte]) extends TimeKey with HasId with SubmitWithModule {
   val timestamp = arrived
 }
 
-class CustomTestDispatcher(db: ConnectionPool, invoker: SolutionTester, storeId: String) {
-  def recordResult(item: CustomTestObject, result: CustomTestingResult): Future[Unit] =
+class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester, storeId: String) {
+  import slick.driver.MySQLDriver.api._
+  import org.stingray.contester.utils.Dbutil._
+
+  def recordResult(item: CustomTestObject, result: CustomTestingResult) =
     if (result.test.isDefined)
-      db.execute("update Eval set Output = ?, Timex = ?, Memory = ?, Info = ?, Result = ?, Processed = 255 where ID = ?",
-        result.test.get.output.map(Blobs.getBinary(_)).getOrElse("".getBytes),
-        result.test.get.run.time / 1000,
-        result.test.get.run.memory,
-        result.test.get.run.returnCode,
-        result.test.get.run.status.getNumber,
-        item.id
-      ).unit
-    else Future.Done
+      db.run(
+        sqlu"""update Eval set Output = ${result.test.get.output.map(Blobs.getBinary(_)).getOrElse("".getBytes)},
+              Timex = ${result.test.get.run.time / 1000},
+              Memory = ${result.test.get.run.memory},
+              Info = ${result.test.get.run.returnCode},
+              Result = ${result.test.get.run.status.getNumber},
+              Processed = 255 where ID = ${item.id}"""
+      ).map(_ => ())
+    else Future.successful(())
+
+  import com.twitter.bijection.twitter_util.UtilBijections._
 
   def run(item: CustomTestObject) =
     invoker.custom(item, item.sourceModule, item.input, new GridfsPath(storeId + "/eval"), item.id)
-      .flatMap(recordResult(item, _))
+      .flatMap(x => twitter2ScalaFuture[Unit].invert(recordResult(item, x)))
 }

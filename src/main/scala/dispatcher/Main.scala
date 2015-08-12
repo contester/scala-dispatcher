@@ -53,6 +53,7 @@ object DispatcherServer extends App {
   Logger.info("Initializing dispatchers")
 
   import scala.collection.JavaConversions._
+  import slick.driver.MySQLDriver.api._
 
   val dispatchers = {
     val polygonBase = config.getConfig("polygons")
@@ -74,7 +75,7 @@ object DispatcherServer extends App {
 
     config.getStringList("dispatcher.standard").foreach { name =>
       if (config.hasPath(name + ".db")) {
-        result.add(createDbConfig(config.getConfig(name)))
+        result.add(createDbConfig(config.getConfig(name)), Database.forConfig(s"${name}.dbnext"))
       }
     }
     result

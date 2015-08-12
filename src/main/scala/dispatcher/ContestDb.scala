@@ -8,6 +8,7 @@ import com.typesafe.config.Config
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json.Json
+import slick.jdbc.JdbcBackend
 import scala.concurrent.ExecutionContext.Implicits.global
 import collection.mutable
 import com.twitter.util.Future
@@ -32,10 +33,10 @@ object ServerSideEvalMessage {
 
 class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
                    val storeId: String, contestResolver: PolygonContestId => ContestHandle,
-                   val rabbitMq: ActorRef) extends Logging {
+                   val rabbitMq: ActorRef, dbnext: JdbcBackend#DatabaseDef) extends Logging {
   val pscanner = new ContestTableScanner(pdata, dbclient, contestResolver)
   val dispatcher = new SubmitDispatcher(this)
-  val evaldispatcher = new CustomTestDispatcher(dbclient, invoker, storeId)
+  val evaldispatcher = new CustomTestDispatcher(dbnext, invoker, storeId)
 
   import com.spingo.op_rabbit.PlayJsonSupport._
 
@@ -92,10 +93,10 @@ class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: Sol
   val dispatchers = new mutable.HashMap[DbConfig, DbDispatcher]()
   val scanners = new mutable.HashMap[DbDispatcher, Future[Unit]]()
 
-  def add(conf: DbConfig) = {
+  def add(conf: DbConfig, dbnext: JdbcBackend#DatabaseDef) = {
     info(conf)
     val d = new DbDispatcher(conf.createConnectionPool, pdata, new File(basePath, conf.short), invoker, conf.short,
-      contestResolver, rabbitMq)
+      contestResolver, rabbitMq, dbnext)
     scanners(d) = d.start
   }
 }
