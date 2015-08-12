@@ -1,5 +1,5 @@
 package org.stingray.contester.dispatcher
-
+/*
 import org.stingray.contester.db.{ConnectionPool, SelectDispatcher}
 import org.stingray.contester.common._
 import java.sql.{ResultSet, Timestamp}
@@ -111,3 +111,4 @@ class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester) 
     }
   }
 }
+*/

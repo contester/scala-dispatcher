@@ -2,15 +2,20 @@ package org.stingray.contester.dispatcher
 
 import java.sql.{Timestamp, ResultSet}
 import com.spingo.op_rabbit.QueueMessage
+import com.twitter.util
+import grizzled.slf4j.Logging
 import org.stingray.contester.db.{HasId, SelectDispatcher}
 import org.stingray.contester.common._
 import org.stingray.contester.invokers.TimeKey
-import com.twitter.util.Future
-import org.stingray.contester.polygon.PolygonURL
+import org.stingray.contester.polygon.{PolygonProblem, PolygonURL}
+import org.stingray.contester.problems.Problem
 import org.stingray.contester.testing._
 import java.net.URL
 import com.spingo.op_rabbit.PlayJsonSupport._
 import play.api.libs.json.{JsValue, Writes, Json}
+import slick.jdbc.JdbcBackend
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 trait Submit extends TimeKey with HasId with SubmitWithModule {
   def schoolMode: Boolean = false
@@ -26,7 +31,7 @@ case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
 
 case class FinishedTesting(submit: SubmitObject, testingId: Int, compiled: Boolean, passed: Int, taken: Int)
 
-class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObject](parent.dbclient) {
+class SubmitDispatcher(parent: DbDispatcher, db: JdbcBackend#DatabaseDef) extends Logging {
   // startup: scan all started
   // rescans: scall all NULLs, start them
   // rejudge: if not in progress, start.
@@ -75,16 +80,20 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
       row.getLong("Computer")
     )
 
-  def getTestingInfo(reporter: DBReporter, m: SubmitObject) =
-    reporter.getAnyTestingAndState(m.id).flatMap(_.map(Future.value).getOrElse {
-      parent.getPolygonProblem(m.contestId, m.problemId).flatMap { polygonProblem =>
-        reporter.allocateTesting(m.id, polygonProblem.handle.uri.toString).flatMap { testingId =>
-          new RawLogResultReporter(parent.basePath, m).start.map { _ =>
-            new TestingInfo(testingId, polygonProblem.handle.uri.toString, Seq())
-          }
+  import com.twitter.bijection.twitter_util.UtilBijections._
+  import com.twitter.bijection.Conversion.asMethod
+
+  def createTestingInfo(reporter: DBReporter, m: SubmitObject): Future[TestingInfo] =
+    parent.getPolygonProblem(m.contestId, m.problemId).as[Future[PolygonProblem]].flatMap { polygonProblem =>
+      reporter.allocateTesting(m.id, polygonProblem.handle.uri.toString).flatMap { testingId =>
+        new RawLogResultReporter(parent.basePath, m).start.map { _ =>
+          new TestingInfo(testingId, polygonProblem.handle.uri.toString, Seq())
         }
       }
-    })
+    }
+
+  def getTestingInfo(reporter: DBReporter, m: SubmitObject) =
+    reporter.getAnyTestingAndState(m.id).flatMap(_.map(Future.successful).getOrElse(createTestingInfo(reporter, m)))
 
   def calculateTestingResult(m: SubmitObject, ti: TestingInfo, sr: SolutionTestingResult) = {
     val taken = sr.tests.length
@@ -118,21 +127,23 @@ class SubmitDispatcher(parent: DbDispatcher) extends SelectDispatcher[SubmitObje
 
   // main test entry point
   def run(m: SubmitObject) = {
-    val reporter = new DBReporter(parent.dbclient)
+    val reporter = new DBReporter(db)
     getTestingInfo(reporter, m).flatMap { testingInfo =>
       reporter.registerTestingOnly(m, testingInfo.testingId).flatMap { _ =>
         val combinedProgress = new CombinedSingleProgress(
-          new DBSingleResultReporter(parent.dbclient, m, testingInfo.testingId),
+          new DBSingleResultReporter(db, m, testingInfo.testingId),
           new RawLogResultReporter(parent.basePath, m))
 
         parent.pdata.getPolygonProblem(PolygonURL(testingInfo.problemId))
-          .flatMap(parent.pdata.sanitizeProblem).flatMap { problem =>
+          .as[Future[PolygonProblem]]
+          .flatMap(x => parent.pdata.sanitizeProblem(x).as[Future[Problem]]).flatMap { problem =>
           parent.invoker(m, m.sourceModule, problem, combinedProgress, m.schoolMode,
             new InstanceSubmitTestingHandle(parent.storeId, m.id, testingInfo.testingId),
-            testingInfo.state.toMap.mapValues(new RestoredResult(_))).flatMap { sr =>
-            combinedProgress.db.finish(sr, m.id, testingInfo.testingId).join(combinedProgress.raw.finish(sr)).unit
+            testingInfo.state.toMap.mapValues(new RestoredResult(_))).as[Future[SolutionTestingResult]].flatMap { (sr: SolutionTestingResult) =>
+            combinedProgress.db.finish(sr, m.id, testingInfo.testingId).zip(combinedProgress.raw.finish(sr))
             .map {_ =>
               parent.rabbitMq ! QueueMessage(calculateTestingResult(m, testingInfo, sr), queue = "contester.finished")
+              ()
             }
           }
         }

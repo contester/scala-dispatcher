@@ -35,7 +35,7 @@ object ServerSideEvalMessage {
 class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
                    val storeId: String, contestResolver: PolygonContestId => ContestHandle,
                    val rabbitMq: ActorRef, dbnext: JdbcBackend#DatabaseDef) extends Logging {
-  val dispatcher = new SubmitDispatcher(this)
+  val dispatcher = new SubmitDispatcher(this, dbnext)
   val evaldispatcher = new CustomTestDispatcher(dbnext, invoker, storeId)
 
   implicit val actorSystem = ActorSystem("such-system")
@@ -67,7 +67,7 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
   def f2o[A](x: Option[Future[A]]): Future[Option[A]] =
     Future.collect(x.toSeq).map(_.headOption)
 
-  def getPolygonProblem(cid: Int, problem: String) = {
+  def getPolygonProblem(cid: Int, problem: String): Future[PolygonProblem] = {
     import akka.pattern.ask
     import scala.concurrent.duration._
 
@@ -78,9 +78,6 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
 
   def sanitizeProblem(problem: PolygonProblem) =
     pdata.sanitizeProblem(problem)
-
-  def start =
-    dispatcher.start
 }
 
 class DbConfig(conf: Config) {
@@ -101,12 +98,10 @@ class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: Sol
                     val store: GridfsObjectStore, contestResolver: PolygonContestId => ContestHandle,
                      rabbitMq: ActorRef) extends Logging {
   val dispatchers = new mutable.HashMap[DbConfig, DbDispatcher]()
-  val scanners = new mutable.HashMap[DbDispatcher, Future[Unit]]()
 
   def add(conf: DbConfig, dbnext: JdbcBackend#DatabaseDef) = {
     info(conf)
     val d = new DbDispatcher(conf.createConnectionPool, pdata, new File(basePath, conf.short), invoker, conf.short,
       contestResolver, rabbitMq, dbnext)
-    scanners(d) = d.start
   }
 }

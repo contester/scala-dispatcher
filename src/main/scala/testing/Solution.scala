@@ -14,13 +14,18 @@ object Solution {
   type EvaluatedTestResult = (Boolean, NumberedTestResult)
 }
 
+import com.twitter.bijection.ImplicitBijection._
+import com.twitter.bijection.twitter_util.UtilBijections._
+import com.twitter.bijection.Conversion.asMethod
+import scala.concurrent.ExecutionContext.Implicits.global
+
 class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
   def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, progress: SingleProgress,
       schoolMode: Boolean, storeHandle: InstanceSubmitTestingHandle, state: Map[Int, Result]): Future[SolutionTestingResult] = {
     invoker.maybeCompile(submit, sourceModule,
       new GridfsPath(storeHandle.submit, "compiledModule"))
       .flatMap { compiled =>
-          progress.compile(compiled._1).flatMap { _ =>
+          progress.compile(compiled._1).as[Future[Unit]].flatMap { _ =>
             compiled._2.map { binary =>
               new BinarySolution(invoker, storeHandle, submit, problem,
                 binary, progress, schoolMode, state).run
@@ -51,7 +56,7 @@ class BinarySolution(invoker: InvokerSimpleApi, storeHandle: InstanceSubmitTesti
       invoker.test(submit, binary, test._2, new GridfsPath(storeHandle, "%d/output.txt".format(test._1)))
         .map(x => test._1 -> x)
         .flatMap { result =>
-        reporter.test(result._1, result._2)
+        reporter.test(result._1, result._2).as[Future[Unit]]
           .map(_ => (proceed(result), result))
       }
     }

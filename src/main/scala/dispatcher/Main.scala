@@ -81,13 +81,14 @@ object DispatcherServer extends App {
     result
   }
 
-  val moodles =
+/*  val moodles =
     if (config.hasPath("dispatcher.moodles"))
       config.getStringList("dispatcher.moodles").filter(x => config.hasPath(x + ".db")).map { name =>
           new MoodleDispatcher(createDbConfig(config.getConfig(name)).createConnectionPool, problemDb, tester)
         }.foreach(_.start)
     else
       ()
+      */
 
   Logger.info("Starting serving")
 

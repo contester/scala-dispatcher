@@ -5,6 +5,8 @@ import com.twitter.util.{Duration, Timer, TimeoutException, Future}
 import grizzled.slf4j.Logging
 import org.jboss.netty.util.HashedWheelTimer
 
+import scala.concurrent.{Future => ScalaFuture}
+
 object Utils extends Logging {
   val timer = new TimerFromNettyTimer(new HashedWheelTimer)
 
@@ -35,4 +37,8 @@ class FutureOps[A](val repr: Future[A]) {
     repr.transform { v =>
       f.flatMap(k => Future.const(v))
     }
+}
+
+object Fu {
+  val Done: ScalaFuture[Unit] = ScalaFuture.successful(())
 }
