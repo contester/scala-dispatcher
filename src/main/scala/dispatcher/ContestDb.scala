@@ -2,7 +2,8 @@ package org.stingray.contester.dispatcher
 
 import java.sql.Timestamp
 
-import akka.actor.ActorRef
+import akka.actor.{Props, ActorSystem, ActorRef}
+import com.spingo.op_rabbit.RabbitControl
 import com.spingo.op_rabbit.consumer.Subscription
 import com.typesafe.config.Config
 import org.joda.time.DateTime
@@ -34,9 +35,12 @@ object ServerSideEvalMessage {
 class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
                    val storeId: String, contestResolver: PolygonContestId => ContestHandle,
                    val rabbitMq: ActorRef, dbnext: JdbcBackend#DatabaseDef) extends Logging {
-  val pscanner = new ContestTableScanner(pdata, dbclient, contestResolver)
   val dispatcher = new SubmitDispatcher(this)
   val evaldispatcher = new CustomTestDispatcher(dbnext, invoker, storeId)
+
+  implicit val actorSystem = ActorSystem("such-system")
+  val pscanner = actorSystem.actorOf(ContestTableScanner.props(pdata, dbnext, contestResolver))
+
 
   import com.spingo.op_rabbit.PlayJsonSupport._
 
@@ -63,14 +67,20 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
   def f2o[A](x: Option[Future[A]]): Future[Option[A]] =
     Future.collect(x.toSeq).map(_.headOption)
 
-  def getPolygonProblem(cid: Int, problem: String) =
-    pscanner(cid).flatMap(pdata.getPolygonProblem(_, problem))
+  def getPolygonProblem(cid: Int, problem: String) = {
+    import akka.pattern.ask
+    import scala.concurrent.duration._
+
+    val f = pscanner.ask(ContestTableScanner.GetContest(cid))(15 minutes).mapTo[ContestTableScanner.GetContestResponse]
+      .flatMap(x => UtilBijections.twitter2ScalaFuture.apply(pdata.getPolygonProblem(x.row, problem)))
+    UtilBijections.twitter2ScalaFuture.invert(f)
+  }
 
   def sanitizeProblem(problem: PolygonProblem) =
     pdata.sanitizeProblem(problem)
 
   def start =
-    pscanner.rescan.join(dispatcher.start).unit
+    dispatcher.start
 }
 
 class DbConfig(conf: Config) {
