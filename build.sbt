@@ -50,6 +50,7 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finagle-memcachedx" % "6.26.0",
   "com.twitter" %% "finagle-mysql" % "6.24.0",
   "com.twitter" %% "util-core" % "6.23.0",
+  "com.twitter" %% "bijection-util" % "0.8.1",
   "org.mongodb" %% "casbah" % "2.7.4",
   "org.clapper" %% "grizzled-slf4j" % "1.0.2",
   "joda-time" % "joda-time" % "2.6",
