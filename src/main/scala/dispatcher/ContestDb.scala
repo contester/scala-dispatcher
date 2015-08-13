@@ -71,10 +71,7 @@ class DbDispatcher(val pdata: ProblemData, val basePath: File, val invoker: Solu
     }
   }
 
-  def f2o[A](x: Option[Future[A]]): Future[Option[A]] =
-    Future.collect(x.toSeq).map(_.headOption)
-
-  def getPolygonProblem(cid: Int, problem: String): Future[PolygonProblem] = {
+    def getPolygonProblem(cid: Int, problem: String): Future[PolygonProblem] = {
     import akka.pattern.ask
     import scala.concurrent.duration._
 
