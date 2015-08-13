@@ -3,11 +3,8 @@ package org.stingray.contester.dispatcher
 import java.sql.Timestamp
 
 import akka.actor.{Props, ActorSystem, ActorRef}
-import com.spingo.op_rabbit.RabbitControl
 import com.spingo.op_rabbit.consumer.Subscription
 import com.typesafe.config.Config
-import org.joda.time.DateTime
-import play.api.Logger
 import play.api.libs.json.Json
 import slick.jdbc.JdbcBackend
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -63,7 +60,7 @@ class DbDispatcher(val pdata: ProblemData, val basePath: File, val invoker: Solu
   }
 
   rabbitMq ! new Subscription {
-    def config = channel(qos = 8) {
+    def config = channel(qos = 1000) {
       consume(queue("contester.submitrequests")) {
         body(as[SubmitMessage]) { submitreq =>
           info(s"Received $submitreq")
