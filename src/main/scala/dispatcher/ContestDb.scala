@@ -15,7 +15,6 @@ import collection.mutable
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import java.io.File
-import org.stingray.contester.db.ConnectionPool
 import org.stingray.contester.testing.SolutionTester
 import org.stingray.contester.common.{ByteBufferModule, GridfsObjectStore}
 import java.net.URL
@@ -36,7 +35,7 @@ object SubmitMessage {
   implicit val formatSubmitMessage = Json.format[SubmitMessage]
 }
 
-class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
+class DbDispatcher(val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
                    val storeId: String, contestResolver: PolygonContestId => ContestHandle,
                    val rabbitMq: ActorRef, dbnext: JdbcBackend#DatabaseDef) extends Logging {
   val dispatcher = new SubmitDispatcher(this, dbnext)
@@ -97,12 +96,6 @@ class DbConfig(conf: Config) {
       conf.getString("short")
     else
       conf.getString("db")
-
-  def createConnectionPool =
-    new ConnectionPool(conf.getString("host"),
-      conf.getString("db"),
-      conf.getString("username"),
-      conf.getString("password"))
 }
 
 class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
@@ -112,7 +105,7 @@ class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: Sol
 
   def add(conf: DbConfig, dbnext: JdbcBackend#DatabaseDef) = {
     info(conf)
-    val d = new DbDispatcher(conf.createConnectionPool, pdata, new File(basePath, conf.short), invoker, conf.short,
+    val d = new DbDispatcher(pdata, new File(basePath, conf.short), invoker, conf.short,
       contestResolver, rabbitMq, dbnext)
   }
 }

@@ -1,17 +1,15 @@
 package org.stingray.contester.dispatcher
 
-import java.sql.{ResultSet, Timestamp}
-import org.stingray.contester.invokers.TimeKey
-import org.stingray.contester.common._
-import org.stingray.contester.db.{HasId, SelectDispatcher, ConnectionPool}
-import org.stingray.contester.testing.SolutionTester
-import org.stingray.contester.testing.CustomTestingResult
-import scala.concurrent.ExecutionContext.Implicits.global
-import slick.jdbc.JdbcBackend
+import java.sql.Timestamp
 
+import org.stingray.contester.common._
+import org.stingray.contester.invokers.TimeKey
+import org.stingray.contester.testing.{CustomTestingResult, SolutionTester}
+import slick.jdbc.JdbcBackend
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-case class CustomTestObject(id: Int, arrived: Timestamp, sourceModule: Module, input: Array[Byte]) extends TimeKey with HasId with SubmitWithModule {
+case class CustomTestObject(id: Int, arrived: Timestamp, sourceModule: Module, input: Array[Byte]) extends TimeKey with SubmitWithModule {
   val timestamp = arrived
 }
 

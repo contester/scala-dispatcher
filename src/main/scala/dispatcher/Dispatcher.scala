@@ -6,7 +6,6 @@ import com.spingo.op_rabbit.PlayJsonSupport._
 import com.spingo.op_rabbit.QueueMessage
 import grizzled.slf4j.Logging
 import org.stingray.contester.common._
-import org.stingray.contester.db.HasId
 import org.stingray.contester.invokers.TimeKey
 import org.stingray.contester.polygon.{PolygonProblem, PolygonURL}
 import org.stingray.contester.problems.Problem
@@ -17,7 +16,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-trait Submit extends TimeKey with HasId with SubmitWithModule {
+trait Submit extends TimeKey with SubmitWithModule {
   def schoolMode: Boolean = false
 }
 
