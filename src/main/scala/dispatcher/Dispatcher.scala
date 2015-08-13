@@ -1,21 +1,21 @@
 package org.stingray.contester.dispatcher
 
-import java.sql.{Timestamp, ResultSet}
+import java.sql.{ResultSet, Timestamp}
+
+import com.spingo.op_rabbit.PlayJsonSupport._
 import com.spingo.op_rabbit.QueueMessage
-import com.twitter.util
 import grizzled.slf4j.Logging
-import org.stingray.contester.db.{HasId, SelectDispatcher}
 import org.stingray.contester.common._
+import org.stingray.contester.db.HasId
 import org.stingray.contester.invokers.TimeKey
 import org.stingray.contester.polygon.{PolygonProblem, PolygonURL}
 import org.stingray.contester.problems.Problem
 import org.stingray.contester.testing._
-import java.net.URL
-import com.spingo.op_rabbit.PlayJsonSupport._
-import play.api.libs.json.{JsValue, Writes, Json}
-import slick.jdbc.JdbcBackend
+import play.api.libs.json.{JsValue, Json, Writes}
+import slick.jdbc.{GetResult, JdbcBackend}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 trait Submit extends TimeKey with HasId with SubmitWithModule {
   def schoolMode: Boolean = false
@@ -32,56 +32,32 @@ case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
 case class FinishedTesting(submit: SubmitObject, testingId: Int, compiled: Boolean, passed: Int, taken: Int)
 
 class SubmitDispatcher(parent: DbDispatcher, db: JdbcBackend#DatabaseDef) extends Logging {
-  // startup: scan all started
-  // rescans: scall all NULLs, start them
-  // rejudge: if not in progress, start.
+  import slick.driver.MySQLDriver.api._
+  import org.stingray.contester.utils.Dbutil._
 
-  val selectAllActiveQuery =
-    """
-      |select
-      |NewSubmits.ID, NewSubmits.Contest, NewSubmits.Team, NewSubmits.Problem,
-      |Languages.Ext, NewSubmits.Arrived, NewSubmits.Source, Contests.SchoolMode, NewSubmits.Computer,
-      |Contests.PolygonID
-      |from NewSubmits, Languages, Contests
-      |where NewSubmits.Contest = Languages.Contest and NewSubmits.SrcLang = Languages.ID
-      |and Contests.ID = NewSubmits.Contest
-      |and Contests.PolygonID != '' and Processed = 1
-    """.stripMargin
-
-  val selectAllNewQuery =
-    """
-      |select
-      |NewSubmits.ID, NewSubmits.Contest, NewSubmits.Team, NewSubmits.Problem,
-      |Languages.Ext, NewSubmits.Arrived, NewSubmits.Source, Contests.SchoolMode, NewSubmits.Computer,
-      |Contests.PolygonID
-      |from NewSubmits, Languages, Contests
-      |where NewSubmits.Contest = Languages.Contest and NewSubmits.SrcLang = Languages.ID
-      |and Contests.ID = NewSubmits.Contest
-      |and Contests.PolygonID != '' and Processed is null
-    """.stripMargin
-
-  val doneQuery = """
-  update NewSubmits set Processed = 255 where ID = ?"""
-
-  val failedQuery = """
-  update NewSubmits set Processed = 254 where ID = ?"""
-
-  val grabOneQuery = """update NewSubmits set Processed = 1 where ID = ?"""
-
-  def rowToSubmit(row: ResultSet) =
-    SubmitObject(
-      row.getInt("ID"),
-      row.getInt("Contest"),
-      row.getInt("Team"),
-      row.getString("Problem"),
-      row.getTimestamp("Arrived"),
-      new ByteBufferModule(row.getString("Ext"), row.getBytes("Source")),
-      row.getInt("SchoolMode") == 1,
-      row.getLong("Computer")
+  implicit val getSubmitObject = GetResult(r =>
+    SubmitObject(r.nextInt(), r.nextInt(), r.nextInt(), r.nextString(), r.nextTimestamp(),
+    new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBoolean(), r.nextLong()
     )
+  )
 
-  import com.twitter.bijection.twitter_util.UtilBijections._
+  def getSubmit(id: Int) =
+    db.run(
+    sql"""
+      select
+      NewSubmits.ID, NewSubmits.Contest, NewSubmits.Team, NewSubmits.Problem,
+      NewSubmits.Arrived, Languages.Ext, NewSubmits.Source, Contests.SchoolMode, NewSubmits.Computer,
+      Contests.PolygonID
+      from NewSubmits, Languages, Contests
+      where NewSubmits.Contest = Languages.Contest and NewSubmits.SrcLang = Languages.ID
+      and Contests.ID = NewSubmits.Contest
+      and Contests.PolygonID != '' and NewSubmits.ID = $id""".as[SubmitObject]).map(_.headOption)
+
+  def markWith(id: Int, value: Int) =
+    db.run(sqlu"update NewSubmits set Processed = $value where ID = $id")
+
   import com.twitter.bijection.Conversion.asMethod
+  import com.twitter.bijection.twitter_util.UtilBijections._
 
   def createTestingInfo(reporter: DBReporter, m: SubmitObject): Future[TestingInfo] =
     parent.getPolygonProblem(m.contestId, m.problemId).as[Future[PolygonProblem]].flatMap { polygonProblem =>
@@ -124,6 +100,14 @@ class SubmitDispatcher(parent: DbDispatcher, db: JdbcBackend#DatabaseDef) extend
         "taken" -> o.taken
       )
   }
+
+  def runq(id: Int) =
+    getSubmit(id).flatMap { submitOption =>
+      run(submitOption.get).andThen {
+        case Success(s) => markWith(id, 255)
+        case Failure(f) => markWith(id, 254)
+      }
+    }
 
   // main test entry point
   def run(m: SubmitObject) = {

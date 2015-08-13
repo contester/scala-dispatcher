@@ -31,6 +31,10 @@ object ServerSideEvalMessage {
   implicit val formatServerSideEvalMessage = Json.format[ServerSideEvalMessage]
 }
 
+case class SubmitMessage(id: Int)
+object SubmitMessage {
+  implicit val formatSubmitMessage = Json.format[SubmitMessage]
+}
 
 class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
                    val storeId: String, contestResolver: PolygonContestId => ContestHandle,
@@ -46,8 +50,7 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
 
   import com.twitter.bijection.twitter_util.UtilBijections
 
-  val subscription = new Subscription {
-    // A qos of 3 will cause up to 3 concurrent messages to be processed at any given time.
+  rabbitMq ! new Subscription {
     def config = channel(qos = 1) {
       consume(queue("contester.evalrequests")) {
         body(as[ServerSideEvalMessage]) { evalreq =>
@@ -61,8 +64,17 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
     }
   }
 
-  rabbitMq ! subscription
-
+  rabbitMq ! new Subscription {
+    def config = channel(qos = 8) {
+      consume(queue("contester.submitrequests")) {
+        body(as[SubmitMessage]) { submitreq =>
+          info(s"Received $submitreq")
+          val acked = dispatcher.runq(submitreq.id)
+          ack(acked)
+        }
+      }
+    }
+  }
 
   def f2o[A](x: Option[Future[A]]): Future[Option[A]] =
     Future.collect(x.toSeq).map(_.headOption)
