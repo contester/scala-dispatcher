@@ -45,7 +45,6 @@ class DbDispatcher(val dbclient: ConnectionPool, val pdata: ProblemData, val bas
   implicit val actorSystem = ActorSystem("such-system")
   val pscanner = actorSystem.actorOf(ContestTableScanner.props(pdata, dbnext, contestResolver))
 
-
   import com.spingo.op_rabbit.PlayJsonSupport._
 
   import com.twitter.bijection.twitter_util.UtilBijections
