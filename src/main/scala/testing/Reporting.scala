@@ -7,7 +7,6 @@ import org.stingray.contester.dispatcher.SubmitObject
 import java.io.File
 import org.apache.commons.io.FileUtils
 import org.stingray.contester.engine.CustomTestResult
-import java.sql.ResultSet
 import slick.driver.MySQLDriver.api._
 import slick.jdbc.JdbcBackend
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -103,7 +102,7 @@ class DBReporter(val client: JdbcBackend#DatabaseDef) {
    */
   def allocateTesting(submitId: Int, problemId: String): Future[Int] =
     client.run(sqlu"""Insert into Testings (Submit, ProblemID, Start) values ($submitId, $problemId, NOW())"""
-      .andThen(sql"select LAST_INSERT_ID()".as[Int])).map(_.head)
+      .andThen(sql"select LAST_INSERT_ID()".as[Int]).withPinnedSession).map(_.head)
 
   /**
    * Update Submits table for given submit with given testing ID.
