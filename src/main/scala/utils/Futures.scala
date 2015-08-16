@@ -42,4 +42,14 @@ class FutureOps[A](val repr: Future[A]) {
 
 object Fu {
   val Done: ScalaFuture[Unit] = ScalaFuture.successful(())
+
+  import com.twitter.bijection.twitter_util.UtilBijections
+
+  implicit def scalaToTwitterFuture[T](f: ScalaFuture[T])(implicit ec: ExecutionContext): Future[T] = {
+    UtilBijections.twitter2ScalaFuture[T].invert(f)
+  }
+
+  implicit def twitterToScalaFuture[T](f: Future[T])(implicit ec: ExecutionContext): ScalaFuture[T] = {
+    UtilBijections.twitter2ScalaFuture[T].apply(f)
+  }
 }

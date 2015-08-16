@@ -2,6 +2,8 @@ package org.stingray.contester.dispatcher
 
 import java.sql.Timestamp
 
+import akka.actor.ActorRef
+import com.spingo.op_rabbit.QueueMessage
 import org.stingray.contester.common._
 import org.stingray.contester.invokers.TimeKey
 import org.stingray.contester.testing.{CustomTestingResult, SolutionTester}
@@ -13,7 +15,8 @@ case class CustomTestObject(id: Int, arrived: Timestamp, sourceModule: Module, i
   val timestamp = arrived
 }
 
-class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester, storeId: String) {
+
+class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester, storeId: String, rabbitMq: ActorRef) {
   import slick.driver.MySQLDriver.api._
   import org.stingray.contester.utils.Dbutil._
 
@@ -26,12 +29,16 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester,
               Info = ${result.test.get.run.returnCode},
               Result = ${result.test.get.run.status.getNumber},
               Processed = 255 where ID = ${item.id}"""
-      ).map(_ => ())
+      ).map { x =>
+        //rabbitMq ! QueueMessage(calculateTestingResult(m, testingInfo, sr), queue = "contester.finished")
+        ()
+      }
     else Future.successful(())
 
   import com.twitter.bijection.twitter_util.UtilBijections._
+  import org.stingray.contester.utils.Fu._
 
   def run(item: CustomTestObject) =
     invoker.custom(item, item.sourceModule, item.input, new GridfsPath(storeId + "/eval"), item.id)
-      .flatMap(x => twitter2ScalaFuture[Unit].invert(recordResult(item, x)))
+      .flatMap(x => recordResult(item, x))
 }

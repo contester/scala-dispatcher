@@ -22,7 +22,9 @@ class ContestResolver(polygonResolver: (String) => URL) {
     new ContestHandle(new URL(polygonResolver(source.polygon), "c/" + source.contestId + "/"))
 }
 
-case class ServerSideEvalMessage(id: Int, contest: Int, team: Int, ext: String, source: Array[Byte], input: Array[Byte])
+import com.github.nscala_time.time.Imports.DateTime
+
+case class ServerSideEvalMessage(id: Int, contest: Int, team: Int, ext: String, arrived: DateTime, source: Array[Byte], input: Array[Byte])
 object ServerSideEvalMessage {
   implicit val formatServerSideEvalMessage = Json.format[ServerSideEvalMessage]
 }
@@ -36,7 +38,7 @@ class DbDispatcher(val pdata: ProblemData, val basePath: File, val invoker: Solu
                    val storeId: String, contestResolver: PolygonContestId => ContestHandle,
                    val rabbitMq: ActorRef, dbnext: JdbcBackend#DatabaseDef) extends Logging {
   val dispatcher = new SubmitDispatcher(this, dbnext)
-  val evaldispatcher = new CustomTestDispatcher(dbnext, invoker, storeId)
+  val evaldispatcher = new CustomTestDispatcher(dbnext, invoker, storeId, rabbitMq)
 
   implicit val actorSystem = ActorSystem("such-system")
   val pscanner = actorSystem.actorOf(ContestTableScanner.props(pdata, dbnext, contestResolver))
