@@ -5,6 +5,7 @@ import java.sql.Timestamp
 import akka.actor.{Props, ActorSystem, ActorRef}
 import com.spingo.op_rabbit.consumer.Subscription
 import com.typesafe.config.Config
+import org.stingray.contester.invokers.TimeKey
 import play.api.libs.json.Json
 import slick.jdbc.JdbcBackend
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -24,9 +25,10 @@ class ContestResolver(polygonResolver: (String) => URL) {
 
 import com.github.nscala_time.time.Imports.DateTime
 
-case class ServerSideEvalMessage(id: Int, contest: Int, team: Int, ext: String, arrived: DateTime, source: Array[Byte], input: Array[Byte])
-object ServerSideEvalMessage {
-  implicit val formatServerSideEvalMessage = Json.format[ServerSideEvalMessage]
+case class ServerSideEvalID(id: Int)
+
+object ServerSideEvalID {
+  implicit val formatServerSideEvalMessage = Json.format[ServerSideEvalID]
 }
 
 case class SubmitMessage(id: Int)
@@ -50,12 +52,9 @@ class DbDispatcher(val pdata: ProblemData, val basePath: File, val invoker: Solu
   rabbitMq ! new Subscription {
     def config = channel(qos = 1) {
       consume(queue("contester.evalrequests")) {
-        body(as[ServerSideEvalMessage]) { evalreq =>
+        body(as[ServerSideEvalID]) { evalreq =>
           info(s"Received $evalreq")
-          val acked = evaldispatcher.run(CustomTestObject(evalreq.id,
-            new Timestamp((new java.util.Date()).getTime),
-            new ByteBufferModule(evalreq.ext, evalreq.source), evalreq.input))
-          ack(UtilBijections.twitter2ScalaFuture.apply(acked))
+          ack(evaldispatcher.runthis(evalreq))
         }
       }
     }
