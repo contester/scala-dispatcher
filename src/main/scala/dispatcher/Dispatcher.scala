@@ -55,11 +55,9 @@ class SubmitDispatcher(parent: DbDispatcher, db: JdbcBackend#DatabaseDef) extend
   def markWith(id: Int, value: Int) =
     db.run(sqlu"update NewSubmits set Processed = $value where ID = $id")
 
-  import com.twitter.bijection.Conversion.asMethod
-  import com.twitter.bijection.twitter_util.UtilBijections._
-
+  import org.stingray.contester.utils.Fu._
   def createTestingInfo(reporter: DBReporter, m: SubmitObject): Future[TestingInfo] =
-    parent.getPolygonProblem(m.contestId, m.problemId).as[Future[PolygonProblem]].flatMap { polygonProblem =>
+    parent.getPolygonProblem(m.contestId, m.problemId).flatMap { polygonProblem =>
       reporter.allocateTesting(m.id, polygonProblem.handle.uri.toString).flatMap { testingId =>
         new RawLogResultReporter(parent.basePath, m).start.map { _ =>
           new TestingInfo(testingId, polygonProblem.handle.uri.toString, Seq())
@@ -118,11 +116,10 @@ class SubmitDispatcher(parent: DbDispatcher, db: JdbcBackend#DatabaseDef) extend
           new RawLogResultReporter(parent.basePath, m))
 
         parent.pdata.getPolygonProblem(PolygonURL(testingInfo.problemId))
-          .as[Future[PolygonProblem]]
-          .flatMap(x => parent.pdata.sanitizeProblem(x).as[Future[Problem]]).flatMap { problem =>
+          .flatMap(x => parent.pdata.sanitizeProblem(x)).flatMap { problem =>
           parent.invoker(m, m.sourceModule, problem, combinedProgress, m.schoolMode,
             new InstanceSubmitTestingHandle(parent.storeId, m.id, testingInfo.testingId),
-            testingInfo.state.toMap.mapValues(new RestoredResult(_))).as[Future[SolutionTestingResult]].flatMap { (sr: SolutionTestingResult) =>
+            testingInfo.state.toMap.mapValues(new RestoredResult(_))).flatMap { (sr: SolutionTestingResult) =>
             combinedProgress.db.finish(sr, m.id, testingInfo.testingId).zip(combinedProgress.raw.finish(sr))
             .map {_ =>
               parent.rabbitMq ! QueueMessage(calculateTestingResult(m, testingInfo, sr), queue = "contester.finished")
