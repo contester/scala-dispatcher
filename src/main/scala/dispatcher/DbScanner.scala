@@ -6,7 +6,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.immutable
 import grizzled.slf4j.Logging
 import org.stingray.contester.polygon.{ContestHandle, ContestWithProblems}
-import com.twitter.bijection.twitter_util.UtilBijections._
 import scala.concurrent.Future
 
 object PolygonContestId extends Logging {
@@ -71,8 +70,6 @@ class ContestTableScanner(d: ProblemData, db: JdbcBackend#DatabaseDef, contestRe
     else
       Future.successful(0)
 
-  import com.twitter.bijection.Conversion.asMethod
-
   private def singleContest(r: ContestRow, c: ContestWithProblems, oldp: Seq[ProblemRow]): Future[Unit] = {
     val m = oldp.filter(_.contest == r.id).map(v => v.id.toUpperCase -> v).toMap
 
@@ -97,9 +94,11 @@ class ContestTableScanner(d: ProblemData, db: JdbcBackend#DatabaseDef, contestRe
     nameChange.zip(deletes).zip(Future.sequence(updates)).map(_ => ())
   }
 
+  import org.stingray.contester.utils.Fu._
+
   private def updateContests(contestList: Iterable[ContestRow]): Future[Unit] = {
     val cmap = contestList.map(x => contestResolver(x.polygonId) -> x).toMap
-    d.getContests(contestList.map(_.polygonId).toSet.toSeq.map(contestResolver)).as[Future[Map[ContestHandle, ContestWithProblems]]]
+    d.getContests(contestList.map(_.polygonId).toSet.toSeq.map(contestResolver))
       .zip(getProblemsFromDb)
       .flatMap {
       case (contests, problems) =>
