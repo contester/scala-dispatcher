@@ -47,8 +47,6 @@ class DbDispatcher(val pdata: ProblemData, val basePath: File, val invoker: Solu
 
   import com.spingo.op_rabbit.PlayJsonSupport._
 
-  import com.twitter.bijection.twitter_util.UtilBijections
-
   rabbitMq ! new Subscription {
     def config = channel(qos = 1) {
       consume(queue("contester.evalrequests")) {
@@ -72,13 +70,13 @@ class DbDispatcher(val pdata: ProblemData, val basePath: File, val invoker: Solu
     }
   }
 
-    def getPolygonProblem(cid: Int, problem: String): Future[PolygonProblem] = {
+  import org.stingray.contester.utils.Fu._
+  def getPolygonProblem(cid: Int, problem: String): Future[PolygonProblem] = {
     import akka.pattern.ask
     import scala.concurrent.duration._
 
-    val f = pscanner.ask(ContestTableScanner.GetContest(cid))(15 minutes).mapTo[ContestTableScanner.GetContestResponse]
-      .flatMap(x => UtilBijections.twitter2ScalaFuture.apply(pdata.getPolygonProblem(x.row, problem)))
-    UtilBijections.twitter2ScalaFuture.invert(f)
+    pscanner.ask(ContestTableScanner.GetContest(cid))(15 minutes).mapTo[ContestTableScanner.GetContestResponse]
+      .flatMap(x => pdata.getPolygonProblem(x.row, problem))
   }
 
   def sanitizeProblem(problem: PolygonProblem) =
