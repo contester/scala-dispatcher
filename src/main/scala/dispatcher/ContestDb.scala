@@ -85,22 +85,11 @@ class DbDispatcher(val pdata: ProblemData, val basePath: File, val invoker: Solu
     pdata.sanitizeProblem(problem)
 }
 
-class DbConfig(conf: Config) {
-  val short =
-    if (conf.hasPath("short"))
-      conf.getString("short")
-    else
-      conf.getString("db")
-}
-
 class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
                     val store: GridfsObjectStore, contestResolver: PolygonContestId => ContestHandle,
                      rabbitMq: ActorRef) extends Logging {
-  val dispatchers = new mutable.HashMap[DbConfig, DbDispatcher]()
-
-  def add(conf: DbConfig, dbnext: JdbcBackend#DatabaseDef) = {
-    info(conf)
-    val d = new DbDispatcher(pdata, new File(basePath, conf.short), invoker, conf.short,
+  def add(shortName: String, dbnext: JdbcBackend#DatabaseDef) = {
+    val d = new DbDispatcher(pdata, new File(basePath, shortName), invoker, shortName,
       contestResolver, rabbitMq, dbnext)
   }
 }

@@ -23,9 +23,6 @@ import play.api.Logger
 object DispatcherServer extends App {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
 
-  private def createDbConfig(conf: Config) =
-    new DbConfig(conf)
-
   private val config = ConfigFactory.load()
   private val mongoDb = MongoDBInstance(config.getString("pdb.mongoUrl")).right.get
 
@@ -58,7 +55,6 @@ object DispatcherServer extends App {
   val dispatchers = {
     val polygonBase = config.getConfig("polygons")
     val polygonNames = polygonBase.root().keys
-    println(polygonNames)
     val contestResolver = new ContestResolver(polygonNames.map(n => n -> new URL(polygonBase.getConfig(n).getString("url"))).toMap)
 
     val authFilter = new AuthPolygonFilter
@@ -74,8 +70,8 @@ object DispatcherServer extends App {
       tester, mongoDb.objectStore, contestResolver(_), rabbitMq)
 
     config.getStringList("dispatcher.standard").foreach { name =>
-      if (config.hasPath(name + ".db")) {
-        result.add(createDbConfig(config.getConfig(name)), Database.forConfig(s"${name}.dbnext"))
+      if (config.hasPath(name + ".dbnext")) {
+        result.add(config.getString(s"${name}.short"), Database.forConfig(s"${name}.dbnext"))
       }
     }
     result
