@@ -3,7 +3,7 @@ package org.stingray.contester.dispatcher
 import java.sql.Timestamp
 
 import akka.actor.ActorRef
-import com.spingo.op_rabbit.QueueMessage
+import com.spingo.op_rabbit.Message
 import org.stingray.contester.common._
 import org.stingray.contester.invokers.TimeKey
 import org.stingray.contester.testing.{CustomTestingResult, SolutionTester}
@@ -47,7 +47,7 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester,
               Result = ${result.test.get.run.status.getNumber},
               Processed = 255 where ID = ${item.id}"""
       ).map { x =>
-        rabbitMq ! QueueMessage(CustomTestResult(item.id, item.contest, item.team), queue = "contester.evals")
+        rabbitMq ! Message.queue(CustomTestResult(item.id, item.contest, item.team), queue = "contester.evals")
         ()
       }
     else Done

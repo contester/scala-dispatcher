@@ -3,7 +3,7 @@ package org.stingray.contester.dispatcher
 import java.sql.{ResultSet, Timestamp}
 
 import com.spingo.op_rabbit.PlayJsonSupport._
-import com.spingo.op_rabbit.QueueMessage
+import com.spingo.op_rabbit.Message
 import grizzled.slf4j.Logging
 import org.stingray.contester.common._
 import org.stingray.contester.invokers.TimeKey
@@ -122,7 +122,7 @@ class SubmitDispatcher(parent: DbDispatcher, db: JdbcBackend#DatabaseDef) extend
             testingInfo.state.toMap.mapValues(new RestoredResult(_))).flatMap { (sr: SolutionTestingResult) =>
             combinedProgress.db.finish(sr, m.id, testingInfo.testingId).zip(combinedProgress.raw.finish(sr))
             .map {_ =>
-              parent.rabbitMq ! QueueMessage(calculateTestingResult(m, testingInfo, sr), queue = "contester.finished")
+              parent.rabbitMq ! Message.queue(calculateTestingResult(m, testingInfo, sr), queue = "contester.finished")
               ()
             }
           }

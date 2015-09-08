@@ -3,7 +3,7 @@ package org.stingray.contester.dispatcher
 import java.sql.Timestamp
 
 import akka.actor.{Props, ActorSystem, ActorRef}
-import com.spingo.op_rabbit.consumer.Subscription
+import com.spingo.op_rabbit._
 import com.typesafe.config.Config
 import org.stingray.contester.invokers.TimeKey
 import play.api.libs.json.Json
@@ -47,8 +47,9 @@ class DbDispatcher(val pdata: ProblemData, val basePath: File, val invoker: Solu
 
   import com.spingo.op_rabbit.PlayJsonSupport._
 
-  rabbitMq ! new Subscription {
-    def config = channel(qos = 1) {
+  val evalSub = Subscription.run(rabbitMq) {
+    import Directives._
+    channel(qos = 1) {
       consume(queue("contester.evalrequests")) {
         body(as[ServerSideEvalID]) { evalreq =>
           info(s"Received $evalreq")
@@ -58,8 +59,9 @@ class DbDispatcher(val pdata: ProblemData, val basePath: File, val invoker: Solu
     }
   }
 
-  rabbitMq ! new Subscription {
-    def config = channel(qos = 1000) {
+  val submitSub = Subscription.run(rabbitMq) {
+    import Directives._
+    channel(qos = 1000) {
       consume(queue("contester.submitrequests")) {
         body(as[SubmitMessage]) { submitreq =>
           info(s"Received $submitreq")

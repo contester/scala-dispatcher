@@ -38,7 +38,7 @@ resolvers ++= Seq(
     "stingr.net" at "http://stingr.net/maven"
 )
 
-val opRabbitVersion = "1.0.0-M11"
+val opRabbitVersion = "1.0.0-RC3"
 
 libraryDependencies ++= Seq(
   "com.foursquare" %% "twitter-util-async" % "1.1.0-SNAPSHOT",
