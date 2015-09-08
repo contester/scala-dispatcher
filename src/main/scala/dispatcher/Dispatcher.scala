@@ -122,7 +122,7 @@ class SubmitDispatcher(parent: DbDispatcher, db: JdbcBackend#DatabaseDef) extend
             testingInfo.state.toMap.mapValues(new RestoredResult(_))).flatMap { (sr: SolutionTestingResult) =>
             combinedProgress.db.finish(sr, m.id, testingInfo.testingId).zip(combinedProgress.raw.finish(sr))
             .map {_ =>
-              parent.rabbitMq ! Message.queue(calculateTestingResult(m, testingInfo, sr), queue = "contester.finished")
+              parent.rabbitMq ! Message.exchange(calculateTestingResult(m, testingInfo, sr), exchange = "contester.submitdone")
               ()
             }
           }
