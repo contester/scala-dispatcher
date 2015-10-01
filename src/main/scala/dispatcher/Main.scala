@@ -4,7 +4,7 @@ import java.io.File
 import java.net.{URL, InetSocketAddress}
 import java.util.concurrent.Executors
 import akka.actor.{Props, ActorSystem}
-import com.spingo.op_rabbit.RabbitControl
+import com.spingo.op_rabbit.{ConnectionParams, RabbitControl}
 import controllers.Assets
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
@@ -45,7 +45,6 @@ object DispatcherServer extends App {
   }
 
   implicit val actorSystem = ActorSystem("such-system")
-  val rabbitMq = actorSystem.actorOf(Props[RabbitControl])
 
   Logger.info("Initializing dispatchers")
 
@@ -66,12 +65,20 @@ object DispatcherServer extends App {
 
     val client = authFilter andThen BasicPolygonFilter andThen CachedConnectionHttpService
     val problems = new ProblemData(client, polygonCache, problemDb, invokerApi)
+
+    val rabbitMq = actorSystem.actorOf(Props[RabbitControl]())
+
+
     val result = new DbDispatchers(problems, new File(config.getString("reporting.base")),
-      tester, mongoDb.objectStore, contestResolver(_), rabbitMq)
+      tester, mongoDb.objectStore, contestResolver(_))
 
     config.getStringList("dispatcher.standard").foreach { name =>
       if (config.hasPath(name + ".dbnext")) {
-        result.add(config.getString(s"${name}.short"), Database.forConfig(s"${name}.dbnext"))
+        val rabbitMq = actorSystem.actorOf(
+          Props(classOf[RabbitControl], ConnectionParams.fromConfig(config.getConfig("op-rabbit"))),
+          s"rabbit.${name}")
+
+        result.add(config.getString(s"${name}.short"), Database.forConfig(s"${name}.dbnext"), rabbitMq)
       }
     }
     result

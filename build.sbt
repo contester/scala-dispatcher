@@ -23,6 +23,7 @@ organization := "org.stingray.contester"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-optimise", "-explaintypes", "-Xcheckinit",
   "-Xlint")
+//, "-Xfatal-warnings")
 
 // javacOptions in Compile ++= Seq("-source", "1.6",  "-target", "1.7")
 

@@ -86,9 +86,8 @@ class DbDispatcher(val pdata: ProblemData, val basePath: File, val invoker: Solu
 }
 
 class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: SolutionTester,
-                    val store: GridfsObjectStore, contestResolver: PolygonContestId => ContestHandle,
-                     rabbitMq: ActorRef) extends Logging {
-  def add(shortName: String, dbnext: JdbcBackend#DatabaseDef) = {
+                    val store: GridfsObjectStore, contestResolver: PolygonContestId => ContestHandle) extends Logging {
+  def add(shortName: String, dbnext: JdbcBackend#DatabaseDef, rabbitMq: ActorRef) = {
     val d = new DbDispatcher(pdata, new File(basePath, shortName), invoker, shortName,
       contestResolver, rabbitMq, dbnext)
   }
