@@ -75,7 +75,7 @@ object DispatcherServer extends App {
     config.getStringList("dispatcher.standard").foreach { name =>
       if (config.hasPath(name + ".dbnext")) {
         val rabbitMq = actorSystem.actorOf(
-          Props(classOf[RabbitControl], ConnectionParams.fromConfig(config.getConfig("op-rabbit"))),
+          Props(classOf[RabbitControl], ConnectionParams.fromConfig(config.getConfig(s"${name}.op-rabbit"))),
           s"rabbit.${name}")
 
         result.add(config.getString(s"${name}.short"), Database.forConfig(s"${name}.dbnext"), rabbitMq)
