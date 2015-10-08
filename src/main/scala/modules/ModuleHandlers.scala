@@ -65,7 +65,7 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     add((api.programFiles / "PascalABC.NET" / "pabcnetcclear.exe") ++ (api.disks / "Programs" / "PascalABC.NET" / "pabcnetcclear.exe"), (x: String) => new PascalABCSourceHandler(x)) +
     add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
     add(api.disks / "WINDOWS" / "System32" / "cmd.exe", visualStudio(_)) +
-    add((api.disks / "Python33" / "Python.exe") ++ (api.disks / "Programs" / "Python-3" / "Python.exe"), new PythonModuleHandler("py3", _)) +
+    add((api.disks / "Python34" / "Python.exe") ++ (api.disks / "Programs" / "Python-3" / "Python.exe"), new PythonModuleHandler("py3", _)) +
     add((api.disks / "Python27" / "Python.exe") ++ (api.disks / "Programs" / "Python-2" / "Python.exe"), new PythonModuleHandler("py2", _)) +
     java + p7z + new Win32BinaryHandler
 
