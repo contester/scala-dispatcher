@@ -25,7 +25,7 @@ final class RichLocalExecutionParameters(val repr: LocalExecutionParameters) {
     noOutput.toBuilder.clearApplicationName().build()
 
   def setCompiler() =
-    outputToMemory.toBuilder.setTimeLimitHardMicros(30 * 1000000).build()
+    outputToMemory.toBuilder.setTimeLimitHardMicros(30 * 1000000).setJoinStdoutStderr(true).build()
 
   def setSolution() =
     repr.toBuilder.setCheckIdleness(true).setRestrictUi(true).setProcessLimit(1).build()
@@ -34,12 +34,18 @@ final class RichLocalExecutionParameters(val repr: LocalExecutionParameters) {
     repr.toBuilder.setNoJob(true).build()
 
   def setTester() =
-    outputToMemory.toBuilder.setTimeLimitHardMicros(120 * 1000000).setNoJob(true).build()
+    outputToMemory.toBuilder.setTimeLimitHardMicros(120 * 1000000).setNoJob(true).setJoinStdoutStderr(true).build()
 
   def emulateStdio(s: Sandbox) = {
     val builder = repr.toBuilder
     builder.getStdInBuilder.setFilename((s.path / "input.txt").name)
     builder.getStdOutBuilder.setFilename((s.path / "output.txt").name)
+    builder.build()
+  }
+
+  def joinStdoutErr() = {
+    val builder = repr.toBuilder
+    builder.setJoinStdoutStderr(true)
     builder.build()
   }
 
