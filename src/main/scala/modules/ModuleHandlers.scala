@@ -175,14 +175,14 @@ class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean)
   val moduleTypes = linuxPrefix + (if (cplusplus) "g++" else "gcc") :: Nil
   val commonFlags =  "-static" :: "-fno-optimize-sibling-calls" :: "-fno-strict-aliasing" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
      "-O2" :: "-o" :: "Solution." + binaryExt :: "Solution." + ext :: Nil
-  val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=33554432" :: commonFlags)
+  val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=67108864" :: commonFlags)
   val flags: ExecutionArguments = if (cplusplus) ("-x" :: "c++" :: platformFlags) else platformFlags
   val sourceName = "Solution." + ext
   val binary = "Solution." + binaryExt
 }
 
 class DelphiSourceHandler(val compiler: String) extends SimpleCompileHandler {
-  val flags: ExecutionArguments = "-DONLINE_JUDGE" :: "-$M33554432,33554432" :: "-cc" :: "Solution.dpr" :: Nil
+  val flags: ExecutionArguments = "-DONLINE_JUDGE" :: "-$M67108864,67108864" :: "-cc" :: "Solution.dpr" :: Nil
   val sourceName = "Solution.dpr"
   val binary = "Solution.exe"
   val binaryExt = "delphibin"
@@ -193,7 +193,7 @@ class FPCSourceHandler(val compiler: String, linux: Boolean) extends SimpleCompi
   private val linuxPrefix = if (linux) "linux-" else ""
   val binaryExt = if (linux) "linux-bin" else "exe"
   def moduleTypes = (linuxPrefix + "pp") :: Nil
-  def flags: ExecutionArguments = "-dONLINE_JUDGE" :: "-Cs33554432" :: "-Mdelphi" :: "-O2" :: "-XS" :: "Solution.pp" :: "-oSolution.exe" :: Nil
+  def flags: ExecutionArguments = "-dONLINE_JUDGE" :: "-Cs67108864" :: "-Mdelphi" :: "-O2" :: "-XS" :: "Solution.pp" :: "-oSolution.exe" :: Nil
   def sourceName = "Solution.pp"
   def binary = "Solution.exe"
 }
@@ -207,7 +207,7 @@ class PascalABCSourceHandler(val compiler: String) extends SimpleCompileHandler 
 }
 
 class VisualStudioSourceHandler(val compiler: String, vcvars: String) extends SimpleCompileHandler {
-  val clflags = "/W4" :: "/F33554432" :: "/EHsc" :: "/O2" :: "/DONLINE_JUDGE" :: Nil
+  val clflags = "/W4" :: "/F67108864" :: "/EHsc" :: "/O2" :: "/DONLINE_JUDGE" :: Nil
   val bFlags = "/S" :: "/C" :: "\"" + (
     (CommandLineTools.quoteArgument(vcvars) :: "&&" :: "cl" :: Nil) ++
       clflags ++ ("Solution.cxx" :: Nil)).mkString(" ") + "\"" :: Nil
@@ -263,12 +263,12 @@ class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler 
   private def getTestLimits(test: TestLimits): List[String] = {
     val ml0 = test.memoryLimit / (1024 * 1024)
     val ml = (if (ml0 < 32) 32 else ml0).toString
-    ("-Xmx" + ml + "M") :: Nil
+    ("-Xmx" + ml + "M") :: ("-Xms" + ml + "M") :: Nil
   }
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     sandbox.getExecutionParameters(
-      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss32M" :: "-Xms32M" :: "-server" :: "-DONLINE_JUDGE=true" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
+      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss64M" :: "-DONLINE_JUDGE=true" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
         "-jar" :: "Solution.jar" :: Nil))
       .map(_.setTimeLimitMicros(test.timeLimitMicros).setSolution)
 }
