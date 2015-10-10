@@ -168,15 +168,18 @@ class WineWin32Handler extends BinaryHandler {
 }
 
 
-class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean) extends SimpleCompileHandler {
+class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean, c11: Boolean) extends SimpleCompileHandler {
   val binaryExt = if (linux) "linux-bin" else "exe"
   private val linuxPrefix = if (linux) "linux-" else ""
-  val ext = if (cplusplus) "cc" else "c"
+  val ext = if (cplusplus) {
+    if (c11) "cc11" else "cc"
+  } else "c"
   val moduleTypes = linuxPrefix + (if (cplusplus) "g++" else "gcc") :: Nil
   val commonFlags =  "-static" :: "-fno-optimize-sibling-calls" :: "-fno-strict-aliasing" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
      "-O2" :: "-o" :: "Solution." + binaryExt :: "Solution." + ext :: Nil
   val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=67108864" :: commonFlags)
-  val flags: ExecutionArguments = if (cplusplus) ("-x" :: "c++" :: platformFlags) else platformFlags
+  val pflags01: Seq[String] = if (c11) "-std=c++11" :: Nil else Nil
+  val flags: ExecutionArguments = if (cplusplus) ("-x" :: "c++" :: platformFlags) ++ pflags01 else platformFlags
   val sourceName = "Solution." + ext
   val binary = "Solution." + binaryExt
 }
