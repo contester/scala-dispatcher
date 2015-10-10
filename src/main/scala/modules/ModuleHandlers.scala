@@ -58,8 +58,9 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     new Win16BinaryHandler
 
   def generate: Future[Seq[ModuleHandler]] =
-    add((api.disks / "mingw" / "bin" / "gcc.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "gcc.exe"), (x: String) => new GCCSourceHandler(x, false, false)) +
-    add((api.disks / "mingw" / "bin" / "g++.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "g++.exe"), (x: String) => new GCCSourceHandler(x, true, false)) +
+    add((api.disks / "mingw" / "bin" / "gcc.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "gcc.exe"), (x: String) => new GCCSourceHandler(x, false, false, false)) +
+    add((api.disks / "mingw" / "bin" / "g++.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "g++.exe"), (x: String) => new GCCSourceHandler(x, true, false, false)) +
+      add((api.disks / "mingw" / "bin" / "g++.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "g++.exe"), (x: String) => new GCCSourceHandler(x, true, false, true)) +
     add(api.programFiles / "Borland" / "Delphi7" / "bin" / "dcc32.exe", (x: String) => new DelphiSourceHandler(x)) +
     add((api.disks / "FPC" / "*" / "bin" / "i386-win32" / "fpc.exe") ++ (api.disks / "Programs" / "FP" / "bin" / "i386-win32" / "fpc.exe"), (x: String) => new FPCSourceHandler(x, false)) +
     add((api.programFiles / "PascalABC.NET" / "pabcnetcclear.exe") ++ (api.disks / "Programs" / "PascalABC.NET" / "pabcnetcclear.exe"), (x: String) => new PascalABCSourceHandler(x)) +
@@ -180,7 +181,7 @@ class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean,
   val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=67108864" :: commonFlags)
   val pflags01: Seq[String] = if (c11) "-std=c++11" :: Nil else Nil
   val flags: ExecutionArguments = if (cplusplus) ("-x" :: "c++" :: platformFlags) ++ pflags01 else platformFlags
-  val sourceName = "Solution." + ext
+  val sourceName = "Solution." + if (c11) "cc" else ext
   val binary = "Solution." + binaryExt
 }
 
