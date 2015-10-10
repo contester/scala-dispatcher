@@ -73,8 +73,6 @@ class ContestTableScanner(d: ProblemData, db: JdbcBackend#DatabaseDef, contestRe
   private def singleContest(r: ContestRow, c: ContestWithProblems, oldp: Seq[ProblemRow]): Future[Unit] = {
     val m = oldp.filter(_.contest == r.id).map(v => v.id.toUpperCase -> v).toMap
 
-    trace(s"Updating contest $r with $c")
-
     c.problems.values.foreach(d.sanitizer)
 
     val nameChange = maybeUpdateContestName(r.id, r.name, c.getName(r.Language))
@@ -89,6 +87,9 @@ class ContestTableScanner(d: ProblemData, db: JdbcBackend#DatabaseDef, contestRe
       case ((problemId, polygonProblem), Some(problemRow))
         if (problemRow.name != polygonProblem.getTitle(r.Language) || problemRow.tests != polygonProblem.testCount) =>
         db.run(sqlu"""replace Problems (Contest, ID, Tests, Name, Rating) values (${r.id}, ${problemId},
+          ${polygonProblem.testCount}, ${polygonProblem.getTitle(r.Language)}, 30)""")
+      case (((problemId, polygonProblem), None)) =>
+	db.run(sqlu"""replace Problems (Contest, ID, Tests, Name, Rating) values (${r.id}, ${problemId},
           ${polygonProblem.testCount}, ${polygonProblem.getTitle(r.Language)}, 30)""")
     }
     nameChange.zip(deletes).zip(Future.sequence(updates)).map(_ => ())
