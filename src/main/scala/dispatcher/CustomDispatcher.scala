@@ -38,19 +38,26 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester,
 
 
   def recordResult(item: CustomTestObject, result: CustomTestingResult) =
-    if (result.test.isDefined)
+    result.test.map { tr =>
       db.run(
-        sqlu"""update Eval set Output = ${result.test.get.output.map(Blobs.getBinary(_)).getOrElse("".getBytes)},
-              Timex = ${result.test.get.run.time / 1000},
-              Memory = ${result.test.get.run.memory},
-              Info = ${result.test.get.run.returnCode},
-              Result = ${result.test.get.run.status.getNumber},
-              Processed = 255 where ID = ${item.id}"""
-      ).map { x =>
+        sqlu"""update Eval set Output = ${tr.output.map(Blobs.getBinary(_)).getOrElse("".getBytes)},
+                Timex = ${tr.run.time / 1000},
+                Memory = ${tr.run.memory},
+                Info = ${tr.run.returnCode},
+                Result = ${tr.run.status.getNumber},
+                Processed = 255 where ID = ${item.id}"""
+      )
+    }.getOrElse {
+      val tr = result.compilation
+      db.run(sqlu"""update Eval set Output = ${tr.stdErr},
+                Timex = ${tr.time / 1000},
+                Memory = ${tr.memory},
+                Result = ${tr.status.getNumber},
+                Processed = 255 where ID = ${item.id}""")
+    }.map { x =>
         rabbitMq ! Message.queue(CustomTestResult(item.id, item.contest, item.team), queue = "contester.evals")
-        ()
+      ()
       }
-    else Done
 
   def runthis(what: ServerSideEvalID): Future[Unit] = {
     db.run(sql"""select ID, Contest, Team, Arrived, Ext, Source, Input from Eval where ID = ${what.id}""".as[CustomTestObject])
