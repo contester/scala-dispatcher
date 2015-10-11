@@ -49,7 +49,7 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester,
       )
     }.getOrElse {
       val tr = result.compilation
-      db.run(sqlu"""update Eval set Output = ${tr.stdErr},
+      db.run(sqlu"""update Eval set Output = ${tr.stdOut},
                 Timex = ${tr.time / 1000},
                 Memory = ${tr.memory},
                 Result = ${tr.status.getNumber},
