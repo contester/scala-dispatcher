@@ -181,7 +181,7 @@ class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean,
   val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=67108864" :: commonFlags)
   val pflags01: Seq[String] = if (c11) "-std=c++11" :: Nil else Nil
   val flags: ExecutionArguments = if (cplusplus) ("-x" :: "c++" :: platformFlags) ++ pflags01 else platformFlags
-  val sourceName = "Solution." + if (c11) "cc" else ext
+  val sourceName = "Solution." + (if (c11) "cc" else ext)
   val binary = "Solution." + binaryExt
 }
 
