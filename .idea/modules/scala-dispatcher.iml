@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module external.linked.project.id="scala-dispatcher" external.linked.project.path="$MODULE_DIR$/../.." external.root.project.path="$MODULE_DIR$/../.." external.system.id="SBT" type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" inherit-compiler-output="false">
+  <component name="FacetManager">
+    <facet type="protobuf" name="Protobuf Facet">
+      <configuration />
+    </facet>
+  </component>
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8" inherit-compiler-output="false">
     <output url="file://$MODULE_DIR$/../../target/scala-2.11/classes" />
     <output-test url="file://$MODULE_DIR$/../../target/scala-2.11/test-classes" />
     <exclude-output />
@@ -99,7 +104,6 @@
     <orderEntry type="library" name="SBT: joda-time:joda-time:2.8.1:jar" level="project" />
     <orderEntry type="library" name="SBT: org.apache.commons:commons-lang3:3.4:jar" level="project" />
     <orderEntry type="library" name="SBT: org.javassist:javassist:3.19.0-GA:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.scala-lang:scala-reflect:2.11.6:jar" level="project" />
     <orderEntry type="library" name="SBT: org.scala-stm:scala-stm_2.11:0.7:jar" level="project" />
     <orderEntry type="library" name="SBT: org.slf4j:jcl-over-slf4j:1.7.12:jar" level="project" />
     <orderEntry type="library" name="SBT: org.slf4j:jul-to-slf4j:1.7.12:jar" level="project" />
@@ -155,5 +159,10 @@
     <orderEntry type="library" name="SBT: com.spingo:op-rabbit-core_2.11:1.0.0-RC3:jar" level="project" />
     <orderEntry type="library" name="SBT: com.spingo:op-rabbit-play-json_2.11:1.0.0-RC3:jar" level="project" />
     <orderEntry type="library" name="SBT: com.thenewmotion.akka:akka-rabbitmq_2.11:1.2.7:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.github.cb372:scalacache-core_2.11:0.7.3:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.github.cb372:scalacache-memcached_2.11:0.7.3:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.scala-logging:scala-logging_2.11:3.1.0:jar" level="project" />
+    <orderEntry type="library" name="SBT: net.spy:spymemcached:2.11.7:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.scala-lang:scala-reflect:2.11.7:jar" level="project" />
   </component>
 </module>

@@ -66,6 +66,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-netty-server" % "2.4.2",
   "com.typesafe" % "config" % "1.3.0",
   "com.googlecode.protobuf-java-format" % "protobuf-java-format" % "1.2",
+  "com.github.cb372" %% "scalacache-memcached" % "0.7.3",
   "org.scalatest" %% "scalatest" % "2.2.3" % "test"
 ).map(_.exclude("org.slf4j", "slf4j-jdk14"))
 

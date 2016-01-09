@@ -32,6 +32,8 @@ object DispatcherServer extends App {
   private val problemDb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
   private val invoker = new InvokerRegistry("contester", mongoDb)
 
+
+
   val invokerApi = new InvokerSimpleApi(invoker, objectCache)
   val tester = new SolutionTester(invokerApi)
 
