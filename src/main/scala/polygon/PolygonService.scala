@@ -5,7 +5,6 @@ import com.twitter.util.Future
 import org.stingray.contester.problems
 import problems._
 import org.stingray.contester.utils.{RefresherCache, ValueCache}
-import org.jboss.netty.buffer.ChannelBuffer
 import com.twitter.finagle.Service
 import scala.xml.XML
 import org.stingray.contester.engine.InvokerSimpleApi
