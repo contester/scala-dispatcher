@@ -1,15 +1,15 @@
 package org.stingray.contester.dispatcher
 
+import com.twitter.io.Buf
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import org.stingray.contester.polygon._
 import org.stingray.contester.utils.ValueCache
 import org.stingray.contester.problems.{SanitizeDb, Problem}
 import com.twitter.finagle.Service
-import org.jboss.netty.buffer.ChannelBuffer
 import org.stingray.contester.engine.InvokerSimpleApi
 
-class ProblemData(pclient: Service[PolygonClientRequest, ChannelBuffer], pdb: ValueCache[PolygonCacheKey, String],
+class ProblemData(pclient: Service[PolygonClientRequest, Buf], pdb: ValueCache[PolygonCacheKey, String],
                   sdb: SanitizeDb, invoker: InvokerSimpleApi) extends Logging {
   val polygonService = new PolygonService(pclient, pdb)
   val sanitizer = new PolygonSanitizer(sdb, pclient, invoker)

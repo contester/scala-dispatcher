@@ -3,14 +3,13 @@ package org.stingray.contester.polygon
 import com.google.common.base.Charsets
 import com.twitter.finagle.{Filter, Service}
 import com.twitter.finagle.builder.ClientBuilder
-import com.twitter.finagle.http.{MediaType, RequestBuilder, Http}
+import com.twitter.finagle.http._
+import com.twitter.io.{Buf, Bufs}
 import com.twitter.util.{StorageUnit, Duration, Future}
 import grizzled.slf4j.Logging
 import java.net.{URLEncoder, InetSocketAddress, URL}
 import java.util.concurrent.TimeUnit
-import org.jboss.netty.buffer.ChannelBuffers.wrappedBuffer
 import org.jboss.netty.handler.codec.http.{HttpResponseStatus, HttpResponse, HttpRequest}
-import scala.Some
 import xml.Elem
 import org.stingray.contester.engine.ProblemDescription
 import org.jboss.netty.buffer.ChannelBuffer
@@ -75,21 +74,16 @@ class ContestHandle(val url: URL) extends PolygonClientRequest with PolygonConte
 
 
 object PolygonClient extends Logging {
-  def asPage(x: ChannelBuffer) =
-    x.toString(Charsets.UTF_8)
+  def asFile(x: Response) =
+    x.content
 
-  def asFile(x: HttpResponse) =
-    x.getContent
-
-  def asByteArray(buffer: ChannelBuffer) = {
-    val bufferBytes = new Array[Byte](buffer.readableBytes())
-    buffer.getBytes(buffer.readerIndex(), bufferBytes)
-    bufferBytes
+  def asByteArray(buffer: Buf) = {
+    Buf.ByteArray.Owned.extract(Buf.ByteArray.coerce(buffer))
   }
 }
 
-object CachedConnectionHttpService extends Service[(URL, HttpRequest), HttpResponse] with Logging {
-  private object PolygonClientCacheLoader extends CacheLoader[(Option[String], InetSocketAddress), Service[HttpRequest, HttpResponse]] {
+object CachedConnectionHttpService extends Service[(URL, Request), Response] with Logging {
+  private object PolygonClientCacheLoader extends CacheLoader[(Option[String], InetSocketAddress), Service[Request, Response]] {
     private def createSSL(addr: InetSocketAddress, hostname: String) = ClientBuilder()
         .codec(Http().maxResponseSize(new StorageUnit(64*1024*1024)))
         .tls(SSLContext.getDefault())
@@ -105,7 +99,7 @@ object CachedConnectionHttpService extends Service[(URL, HttpRequest), HttpRespo
         .tcpConnectTimeout(Duration(5, TimeUnit.SECONDS))
         .build()
 
-    def load(key: (Option[String], InetSocketAddress)): Service[HttpRequest, HttpResponse] =
+    def load(key: (Option[String], InetSocketAddress)): Service[Request, Response] =
       if (key._1.isDefined)
         createSSL(key._2, key._1.get)
       else
@@ -116,7 +110,7 @@ object CachedConnectionHttpService extends Service[(URL, HttpRequest), HttpRespo
     .expireAfterAccess(30, TimeUnit.MINUTES)
     .build(PolygonClientCacheLoader)
 
-  def apply(request: (URL, HttpRequest)): Future[HttpResponse] = {
+  def apply(request: (URL, Request)): Future[Response] = {
     val url = request._1
     val addr = new InetSocketAddress(url.getHost, if (url.getPort == -1) url.getDefaultPort else url.getPort)
     val tlsHost = if (url.getProtocol == "https") Some(url.getHost) else None
@@ -124,29 +118,29 @@ object CachedConnectionHttpService extends Service[(URL, HttpRequest), HttpRespo
   }
 }
 
-object BasicPolygonFilter extends Filter[PolygonAuthenticatedRequest, ChannelBuffer, (URL, HttpRequest), HttpResponse] {
+object BasicPolygonFilter extends Filter[PolygonAuthenticatedRequest, Buf, (URL, Request), Response] {
   private def encodeFormData(data: Iterable[(String, String)]) =
     (for ((k, v) <- data) yield URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8") ).mkString("&")
 
-  private def handleHttpResponse(response: HttpResponse): ChannelBuffer =
-    if (response.getStatus == HttpResponseStatus.OK)
-      response.getContent
+  private def handleHttpResponse(response: Response): Buf =
+    if (response.status == Status.Ok)
+      response.content
     else
-      throw new PolygonClientHttpException(response.getStatus.getReasonPhrase)
+      throw new PolygonClientHttpException(response.status.reason)
 
-  def apply(request: PolygonAuthenticatedRequest, service: Service[(URL, HttpRequest), HttpResponse]): Future[ChannelBuffer] = {
+  def apply(request: PolygonAuthenticatedRequest, service: Service[(URL, Request), Response]): Future[Buf] = {
     val postData = encodeFormData(request.params)
     val httpRequest = RequestBuilder()
       .url(request.url)
       .setHeader("Content-Type", MediaType.WwwForm)
       .setHeader("Content-Length", postData.length().toString)
-      .buildPost(wrappedBuffer(postData.getBytes(Charsets.UTF_8)))
+      .buildPost(Bufs.ownedBuf(postData.getBytes(Charsets.UTF_8):_*))
 
     service((request.url, httpRequest)).map(handleHttpResponse(_))
   }
 }
 
-class AuthPolygonFilter extends Filter[PolygonClientRequest, ChannelBuffer, PolygonAuthenticatedRequest, ChannelBuffer] with Logging {
+class AuthPolygonFilter extends Filter[PolygonClientRequest, Buf, PolygonAuthenticatedRequest, Buf] with Logging {
   private val polygonBaseRe = new Regex("^(.*/)(c/\\d+/?.*|p/[^/]+/[^/]/?.*)$")
   val bases = new mutable.HashMap[String, PolygonBase]()
 
@@ -156,7 +150,7 @@ class AuthPolygonFilter extends Filter[PolygonClientRequest, ChannelBuffer, Poly
   def extractPolygonBase(url: URL) =
     polygonBaseRe.findFirstMatchIn(url.getPath).map(_.group(1)).map(new URL(url.getProtocol, url.getHost, url.getPort, _))
 
-  def apply(request: PolygonClientRequest, service: Service[PolygonAuthenticatedRequest, ChannelBuffer]): Future[ChannelBuffer] = {
+  def apply(request: PolygonClientRequest, service: Service[PolygonAuthenticatedRequest, Buf]): Future[Buf] = {
     val baseOpt = extractPolygonBase(request.objectUrl).flatMap(x => bases.get(x.toString))
     if (baseOpt.isDefined)
       service(new PolygonAuthenticatedRequest(request.objectUrl, request.params, baseOpt.get.authInfo))

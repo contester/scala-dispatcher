@@ -1,15 +1,14 @@
 package org.stingray.contester.utils
 
-import com.twitter.finagle.util.TimerFromNettyTimer
+import com.twitter.finagle.util.HashedWheelTimer
 import com.twitter.util.{Duration, Timer, TimeoutException, Future}
 import grizzled.slf4j.Logging
-import org.jboss.netty.util.HashedWheelTimer
 
 import scala.concurrent.{Future => ScalaFuture, Promise, ExecutionContext}
 import scala.util.{Try, Failure, Success}
 
 object Utils extends Logging {
-  val timer = new TimerFromNettyTimer(new HashedWheelTimer)
+  val timer = HashedWheelTimer.Default
 
   def retry[A](times: Int)(f: => Future[A]): Future[A] =
     if (times > 0) {
