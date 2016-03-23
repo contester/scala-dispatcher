@@ -1,13 +1,19 @@
 package org.stingray.contester.dispatcher
-/*
-import org.stingray.contester.db.{ConnectionPool, SelectDispatcher}
+
+import akka.actor.{Actor, Stash}
+import slick.jdbc.{GetResult, JdbcBackend}
 import org.stingray.contester.common._
 import java.sql.{ResultSet, Timestamp}
+
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import org.stingray.contester.problems.{DirectProblemHandle, ProblemDb}
-import org.stingray.contester.testing.{SolutionTester, SolutionTestingResult, SingleProgress}
+import org.stingray.contester.testing.{SingleProgress, SolutionTester, SolutionTestingResult}
 import java.net.URI
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.mutable
+
 
 case class MoodleSubmit(id: Int, problemId: String, arrived: Timestamp, sourceModule: Module) extends Submit {
   val timestamp = arrived
@@ -17,98 +23,128 @@ case class MoodleSubmit(id: Int, problemId: String, arrived: Timestamp, sourceMo
     "MoodleSubmit(%d)".format(id)
 }
 
-class MoodleSingleResult(client: ConnectionPool, val submit: MoodleSubmit, val testingId: Int) extends SingleProgress {
-  def compile(r: CompileResult): Future[Unit] =
-    client.execute(
-      "insert into mdl_contester_results (testingid, processed, result, test, timex, memory, testeroutput, testererror) values (?, NOW(), ?, ?, ?, ?, ?, ?)",
-      testingId, r.status.getNumber, 0, r.time / 1000,
-      r.memory, r.stdOut, r.stdErr).unit
+class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubmit, val testingId: Int) extends SingleProgress {
+  import slick.driver.MySQLDriver.api._
 
-  def test(id: Int, r: TestResult): Future[Unit] =
-    client.execute(
-      "Insert into mdl_contester_results (testingid, processed, result, test, timex, memory, info, testeroutput, testererror, testerexitcode) values (?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)",
-      testingId, r.status.getNumber, id, r.solution.time / 1000,
-      r.solution.memory, r.solution.returnCode.abs,
-      new String(r.getTesterOutput, "windows-1251"), new String(r.getTesterError, "windows-1251"),
-      r.getTesterReturnCode.abs).unit
+  def compile(r: CompileResult) =
+    client.run(
+      sqlu"""insert into mdl_contester_results (testingid, processed, result, test, timex, memory, testeroutput, testererror)
+            values ($testingId, NOW(), ${r.status.getNumber}, 0, ${r.time / 1000}, ${r.memory},
+        ${new String(r.stdOut, "UTF-8")}, ${new String(r.stdErr, "UTF-8")})""").map(_ => ())
 
-  def finish(r: SolutionTestingResult): Future[Unit] =
-    client.execute("update mdl_contester_testings set finish = NOW(), compiled = ?, taken = ?, passed = ? where ID = ?",
-      if (r.compilation.success) "1" else "0", r.tests.size, r.tests.count(_._2.success), testingId).unit
+  def test(id: Int, r: TestResult) =
+    client.run(
+      sqlu"""Insert into mdl_contester_results (testingid, processed, result, test, timex, memory, info, testeroutput,
+             testererror, testerexitcode) values ($testingId, NOW(), ${r.status.getNumber}, $id, ${r.solution.time / 1000},
+             ${r.solution.memory}, ${r.solution.returnCode.abs},
+             ${new String(r.getTesterOutput, "UTF-8")}, ${new String(r.getTesterError, "UTF-8")},
+             ${r.getTesterReturnCode.abs})""").map(_ => ())
+
+  def finish(r: SolutionTestingResult) = {
+    val cval = if (r.compilation.success) 1 else 0
+    val passed = r.tests.count(_._2.success)
+    client.run(
+      sqlu"""update mdl_contester_testings set finish = NOW(), compiled = ${cval}, taken = ${r.tests.size},
+         passed = ${passed} where ID = ${testingId}""").map(_ => ())
+  }
 }
 
-class MoodleResultReporter(client: ConnectionPool, val submit: MoodleSubmit) {
-  def start: Future[SingleProgress] =
-    client.execute("Insert into mdl_contester_testings (submitid, start) values (?, NOW())", submit.id)
-      .map(_.lastInsertId.get).map(new MoodleSingleResult(client, submit, _))
+object MoodleResultReporter {
+  import slick.driver.MySQLDriver.api._
+
+  def start(client: JdbcBackend#DatabaseDef, submit: MoodleSubmit) =
+    client.run(sqlu"""Insert into mdl_contester_testings (submitid, start) values (${submit.id}, NOW())"""
+      .andThen(sql"select LAST_INSERT_ID()".as[Int]).withPinnedSession)
+      .map(_.head).map(new MoodleSingleResult(client, submit, _))
 }
 
-class MoodleDispatcher(db: ConnectionPool, pdb: ProblemDb, inv: SolutionTester) extends SelectDispatcher[MoodleSubmit](db) with Logging {
-  def rowToSubmit(row: ResultSet): MoodleSubmit =
-    MoodleSubmit(
-      row.getInt("SubmitId"),
-      row.getInt("ProblemId").toString,
-      row.getTimestamp("Arrived"),
-      new ByteBufferModule(row.getString("ModuleId"), row.getBytes("Solution"))
-    )
+object MoodleTableScanner {
+  case object Rescan
+  case class UnprocessedEntries(items: Seq[Long])
+  case class DoneWith(id: Long)
+}
 
-  def selectAllNewQuery: String =
-    """
-      |select
-      |mdl_contester_submits.id as SubmitId,
-      |mdl_contester_languages.ext as ModuleId,
-      |mdl_contester_submits.solution as Solution,
-      |mdl_contester_submits.submitted as Arrived,
-      |mdl_contester_submits.problem as ProblemId
-      |from
-      |mdl_contester_submits, mdl_contester_languages
-      |where
-      |mdl_contester_submits.lang = mdl_contester_languages.id and
-      |mdl_contester_submits.processed is null
-    """.stripMargin
+class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemDb, inv: SolutionTester) {
+  import slick.driver.MySQLDriver.api._
+  implicit val getMoodleSubmit = GetResult(r=>
+    MoodleSubmit(r.nextInt(), r.nextInt().toString, r.nextTimestamp(), new ByteBufferModule(r.nextString(), r.nextBytes()))
+  )
 
-  def selectAllActiveQuery: String =
-    """
-      |select
-      |mdl_contester_submits.id as SubmitId,
-      |mdl_contester_languages.ext as ModuleId,
-      |mdl_contester_submits.solution as Solution,
-      |mdl_contester_submits.submitted as Arrived,
-      |mdl_contester_submits.problem as ProblemId
-      |from
-      |mdl_contester_submits, mdl_contester_languages
-      |where
-      |mdl_contester_submits.lang = mdl_contester_languages.id and
-      |mdl_contester_submits.processed = 1
-    """.stripMargin
+  private def getSubmit(id: Int) =
+    db.run(
+      sql"""
+         select
+         mdl_contester_submits.id as SubmitId,
+         mdl_contester_submits.problem as ProblemId
+         mdl_contester_submits.submitted as Arrived,
+         mdl_contester_languages.ext as ModuleId,
+         mdl_contester_submits.solution as Solution,
+         from
+         mdl_contester_submits, mdl_contester_languages
+         where
+         mdl_contester_submits.lang = mdl_contester_languages.id and
+         mdl_contester_submits.processed == ${id}
+          """.as[MoodleSubmit]).map(_.headOption)
 
-  def grabOneQuery: String =
-    "update mdl_contester_submits set processed = 1 where id = ?"
+  def markWith(id: Int, value: Int) =
+    db.run(sqlu"update mdl_contester_submits set processed = $value where id = $id")
 
-  def doneQuery: String =
-    "update mdl_contester_submits set processed = 255 where id = ?"
 
-  def failedQuery: String =
-    "update mdl_contester_submits set processed = 254 where id = ?"
+  import org.stingray.contester.utils.Fu._
 
-  def findUnfinishedTesting(item: MoodleSubmit) =
-    db.select("select testingid from mdl_contester_testings where submitid = ? and finish is null", item.id) { row =>
-      row.getInt("submitid")
-    }.map(_.headOption)
-
-  def startNewTesting(item: MoodleSubmit) =
-    db.execute("Insert into mdl_contester_testings (submitid, start) values (?, NOW())", item.id)
-      .map(_.lastInsertId.get)
+  def runId(id: Long): Future[Unit] =
+    getSubmit(id.toInt).flatMap { submit =>
+      submit.map(run)
+        .getOrElse(Future.Done)
+          .transform { v =>
+            val cv = if (v.isThrow) 254 else 255
+            markWith(id.toInt, cv).unit
+          }
+    }
 
   def run(item: MoodleSubmit): Future[Unit] = {
-    trace("Received %s".format(item))
     pdb.getMostRecentProblem(new DirectProblemHandle(new URI("direct://school.sgu.ru/moodle/" + item.problemId))).flatMap { problem =>
-      startNewTesting(item).flatMap { testingId =>
-        val reporter = new MoodleSingleResult(db, item, testingId)
+      MoodleResultReporter.start(db, item).flatMap { reporter =>
         inv(item, item.sourceModule, problem.get, reporter, true,
-          new InstanceSubmitTestingHandle("school.sgu.ru/moodle", item.id, testingId), Map.empty).flatMap(reporter.finish)
+          new InstanceSubmitTestingHandle("school.sgu.ru/moodle", item.id, reporter.testingId), Map.empty).flatMap(reporter.finish)
       }
     }
   }
+
 }
-*/
+
+class MoodleTableScanner(db: JdbcBackend#DatabaseDef, dispatcher: MoodleDispatcher) extends Actor with Stash with Logging {
+  import MoodleTableScanner._
+  import slick.driver.MySQLDriver.api._
+
+  private def getUnprocessedEntries() =
+    db.run(sql"select id from mdl_contester_submits where processed is null".as[Long])
+
+  val active = mutable.Set[Long]()
+
+  private def startProcessing(id: Long) = {
+    active.add(id)
+    dispatcher.runId(id).ensure(self ! DoneWith(id))
+  }
+
+  override def receive: Receive = {
+    case Rescan =>
+      getUnprocessedEntries()
+            .onComplete { v =>
+              self ! UnprocessedEntries(v.getOrElse(Nil))
+            }
+      context.become(rescanning)
+    case UnprocessedEntries(v) => ()
+    case DoneWith(id) => active.remove(id)
+  }
+
+  def rescanning: Receive = {
+    case UnprocessedEntries(v) =>
+      for(id <- v.filterNot(active(_))) {
+        startProcessing(id)
+      }
+      context.unbecome()
+    case Rescan => ()
+    case DoneWith(id) => stash()
+  }
+}
