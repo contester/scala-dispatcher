@@ -86,14 +86,15 @@ object DispatcherServer extends App {
     result
   }
 
-/*  val moodles =
-    if (config.hasPath("dispatcher.moodles"))
-      config.getStringList("dispatcher.moodles").filter(x => config.hasPath(x + ".db")).map { name =>
-          new MoodleDispatcher(createDbConfig(config.getConfig(name)).createConnectionPool, problemDb, tester)
-        }.foreach(_.start)
-    else
-      ()
-      */
+  if (config.hasPath("dispatcher.moodles")) {
+    for (name <- config.getStringList("dispatcher.moodles")) {
+      if (config.hasPath(name + ".dbnext")) {
+        val db = Database.forConfig(s"${name}.dbnext")
+        val dispatcher = new MoodleDispatcher(db, problemDb, tester)
+        actorSystem.actorOf(MoodleTableScanner.props(db, dispatcher))
+      }
+    }
+  }
 
   Logger.info("Starting serving")
 

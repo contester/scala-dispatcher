@@ -1,6 +1,6 @@
 package org.stingray.contester.dispatcher
 
-import akka.actor.{Actor, Stash}
+import akka.actor.{Actor, Props, Stash}
 import slick.jdbc.{GetResult, JdbcBackend}
 import org.stingray.contester.common._
 import java.sql.{ResultSet, Timestamp}
@@ -62,6 +62,9 @@ object MoodleTableScanner {
   case object Rescan
   case class UnprocessedEntries(items: Seq[Long])
   case class DoneWith(id: Long)
+
+  def props(db: JdbcBackend#DatabaseDef, dispatcher: MoodleDispatcher) =
+    Props(classOf[MoodleTableScanner], db, dispatcher)
 }
 
 class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemDb, inv: SolutionTester) {
