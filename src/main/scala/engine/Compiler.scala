@@ -5,14 +5,13 @@ import org.stingray.contester.modules.{CompiledModule, SourceHandler}
 import com.twitter.util.Future
 import org.stingray.contester.common._
 import grizzled.slf4j.Logging
-import com.foursquare.common.async.Async.{async, await}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object Compiler extends Logging {
-  private def justCompile(sandbox: Sandbox, handler: SourceHandler, module: Module) = async {
-    await(module.putToSandbox(sandbox, handler.sourceName))
-    await(handler.compile(sandbox))
-  }
+  private def justCompile(sandbox: Sandbox, handler: SourceHandler, module: Module) = 
+    module.putToSandbox(sandbox, handler.sourceName).flatMap { _ =>
+      handler.compile(sandbox)
+    }
 
   private def storeCompiledModule(sandbox: Sandbox, store: GridfsObjectStore, stored: HasGridfsPath, sourceHash: String,
                                   module: CompiledModule): Future[Option[Module]] =

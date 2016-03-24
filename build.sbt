@@ -1,6 +1,6 @@
 import sbtprotobuf.{ProtobufPlugin=>PB}
 
-seq(PB.protobufSettings: _*)
+PB.protobufSettings
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
 
@@ -10,12 +10,10 @@ enablePlugins(SbtTwirl)
 
 name := "dispatcher"
 
-fork in (Compile, run) := true
-
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m",
   "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 version := "0.1"
 
@@ -39,10 +37,9 @@ resolvers ++= Seq(
     "stingr.net" at "http://stingr.net/maven"
 )
 
-val opRabbitVersion = "1.0.0-RC3"
+val opRabbitVersion = "1.3.0"
 
 libraryDependencies ++= Seq(
-  "com.foursquare" %% "twitter-util-async" % "1.1.0-SNAPSHOT",
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
   "com.spingo" %% "op-rabbit-play-json"   % opRabbitVersion,
   "io.netty" % "netty" % "3.10.1.Final",
@@ -54,6 +51,7 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "bijection-util" % "0.8.1",
   "org.mongodb" %% "casbah" % "2.7.4",
   "org.clapper" %% "grizzled-slf4j" % "1.0.2",
+  "net.spy" % "spymemcached" % "2.12.0",
   "joda-time" % "joda-time" % "2.6",
   "org.joda" % "joda-convert" % "1.7",
   "org.apache.httpcomponents" % "httpclient" % "4.3.6",
@@ -62,30 +60,9 @@ libraryDependencies ++= Seq(
   "com.codahale" % "jerkson_2.9.1" % "0.5.0",
   "mysql" % "mysql-connector-java" % "5.1.36",
   "com.typesafe.slick" %% "slick" % "3.1.0-M1",
-  "com.typesafe.play" %% "play" % "2.4.2",
-  "com.typesafe.play" %% "play-netty-server" % "2.4.2",
+  "com.typesafe.play" %% "play" % "2.5.0",
+  "com.typesafe.play" %% "play-netty-server" % "2.5.0",
   "com.typesafe" % "config" % "1.3.0",
   "com.googlecode.protobuf-java-format" % "protobuf-java-format" % "1.2",
-  "com.github.cb372" %% "scalacache-memcached" % "0.7.3",
   "org.scalatest" %% "scalatest" % "2.2.3" % "test"
 ).map(_.exclude("org.slf4j", "slf4j-jdk14"))
-
-excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
-  cp.filter { p =>
-    val x = p.data
-    x.getPath.contains("org.scala-sbt") ||
-    x.getName.startsWith("slf4j-nop") ||
-    x.getName.startsWith("scalatest") ||
-    x.getName.startsWith("sbt-idea") ||
-    x.getName.startsWith("sbt-updates")
-  }
-}
-
-mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
-  {
-    case "META-INF/NOTICE.txt"     => MergeStrategy.discard
-    case "META-INF/LICENSE.txt"     => MergeStrategy.discard
-    case x => old(x)
-  }
-}
-
