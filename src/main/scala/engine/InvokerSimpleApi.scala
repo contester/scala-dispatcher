@@ -24,12 +24,7 @@ class InvokerSimpleApi(val registry: InvokerRegistry, val objectCache: ObjectCac
     if (ScriptLanguage.list(m.moduleType))
       Future.value((ScriptingLanguageResult, Some(m)))
     else
-      Compiler.checkIfCompiled(m, registry.mongoDb.objectStore, stored).flatMap { maybeCompiled =>
-        if (maybeCompiled.isDefined)
-          Future.value((AlreadyCompiledResult, maybeCompiled))
-        else
-          compile(key, m, stored)
-      }
+      compile(key, m, stored)
   }
 
 }

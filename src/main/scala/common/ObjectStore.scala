@@ -46,6 +46,17 @@ class GridfsPath(override val toGridfsPath: String) extends HasGridfsPath {
 
 class StoreHandle(val store: GridfsObjectStore, val handle: HasGridfsPath)
 
+case class ObjectMetaData(originalSize: Long, sha1sum: Option[String], moduleType: Option[String], compressionType: Option[String])
+
+object ObjectMetaData {
+  def fromMongoDBObject(obj: MongoDBObject): ObjectMetaData = {
+    import com.mongodb.casbah.Implicits._
+
+    ObjectMetaData(obj.getAsOrElse[Long]("originalSize", 0), obj.getAs[String]("checksum"),
+      obj.getAs[String]("moduleType"), obj.getAs[String]("compressionType"))
+  }
+}
+
 /**
  * Interface to the object store.
  * @param fs gridfs to work on.
@@ -73,14 +84,13 @@ class GridfsObjectStore(fs: GridFS) {
   /**
    * Get metadata for a file name.
    * @param name
-   * @return Future[Option[(checksum, Map[other,metadata])]]
+   * @return metadata
    */
-  def getMetaData(name: String): Future[Option[(String, Map[String, Any])]] =
+  def getMetaData(name: String): Future[Option[ObjectMetaData]] =
     Future {
       fs.findOne(name).map { file =>
         import com.mongodb.casbah.Implicits._
-        val metadataMap: Map[String, Any] = file.metaData.map(x => x._1 -> x._2).toMap
-        (ObjectStore.getMetadataString(metadataMap, "checksum"), metadataMap.filterKeys(_ != "checksum"))
+        ObjectMetaData.fromMongoDBObject(file.metaData)
       }
     }
 
@@ -138,10 +148,9 @@ class GridfsObjectStore(fs: GridFS) {
    * @param name
    * @return
    */
-  def getModuleEx(name: String): Future[Option[(Module, Map[String, Any])]] =
-    getMetaData(name).map(_.map {
-      case (checksum, metadata) =>
-        (new ObjectStoreModule(name, ObjectStore.getMetadataString(metadata, "moduleType"), checksum), metadata)
+  def getModuleEx(name: String): Future[Option[(Module, ObjectMetaData)]] =
+    getMetaData(name).map(_.map { metadata =>
+        (new ObjectStoreModule(name, metadata.moduleType.getOrElse(""), metadata.sha1sum.getOrElse("")), metadata)
     })
 }
 
