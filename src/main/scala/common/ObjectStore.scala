@@ -70,8 +70,6 @@ class GridfsObjectStore(fs: GridFS) {
       checksum
     }
 
-  def get(name: String): Future[Option[(InputStream, String, Map[String, Any])]] = ???
-
   /**
    * Get metadata for a file name.
    * @param name
@@ -123,28 +121,6 @@ class GridfsObjectStore(fs: GridFS) {
     }
 
   /**
-   * Copy a file to sandbox.
-   * @param sandbox
-   * @param name
-   * @param destinationName
-   * @return
-   */
-  def copyToSandbox(sandbox: Sandbox, name: String, destinationName: String): Future[InvokerRemoteFile] =
-    sandbox.putGridfs(name, destinationName).map(_.get)
-
-  /**
-   * Put array[byte] as module.
-   * @param name
-   * @param moduleType
-   * @param content
-   * @return
-   */
-  def putModule(name: String, moduleType: String, content: Array[Byte]): Future[Module] =
-    put(name, content, Map("moduleType" -> moduleType)).map { checksum =>
-      new ObjectStoreModule(name, moduleType, checksum)
-    }
-
-  /**
    * Put filename from sandbox as named module.
    * @param sandbox
    * @param name
@@ -167,14 +143,6 @@ class GridfsObjectStore(fs: GridFS) {
       case (checksum, metadata) =>
         (new ObjectStoreModule(name, ObjectStore.getMetadataString(metadata, "moduleType"), checksum), metadata)
     })
-
-  /**
-   * Retrieve just module.
-   * @param name
-   * @return
-   */
-  def getModule(name: String): Future[Option[Module]] =
-    getModuleEx(name).map(_.map(_._1))
 }
 
 trait Module {
