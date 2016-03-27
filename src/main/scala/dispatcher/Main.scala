@@ -53,7 +53,7 @@ object DispatcherServer extends App {
   import scala.collection.JavaConversions._
   import slick.driver.MySQLDriver.api._
 
-  val dispatchers = {
+  val dispatchers = if (config.hasPath("dispatcher.standard")) {
     val polygonBase = config.getConfig("polygons")
     val polygonNames = polygonBase.root().keys
     val contestResolver = new ContestResolver(polygonNames.map(n => n -> new URL(polygonBase.getConfig(n).getString("url"))).toMap)
@@ -84,17 +84,17 @@ object DispatcherServer extends App {
       }
     }
     result
-  }
+  } else Nil
 
+  val moodles = 
   if (config.hasPath("dispatcher.moodles")) {
-    for (name <- config.getStringList("dispatcher.moodles")) {
-      if (config.hasPath(name + ".dbnext")) {
+    for (name <- config.getStringList("dispatcher.moodles"); if config.hasPath(name + ".dbnext")) yield {
         val db = Database.forConfig(s"${name}.dbnext")
         val dispatcher = new MoodleDispatcher(db, problemDb, tester)
+        Logger.info(s"starting actor for ${name}")
         actorSystem.actorOf(MoodleTableScanner.props(db, dispatcher))
-      }
     }
-  }
+  } else Nil
 
   Logger.info("Starting serving")
 
