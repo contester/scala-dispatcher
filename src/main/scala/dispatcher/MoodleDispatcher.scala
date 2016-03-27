@@ -138,7 +138,6 @@ class MoodleTableScanner(db: JdbcBackend#DatabaseDef, dispatcher: MoodleDispatch
 
   override def receive: Receive = {
     case Rescan =>
-      info("Rescan received")
       getUnprocessedEntries()
             .onComplete { v =>
               self ! UnprocessedEntries(v.getOrElse(Nil))
@@ -150,18 +149,15 @@ class MoodleTableScanner(db: JdbcBackend#DatabaseDef, dispatcher: MoodleDispatch
 
   def rescanning: Receive = {
     case UnprocessedEntries(v) =>
-      info(s"Unprocessed(${v})")
       for(id <- v.filterNot(active(_))) {
         startProcessing(id)
       }
       context.unbecome()
-    case Rescan =>
-      info("Rescan ignored")
+    case Rescan => ()
     case DoneWith(id) => stash()
   }
 
   import scala.concurrent.duration._
 
   context.system.scheduler.schedule(5 seconds, 5 seconds, self, Rescan)
-  info("scheduled")
 }
