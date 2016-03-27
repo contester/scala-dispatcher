@@ -40,7 +40,7 @@ class SimpleProblemTest(problem: SimpleProblem, val testId: Int) extends Test wi
 
   override def interactive: Boolean = problem.m.interactorName.isDefined
 
-  override def stdio: Boolean = problem.m.stdio
+  override def stdio: Boolean = problem.m.stdio.getOrElse(false)
 
   override def memoryLimit: Long = problem.m.memoryLimit
 
@@ -48,7 +48,7 @@ class SimpleProblemTest(problem: SimpleProblem, val testId: Int) extends Test wi
 }
 
 case class SimpleProblemManifest(id: String, revision: Int, testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
-                                 stdio: Boolean, testerName: String, answers: Set[Int], interactorName: Option[String],
+                                 stdio: Option[Boolean], testerName: String, answers: Set[Int], interactorName: Option[String],
                                  combinedHash: Option[String])
 
 class SimpleProblem(val db: SimpleProblemDb, val m: SimpleProblemManifest, val id: ProblemID) extends Problem {
@@ -76,7 +76,9 @@ object SimpleProblemDb {
   def parseSimpleProblemManifest(what: String): Option[SimpleProblemManifest] = {
     Json.parse(what).validate[Seq[SimpleProblemManifest]] match {
       case s: JsSuccess[Seq[SimpleProblemManifest]] => Some(s.get.head)
-      case _ => None
+      case x =>
+        println(x)
+        None
     }
   }
 
