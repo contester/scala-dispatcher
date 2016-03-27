@@ -150,4 +150,8 @@ class MoodleTableScanner(db: JdbcBackend#DatabaseDef, dispatcher: MoodleDispatch
     case Rescan => ()
     case DoneWith(id) => stash()
   }
+
+  import scala.concurrent.duration._
+
+  context.system.scheduler.schedule(5 seconds, 5 seconds, self, Rescan)
 }
