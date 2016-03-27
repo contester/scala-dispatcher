@@ -41,7 +41,7 @@ class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubm
              ${r.getTesterReturnCode.abs})""").map(_ => ())
 
   def finish(r: SolutionTestingResult) = {
-    val cval = if (r.compilation.success) 1 else 0
+    val cval = if (r.compilation.success) "1" else "0"
     val passed = r.tests.count(_._2.success)
     client.run(
       sqlu"""update mdl_contester_testings set finish = NOW(), compiled = ${cval}, taken = ${r.tests.size},
@@ -67,27 +67,32 @@ object MoodleTableScanner {
     Props(classOf[MoodleTableScanner], db, dispatcher)
 }
 
-class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemDb, inv: SolutionTester) {
+class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemDb, inv: SolutionTester) extends Logging {
   import slick.driver.MySQLDriver.api._
   implicit val getMoodleSubmit = GetResult(r=>
     MoodleSubmit(r.nextInt(), r.nextInt().toString, r.nextTimestamp(), new ByteBufferModule(r.nextString(), r.nextBytes()))
   )
 
-  private def getSubmit(id: Int) =
-    db.run(
+  private def getSubmit(id: Int) = {
+    val f = db.run(
       sql"""
          select
          mdl_contester_submits.id as SubmitId,
-         mdl_contester_submits.problem as ProblemId
+         mdl_contester_submits.problem as ProblemId,
          mdl_contester_submits.submitted as Arrived,
          mdl_contester_languages.ext as ModuleId,
-         mdl_contester_submits.solution as Solution,
+         mdl_contester_submits.solution as Solution
          from
          mdl_contester_submits, mdl_contester_languages
          where
          mdl_contester_submits.lang = mdl_contester_languages.id and
-         mdl_contester_submits.processed == ${id}
+         mdl_contester_submits.id = ${id}
           """.as[MoodleSubmit]).map(_.headOption)
+f.onFailure {
+case x => info(s"$x")
+}
+f
+}
 
   def markWith(id: Int, value: Int) =
     db.run(sqlu"update mdl_contester_submits set processed = $value where id = $id")
@@ -127,11 +132,13 @@ class MoodleTableScanner(db: JdbcBackend#DatabaseDef, dispatcher: MoodleDispatch
 
   private def startProcessing(id: Long) = {
     active.add(id)
+    info(s"Starting ${id}")
     dispatcher.runId(id).ensure(self ! DoneWith(id))
   }
 
   override def receive: Receive = {
     case Rescan =>
+      info("Rescan received")
       getUnprocessedEntries()
             .onComplete { v =>
               self ! UnprocessedEntries(v.getOrElse(Nil))
@@ -143,11 +150,18 @@ class MoodleTableScanner(db: JdbcBackend#DatabaseDef, dispatcher: MoodleDispatch
 
   def rescanning: Receive = {
     case UnprocessedEntries(v) =>
+      info(s"Unprocessed(${v})")
       for(id <- v.filterNot(active(_))) {
         startProcessing(id)
       }
       context.unbecome()
-    case Rescan => ()
+    case Rescan =>
+      info("Rescan ignored")
     case DoneWith(id) => stash()
   }
+
+  import scala.concurrent.duration._
+
+  context.system.scheduler.schedule(5 seconds, 5 seconds, self, Rescan)
+  info("scheduled")
 }

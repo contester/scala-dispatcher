@@ -59,10 +59,11 @@ libraryDependencies ++= Seq(
   "com.rabbitmq" % "amqp-client" % "3.6.1",
   "com.codahale" % "jerkson_2.9.1" % "0.5.0",
   "mysql" % "mysql-connector-java" % "5.1.38",
+  "org.clapper" %% "avsl" % "1.0.2",
   "com.typesafe.slick" %% "slick" % "3.1.1",
   "com.typesafe.play" %% "play" % "2.5.0",
   "com.typesafe.play" %% "play-netty-server" % "2.5.0",
   "com.typesafe" % "config" % "1.3.0",
   "com.googlecode.protobuf-java-format" % "protobuf-java-format" % "1.2",
   "org.scalatest" %% "scalatest" % "2.2.3" % "test"
-).map(_.exclude("org.slf4j", "slf4j-jdk14"))
+).map(_.exclude("org.slf4j", "slf4j-jdk14")).map(_.exclude("org.slf4j", "slf4j-log4j12"))
