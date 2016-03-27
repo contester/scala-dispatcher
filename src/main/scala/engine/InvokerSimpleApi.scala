@@ -8,14 +8,14 @@ import org.stingray.contester.modules.ScriptLanguage
 
 class InvokerSimpleApi(val registry: InvokerRegistry, val objectCache: ObjectCache) {
   def compile(key: SchedulingKey, m: Module, stored: HasGridfsPath): Future[(CompileResult, Option[Module])] =
-    registry(m.moduleType, key, "compile")(Compiler(_, m, registry.mongoDb.objectStore, stored))
+    registry(m.moduleType, key, "compile")(Compiler(_, m, stored))
 
   def test(key: SchedulingKey, m: Module, t: Test, storePrefix: HasGridfsPath): Future[TestResult] =
-    registry(m.moduleType, key, t)(Tester(_, m, t, registry.mongoDb.objectStore, storePrefix, objectCache))
+    registry(m.moduleType, key, t)(Tester(_, m, t, storePrefix, objectCache))
 
   def custom(key: SchedulingKey, m: Module, input: Array[Byte],
              resultName: HasGridfsPath): Future[CustomTestResult] =
-    registry(m.moduleType, key, "custom")(CustomTester(_, m, input, registry.mongoDb.objectStore, resultName))
+    registry(m.moduleType, key, "custom")(CustomTester(_, m, input, resultName))
 
   def sanitize(key: ProblemDescription): Future[ProblemManifest] =
     registry("zip", key, "sanitize")(Sanitizer(_, key))

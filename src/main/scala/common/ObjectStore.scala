@@ -101,57 +101,6 @@ class GridfsObjectStore(fs: GridFS) {
    */
   def exists(name: String): Future[Boolean] =
     getMetaData(name).map(_.isDefined)
-
-  /**
-   * Set metadata for a name.
-   * @param name
-   * @param f
-   * @return
-   */
-  def setMetaData(name: String)(f: Map[String, Any] => Map[String, Any]): Future[Unit] =
-    Future {
-      fs.findOne(name).map { file =>
-        import com.mongodb.casbah.Implicits._
-        file.metaData = f(file.metaData.map(x => x._1 -> x._2).toMap)
-        file.save()
-      }
-    }
-
-  /**
-   * Copy a file from sandbox.
-   * @param sandbox
-   * @param name
-   * @param remote
-   * @param moduleType
-   * @return
-   */
-  def copyFromSandbox(sandbox: Sandbox, name: String, remote: RemoteFileName, moduleType: Option[String]): Future[Option[String]] =
-    sandbox.getGridfs(Seq((remote, name, moduleType))).map { files =>
-      files.headOption.map(_.checksum.getOrElse("deadbeef"))
-    }
-
-  /**
-   * Put filename from sandbox as named module.
-   * @param sandbox
-   * @param name
-   * @param remote
-   * @param moduleType
-   * @return
-   */
-  def putModule(sandbox: Sandbox, name: String, remote: RemoteFileName, moduleType: String): Future[Option[Module]] =
-    copyFromSandbox(sandbox, name, remote, Some(moduleType)).map { checksum =>
-        checksum.map(new ObjectStoreModule(name, moduleType, _))
-    }
-
-  /**
-   * Retrieve module with all attributes.
-   * @param name
-   * @return
-   */
-  def getModuleEx(name: String): Future[Option[(Module, ObjectMetaData)]] =
-    getMetaData(name).map(_.map { metadata =>
-        (new ObjectStoreModule(name, metadata.moduleType.getOrElse(""), metadata.sha1sum.getOrElse("")), metadata)
-    })
 }
 
 trait Module {

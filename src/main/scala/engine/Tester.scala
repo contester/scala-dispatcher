@@ -4,16 +4,18 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.proto.Local.{LocalExecution, LocalExecutionParameters, LocalExecutionResult}
 import org.stingray.contester.common._
 import org.stingray.contester.invokers._
-import org.stingray.contester.modules.{ModuleHandler, BinaryHandler}
+import org.stingray.contester.modules.{BinaryHandler, ModuleHandler}
 import org.stingray.contester.problems.{Test, TestLimits}
 import org.apache.commons.io.FilenameUtils
 import com.twitter.util.{Duration, Future}
 import org.stingray.contester.ContesterImplicits._
-import org.stingray.contester.utils.{ProtobufTools, Utils}
+import org.stingray.contester.utils.{ProtobufTools, SandboxUtil, Utils}
 import java.util.concurrent.TimeUnit
+
 import org.stingray.contester.rpc4.RemoteError
+
 import scala.Some
-import org.jboss.netty.buffer.{ChannelBuffers, WrappedChannelBuffer, ChannelBuffer}
+import org.jboss.netty.buffer.{ChannelBuffer, ChannelBuffers, WrappedChannelBuffer}
 import com.google.protobuf.Message
 
 object Tester extends Logging {
@@ -69,16 +71,16 @@ object Tester extends Logging {
     }
   }
 
-  private def storeFile(sandbox: Sandbox, store: GridfsObjectStore, storeAs: HasGridfsPath, storeWhat: RemoteFileName): Future[Option[String]] =
+  private def storeFile(sandbox: Sandbox, storeAs: HasGridfsPath, storeWhat: RemoteFileName): Future[Option[String]] =
     sandbox.invoker.api.stat(Seq(storeWhat), true)
-      .map(_.headOption).flatMap(_.map(_ => store.copyFromSandbox(sandbox, storeAs.toGridfsPath, storeWhat, None)).getOrElse(Future.None))
+      .map(_.headOption).flatMap(_.map(_ => SandboxUtil.copyFromSandbox(sandbox, storeAs.toGridfsPath, storeWhat, None)).getOrElse(Future.None))
 
-  def apply(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore,
+  def apply(instance: InvokerInstance, module: Module, test: Test,
             resultName: HasGridfsPath, objectCache: ObjectCache): Future[TestResult] =
     (if (test.interactive)
       testInteractive(instance, module, test)
     else
-      testOld(instance, module, test, store, resultName, objectCache)).map(x => new TestResult(x._1, x._2))
+      testOld(instance, module, test, resultName, objectCache)).map(x => new TestResult(x._1, x._2))
 
   /*
     We can cache the entire result on (module, testKey) here
@@ -97,7 +99,7 @@ object Tester extends Logging {
     }
 
   private def executeAndStoreSuccess(sandbox: Sandbox, factory: (String) => ModuleHandler,
-                                     test: Test, module: Module, store: GridfsObjectStore, resultName: HasGridfsPath,
+                                     test: Test, module: Module, resultName: HasGridfsPath,
                                      cache: ObjectCache): Future[(RunResult, Option[String])] =
     test.prepareInput(sandbox)
       .flatMap { _ =>
@@ -105,7 +107,7 @@ object Tester extends Logging {
         module, test.getLimits(module.moduleType), test.stdio) }
       .flatMap { solutionResult =>
     { if (solutionResult.success) {
-          storeFile(sandbox, store, resultName, sandbox.sandboxId / "output.txt")
+          storeFile(sandbox, resultName, sandbox.sandboxId / "output.txt")
         } else {
           Future.None
         }}.map((solutionResult, _))
@@ -113,9 +115,9 @@ object Tester extends Logging {
 
   // TODO: restore caching of test results. Use ScalaCache and better keys (not just outputHash)
 
-  private def testOld(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore,
+  private def testOld(instance: InvokerInstance, module: Module, test: Test,
                       resultName: HasGridfsPath, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] =
-    executeAndStoreSuccess(instance.restricted, instance.factory, test, module, store, resultName, objectCache)
+    executeAndStoreSuccess(instance.restricted, instance.factory, test, module, resultName, objectCache)
       .flatMap {
       case (solutionResult, optHash) =>
         optHash.map { outputHash =>
