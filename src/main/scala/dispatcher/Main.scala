@@ -83,8 +83,8 @@ object DispatcherServer extends App {
         result.add(config.getString(s"${name}.short"), Database.forConfig(s"${name}.dbnext"), rabbitMq)
       }
     }
-    result
-  } else Nil
+    Some(result)
+  } else None
 
   val moodles = 
   if (config.hasPath("dispatcher.moodles")) {
