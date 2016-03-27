@@ -51,7 +51,7 @@ case class SimpleProblemManifest(id: String, revision: Int, testCount: Int, time
                                  stdio: Option[Boolean], testerName: String, answers: Set[Int], interactorName: Option[String],
                                  combinedHash: Option[String])
 
-class SimpleProblem(val db: SimpleProblemDb, val m: SimpleProblemManifest, val id: ProblemID) extends Problem {
+class SimpleProblem(val m: SimpleProblemManifest, val id: ProblemID) extends Problem {
   /**
     * Override this method to provide sequence of tests.
     *
@@ -84,32 +84,24 @@ object SimpleProblemDb {
 
 }
 
-class SimpleProblemDb(url: String, client: Service[Request, Response]) extends ProblemDb {
+class SimpleProblemDb(url: String, client: Service[Request, Response]) extends ProblemServerInterface {
   import SimpleProblemDb._
-  override def setProblem(problem: ProblemID, manifest: ProblemManifest): Future[Problem] = ???
 
-  private def receiveProblem(url: String) = {
+  private def receiveProblem(url: String): Future[Option[Problem]] = {
     val request = RequestBuilder().url(url).buildGet()
     client(request).flatMap { r =>
       r.status match {
         case Status.Ok =>
-          //Future.value(parseSimpleProblemManifest(r.contentString))
-          Future.None
+          Future.value(parseSimpleProblemManifest(r.contentString).map { found =>
+            val pid = new SimpleProblemID(getSimpleUrlId(new URI(found.id)), found.revision)
+            new SimpleProblem(found, pid)
+          })
         case Status.NotFound =>
           Future.None
         case _ => Future.exception(SimpleProblemDbException(r.status.reason))
       }
     }
   }
-
-  override def getProblem(problem: ProblemID): Future[Option[Problem]] = ???
-  /*{
-    val ub = new URIBuilder(url+"problem/get/")
-      .addParameter("id", problem.pid)
-      .addParameter("revision", problem.revision.toString)
-      .build().toASCIIString
-    receiveProblem(ub)
-  }*/
 
   def getPathPart(url: URI) =
     url.getPath.stripPrefix("/").stripSuffix("/")

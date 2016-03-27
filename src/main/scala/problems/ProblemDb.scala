@@ -37,10 +37,13 @@ object ProblemManifest {
     )
 }
 
-trait ProblemDb {
+trait ProblemServerInterface {
+  def getMostRecentProblem(problem: ProblemHandle): Future[Option[Problem]]
+}
+
+trait ProblemDb extends ProblemServerInterface {
   def setProblem(problem: ProblemID, manifest: ProblemManifest): Future[Problem]
   def getProblem(problem: ProblemID): Future[Option[Problem]]
-  def getMostRecentProblem(problem: ProblemHandle): Future[Option[Problem]]
 }
 
 trait ProblemFileStore {

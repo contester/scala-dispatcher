@@ -7,7 +7,7 @@ import java.sql.{ResultSet, Timestamp}
 
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
-import org.stingray.contester.problems.{DirectProblemHandle, ProblemDb}
+import org.stingray.contester.problems.{DirectProblemHandle, ProblemDb, ProblemServerInterface}
 import org.stingray.contester.testing.{SingleProgress, SolutionTester, SolutionTestingResult}
 import java.net.URI
 
@@ -67,7 +67,7 @@ object MoodleTableScanner {
     Props(classOf[MoodleTableScanner], db, dispatcher)
 }
 
-class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemDb, inv: SolutionTester) extends Logging {
+class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface, inv: SolutionTester) extends Logging {
   import slick.driver.MySQLDriver.api._
   implicit val getMoodleSubmit = GetResult(r=>
     MoodleSubmit(r.nextInt(), r.nextInt().toString, r.nextTimestamp(), new ByteBufferModule(r.nextString(), r.nextBytes()))
