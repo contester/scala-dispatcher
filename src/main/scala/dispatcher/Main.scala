@@ -1,22 +1,22 @@
 package org.stingray.contester.dispatcher
 
 import java.io.File
-import java.net.{URL, InetSocketAddress}
+import java.net.{InetSocketAddress, URL}
 import java.util.concurrent.Executors
-import akka.actor.{Props, ActorSystem}
+
+import akka.actor.{ActorSystem, Props}
 import com.spingo.op_rabbit.{ConnectionParams, RabbitControl}
 import controllers.Assets
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
-import org.jboss.netty.logging.{Slf4JLoggerFactory, InternalLoggerFactory}
+import org.jboss.netty.logging.{InternalLoggerFactory, Slf4JLoggerFactory}
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.stingray.contester.testing.SolutionTester
 import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.common.{MemcachedObjectCache, MongoDBInstance}
 import org.stingray.contester.polygon._
-import org.stingray.contester.problems.CommonProblemDb
-
+import org.stingray.contester.problems.{CommonProblemDb, SimpleProblemDb}
 import com.typesafe.config.{Config, ConfigFactory}
 import play.api.Logger
 
@@ -32,10 +32,13 @@ object DispatcherServer extends App {
   private val problemDb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
   private val invoker = new InvokerRegistry("contester", mongoDb)
 
-
-
   val invokerApi = new InvokerSimpleApi(invoker, objectCache)
   val tester = new SolutionTester(invokerApi)
+
+  val simpleDb =
+    if (config.hasPath("simpledb")) {
+      Some(SimpleProblemDb(config.getString("simpledb")))
+    } else None
 
   private def bindInvokerTo(socket: InetSocketAddress) = {
     val sf = new NioServerSocketChannelFactory(
@@ -90,7 +93,7 @@ object DispatcherServer extends App {
   if (config.hasPath("dispatcher.moodles")) {
     for (name <- config.getStringList("dispatcher.moodles"); if config.hasPath(name + ".dbnext")) yield {
         val db = Database.forConfig(s"${name}.dbnext")
-        val dispatcher = new MoodleDispatcher(db, problemDb, tester)
+        val dispatcher = new MoodleDispatcher(db, simpleDb.getOrElse(problemDb), tester)
         Logger.info(s"starting actor for ${name}")
         actorSystem.actorOf(MoodleTableScanner.props(db, dispatcher))
     }

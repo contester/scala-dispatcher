@@ -2,7 +2,7 @@ package org.stingray.contester.problems
 
 import java.net.URI
 
-import com.twitter.finagle.Service
+import com.twitter.finagle.{Http, Service}
 import com.twitter.finagle.http.{Request, RequestBuilder, Response, Status}
 import com.twitter.util.Future
 import org.apache.http.client.utils.{URIBuilder, URLEncodedUtils}
@@ -82,6 +82,12 @@ object SimpleProblemDb {
     }
   }
 
+  def apply(url: String) = {
+    val parsed = new URI(url)
+    val dest = if (parsed.getPort != -1) parsed.getHost else s"${parsed.getHost}:${parsed.getPort}"
+    val client = Http.client.newService(dest)
+    new SimpleProblemDb(url, client)
+  }
 }
 
 class SimpleProblemDb(url: String, client: Service[Request, Response]) extends ProblemServerInterface {
