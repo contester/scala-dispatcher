@@ -22,21 +22,14 @@ trait HasGridfsPath {
   def toGridfsPath: String
 }
 
-class InstanceHandle(val handle: String) {
-  def submit(submitId: Int) =
-    new InstanceSubmitHandle(handle, submitId)
-}
-class InstanceSubmitHandle(val handle: String, val submitId: Int) extends HasGridfsPath {
-  def toGridfsPath: String = "submit/%s/%d".format(handle, submitId)
-
-  def testing(testingId: Int) =
-    new InstanceSubmitTestingHandle(handle, submitId, testingId)
+class InstanceSubmitHandle(val baseUrl: Option[String], val handle: String, val submitId: Int) extends HasGridfsPath {
+  def toGridfsPath: String = s"${baseUrl.getOrElse("")}submit/${handle}/${submitId}"
 }
 
-class InstanceSubmitTestingHandle(val handle: String, val submitId: Int, val testingId: Int) extends HasGridfsPath {
-  def toGridfsPath: String = "submit/%s/%d/%d".format(handle, submitId, testingId)
+class InstanceSubmitTestingHandle(val baseUrl: Option[String], val handle: String, val submitId: Int, val testingId: Int) extends HasGridfsPath {
+  def toGridfsPath: String = s"${baseUrl.getOrElse("")}submit/${handle}/${submitId}/${testingId}"
 
-  def submit = new InstanceSubmitHandle(handle, submitId)
+  def submit = new InstanceSubmitHandle(baseUrl, handle, submitId)
 }
 
 class GridfsPath(override val toGridfsPath: String) extends HasGridfsPath {

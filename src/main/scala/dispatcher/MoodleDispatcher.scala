@@ -67,7 +67,7 @@ object MoodleTableScanner {
     Props(classOf[MoodleTableScanner], db, dispatcher)
 }
 
-class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface, inv: SolutionTester) extends Logging {
+class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface, inv: SolutionTester, storeUrl: Option[String]) extends Logging {
   import slick.driver.MySQLDriver.api._
   implicit val getMoodleSubmit = GetResult(r=>
     MoodleSubmit(r.nextInt(), r.nextInt().toString, r.nextTimestamp(), new ByteBufferModule(r.nextString(), r.nextBytes()))
@@ -88,15 +88,14 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
          mdl_contester_submits.lang = mdl_contester_languages.id and
          mdl_contester_submits.id = ${id}
           """.as[MoodleSubmit]).map(_.headOption)
-f.onFailure {
-case x => info(s"$x")
-}
-f
-}
+    f.onFailure {
+      case x => info(s"$x")
+    }
+    f
+  }
 
   def markWith(id: Int, value: Int) =
     db.run(sqlu"update mdl_contester_submits set processed = $value where id = $id")
-
 
   import org.stingray.contester.utils.Fu._
 
@@ -114,7 +113,7 @@ f
     pdb.getMostRecentProblem(new DirectProblemHandle(new URI("direct://school.sgu.ru/moodle/" + item.problemId))).flatMap { problem =>
       MoodleResultReporter.start(db, item).flatMap { reporter =>
         inv(item, item.sourceModule, problem.get, reporter, true,
-          new InstanceSubmitTestingHandle("school.sgu.ru/moodle", item.id, reporter.testingId), Map.empty).flatMap(reporter.finish)
+          new InstanceSubmitTestingHandle(storeUrl.map("filer:" + _ + "fs/"), "school.sgu.ru/moodle", item.id, reporter.testingId), Map.empty).flatMap(reporter.finish)
       }
     }
   }

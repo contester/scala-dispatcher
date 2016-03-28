@@ -93,7 +93,7 @@ object DispatcherServer extends App {
   if (config.hasPath("dispatcher.moodles")) {
     for (name <- config.getStringList("dispatcher.moodles"); if config.hasPath(name + ".dbnext")) yield {
         val db = Database.forConfig(s"${name}.dbnext")
-        val dispatcher = new MoodleDispatcher(db, simpleDb.getOrElse(problemDb), tester)
+        val dispatcher = new MoodleDispatcher(db, simpleDb.getOrElse(problemDb), tester, simpleDb.map(_.baseUrl))
         Logger.info(s"starting actor for ${name}")
         actorSystem.actorOf(MoodleTableScanner.props(db, dispatcher))
     }

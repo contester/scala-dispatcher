@@ -93,7 +93,7 @@ object SimpleProblemDb {
   }
 }
 
-class SimpleProblemDb(baseUrl: String, client: Service[Request, Response]) extends ProblemServerInterface {
+class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) extends ProblemServerInterface {
   import SimpleProblemDb._
 
   private def receiveProblem(url: String): Future[Option[Problem]] = {
@@ -113,10 +113,10 @@ class SimpleProblemDb(baseUrl: String, client: Service[Request, Response]) exten
     }
   }
 
-  def getPathPart(url: URI) =
+  private def getPathPart(url: URI) =
     url.getPath.stripPrefix("/").stripSuffix("/")
 
-  def getSimpleUrlId(url: URI) =
+  private def getSimpleUrlId(url: URI) =
     (url.getScheme :: url.getHost :: (if (url.getPort != -1) url.getPort.toString :: getPathPart(url) :: Nil else getPathPart(url) :: Nil)).mkString("/")
 
   override def getMostRecentProblem(problem: ProblemHandle): Future[Option[Problem]] = {

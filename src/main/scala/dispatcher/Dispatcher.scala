@@ -118,7 +118,7 @@ class SubmitDispatcher(parent: DbDispatcher, db: JdbcBackend#DatabaseDef) extend
         parent.pdata.getPolygonProblem(PolygonURL(testingInfo.problemId))
           .flatMap(x => parent.pdata.sanitizeProblem(x)).flatMap { problem =>
           parent.invoker(m, m.sourceModule, problem, combinedProgress, m.schoolMode,
-            new InstanceSubmitTestingHandle(parent.storeId, m.id, testingInfo.testingId),
+            new InstanceSubmitTestingHandle(None, parent.storeId, m.id, testingInfo.testingId),
             testingInfo.state.toMap.mapValues(new RestoredResult(_))).flatMap { (sr: SolutionTestingResult) =>
             combinedProgress.db.finish(sr, m.id, testingInfo.testingId).zip(combinedProgress.raw.finish(sr))
             .map {_ =>
