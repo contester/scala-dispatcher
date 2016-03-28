@@ -84,23 +84,27 @@ object SimpleProblemDb {
 
   def apply(url: String) = {
     val parsed = new URI(url)
-    val dest = if (parsed.getPort != -1) parsed.getHost else s"${parsed.getHost}:${parsed.getPort}"
+    println(parsed)
+    val destPort = if (parsed.getPort == -1) 80 else parsed.getPort
+    val dest = s"${parsed.getHost}:${destPort}"
+    println(dest)
     val client = Http.client.newService(dest)
     new SimpleProblemDb(url, client)
   }
 }
 
-class SimpleProblemDb(url: String, client: Service[Request, Response]) extends ProblemServerInterface {
+class SimpleProblemDb(baseUrl: String, client: Service[Request, Response]) extends ProblemServerInterface {
   import SimpleProblemDb._
 
   private def receiveProblem(url: String): Future[Option[Problem]] = {
     val request = RequestBuilder().url(url).buildGet()
     client(request).flatMap { r =>
+      println(r)
       r.status match {
         case Status.Ok =>
           Future.value(parseSimpleProblemManifest(r.contentString).map { found =>
             val pid = new SimpleProblemID(getSimpleUrlId(new URI(found.id)), found.revision)
-            new SimpleProblem(url + "fs/", found, pid)
+            new SimpleProblem(baseUrl + "fs/", found, pid)
           })
         case Status.NotFound =>
           Future.None
@@ -115,9 +119,8 @@ class SimpleProblemDb(url: String, client: Service[Request, Response]) extends P
   def getSimpleUrlId(url: URI) =
     (url.getScheme :: url.getHost :: (if (url.getPort != -1) url.getPort.toString :: getPathPart(url) :: Nil else getPathPart(url) :: Nil)).mkString("/")
 
-
   override def getMostRecentProblem(problem: ProblemHandle): Future[Option[Problem]] = {
-    receiveProblem(new URIBuilder(url+"problem/get/")
+    receiveProblem(new URIBuilder(baseUrl+"problem/get/")
       .addParameter("id", problem.uri.toASCIIString)
       .build().toASCIIString)
   }
