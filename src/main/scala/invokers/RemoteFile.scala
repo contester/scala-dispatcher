@@ -3,6 +3,10 @@ package org.stingray.contester.invokers
 import org.apache.commons.io.FilenameUtils
 import org.stingray.contester.proto.Local.FileStat
 
+class StorageFileName(val s: String) extends AnyVal
+
+case class CopyToStorage(local: RemoteFileName, storage: StorageFileName, moduleType: Option[String])
+
 class RemoteFileName(val components: Seq[String], pathSeparator: Option[String]) {
   def parent: RemoteFileName =
     new RemoteFileName(components.take(components.length - 1), pathSeparator)

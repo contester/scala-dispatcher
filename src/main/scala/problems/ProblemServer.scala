@@ -18,7 +18,7 @@ class SimpleProblemTest(problem: SimpleProblem, val testId: Int) extends Test wi
     Future.value(Some(problem.id.testPrefix(testId)))
 
   private[this] def putAsset(sandbox: Sandbox, what: String, where: String) =
-    sandbox.putGridfs(what, where).map { r =>
+    sandbox.putGridfs("filer:" + problem.baseUrl + what, where).map { r =>
       if (r.isEmpty) throw new TestAssetNotFoundException(what)
     }
 
@@ -51,7 +51,7 @@ case class SimpleProblemManifest(id: String, revision: Int, testCount: Int, time
                                  stdio: Option[Boolean], testerName: String, answers: Set[Int], interactorName: Option[String],
                                  combinedHash: Option[String])
 
-class SimpleProblem(val m: SimpleProblemManifest, val id: ProblemID) extends Problem {
+class SimpleProblem(val baseUrl: String, val m: SimpleProblemManifest, val id: ProblemID) extends Problem {
   /**
     * Override this method to provide sequence of tests.
     *
@@ -94,7 +94,7 @@ class SimpleProblemDb(url: String, client: Service[Request, Response]) extends P
         case Status.Ok =>
           Future.value(parseSimpleProblemManifest(r.contentString).map { found =>
             val pid = new SimpleProblemID(getSimpleUrlId(new URI(found.id)), found.revision)
-            new SimpleProblem(found, pid)
+            new SimpleProblem(url + "fs/", found, pid)
           })
         case Status.NotFound =>
           Future.None
