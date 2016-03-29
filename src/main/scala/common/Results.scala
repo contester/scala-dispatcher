@@ -2,17 +2,12 @@ package org.stingray.contester.common
 
 import org.stingray.contester.proto.Blobs.Blob
 import org.stingray.contester.proto.Local.{StatusCodes, LocalExecution, LocalExecutionParameters, LocalExecutionResult}
-import com.googlecode.protobuf.format.JsonFormat
-import com.mongodb.util.JSON
-import com.mongodb.casbah.commons.{Imports, MongoDBObject}
 
 /**
  * Result of some run, operation, or test
  */
 trait Result {
   def success: Boolean
-
-  def toMongoDBObject = MongoDBObject("success" -> success)
 }
 
 /**
@@ -68,12 +63,6 @@ class SingleRunResult(val value: LocalExecution) extends RunResult {
     "params" -> params,
     "result" -> result
   )
-
-  import com.mongodb.casbah.Implicits._
-  override def toMongoDBObject = super.toMongoDBObject ++ MongoDBObject(
-    "status" -> status,
-    "params" -> JSON.parse(JsonFormat.printToString(params)),
-    "result" -> JSON.parse(JsonFormat.printToString(result)))
 }
 
 class JavaRunResult(v: LocalExecution) extends SingleRunResult(v) {
@@ -165,8 +154,6 @@ class InteractiveRunResult(first: SingleRunResult, second: SingleRunResult) exte
 class StepResult(val name: String, v: LocalExecution) extends SingleRunResult(v) {
   import com.mongodb.casbah.Implicits._
   override def toMap = super.toMap.+("name" -> name)
-
-  override def toMongoDBObject: Imports.DBObject = MongoDBObject("stepName" -> name) ++ super.toMongoDBObject
 }
 
 object StepResult {
@@ -187,9 +174,6 @@ trait CompileResult extends Result {
   val stdErr = "".getBytes
 
   def toMap: Map[String, Any] = Map()
-
-  import com.mongodb.casbah.Implicits._
-  override def toMongoDBObject = super.toMongoDBObject ++ MongoDBObject("action" -> "compile", "status" -> status, "time" -> time, "memory" -> memory, "stdOut" -> stdOut, "stdErr" -> stdErr)
 }
 
 class RealCompileResult(val steps: Seq[StepResult], override val success: Boolean) extends CompileResult {
@@ -210,9 +194,6 @@ class RealCompileResult(val steps: Seq[StepResult], override val success: Boolea
   override def toMap: Map[String, Any] = Map(
     "steps" -> steps.map(_.toMap)
   )
-
-  import com.mongodb.casbah.Implicits._
-  override def toMongoDBObject: Imports.DBObject = super.toMongoDBObject ++ MongoDBObject("steps" -> steps.map(_.toMongoDBObject))
 }
 
 object AlreadyCompiledResult extends CompileResult {
@@ -306,15 +287,4 @@ class TestResult(val solution: RunResult, val tester: Option[TesterRunResult]) e
   override def toString =
       "%s, time=%ss, memory=%s".format(StatusCode(status),
       solution.time / 1000000.0, solution.memory)
-
-  import com.mongodb.casbah.Implicits._
-  override def toMongoDBObject: Imports.DBObject = super.toMongoDBObject ++ MongoDBObject(List(
-      "status" -> status,
-      "testerStatus" -> testerStatus,
-      "solutionStatus" -> solutionStatus,
-      "testerOutput" -> getTesterOutput,
-      "testerError" -> getTesterError,
-      "testerReturnCode" -> getTesterReturnCode,
-      "solution" -> solution.toMongoDBObject
-  ) ++ tester.map("tester" -> _))
 }
