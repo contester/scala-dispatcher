@@ -51,7 +51,6 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "bijection-util" % "0.9.2",
   "org.mongodb" %% "casbah" % "2.7.4",
   "org.clapper" %% "grizzled-slf4j" % "1.0.2",
-  "net.spy" % "spymemcached" % "2.12.0",
   "joda-time" % "joda-time" % "2.9.2",
   "org.joda" % "joda-convert" % "1.8.1",
   "org.apache.httpcomponents" % "httpclient" % "4.5.2",

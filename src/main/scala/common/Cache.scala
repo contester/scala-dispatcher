@@ -5,8 +5,6 @@ import com.twitter.util.{Time, Future}
 import com.twitter.finagle.Memcachedx
 import grizzled.slf4j.Logging
 import com.google.protobuf.Message
-import net.spy.memcached.MemcachedClient
-import net.spy.memcached.transcoders.Transcoder
 import org.stingray.contester.utils.ProtobufTools
 
 trait ObjectCache {
