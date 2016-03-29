@@ -57,7 +57,6 @@ libraryDependencies ++= Seq(
   "org.apache.httpcomponents" % "httpclient" % "4.5.2",
   "commons-io" % "commons-io" % "2.4",
   "com.rabbitmq" % "amqp-client" % "3.6.1",
-  "com.codahale" % "jerkson_2.9.1" % "0.5.0",
   "mysql" % "mysql-connector-java" % "5.1.38",
   "org.clapper" %% "avsl" % "1.0.2",
   "com.typesafe.slick" %% "slick" % "3.1.1",
