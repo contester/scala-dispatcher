@@ -34,6 +34,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="SBT: aopalliance:aopalliance:1.0:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.clapper:grizzled-slf4j_2.11:1.0.3:jar" level="project" />
     <orderEntry type="library" name="SBT: org.scala-lang.modules:scala-async_2.11:0.9.1:jar" level="project" />
     <orderEntry type="library" name="SBT: org.clapper:grizzled-scala_2.11:1.2:jar" level="project" />
     <orderEntry type="library" name="SBT: org.clapper:avsl_2.11:1.0.2:jar" level="project" />
@@ -94,7 +95,6 @@
     <orderEntry type="library" name="SBT: org.mongodb:casbah-gridfs_2.11:2.7.4:jar" level="project" />
     <orderEntry type="library" name="SBT: org.mongodb:casbah-core_2.11:2.7.4:jar" level="project" />
     <orderEntry type="library" name="SBT: org.mongodb:casbah-commons_2.11:2.7.4:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.clapper:grizzled-slf4j_2.11:1.0.2:jar" level="project" />
     <orderEntry type="library" name="SBT: org.apache.thrift:libthrift:0.5.0-1:jar" level="project" />
     <orderEntry type="library" name="SBT: javax.inject:javax.inject:1:jar" level="project" />
     <orderEntry type="library" name="SBT: commons-lang:commons-lang:2.6:jar" level="project" />
@@ -139,30 +139,10 @@
     <orderEntry type="library" name="SBT: com.typesafe.akka:akka-actor_2.11:2.4.2:jar" level="project" />
     <orderEntry type="library" name="SBT: com.typesafe.akka:akka-slf4j_2.11:2.4.2:jar" level="project" />
     <orderEntry type="library" name="SBT: com.typesafe.akka:akka-stream_2.11:2.4.2:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.netty:netty-reactive-streams:1.0.2:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.netty:netty-reactive-streams-http:1.0.2:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:build-link:2.5.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-datacommons_2.11:2.5.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-exceptions:2.5.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-functional_2.11:2.5.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-iteratees_2.11:2.5.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-json_2.11:2.5.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-netty-server_2.11:2.5.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-netty-utils:2.5.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-server_2.11:2.5.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-streams_2.11:2.5.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play_2.11:2.5.0:jar" level="project" />
     <orderEntry type="library" name="SBT: com.typesafe.slick:slick_2.11:3.1.1:jar" level="project" />
     <orderEntry type="library" name="SBT: commons-collections:commons-collections:3.2.2:jar" level="project" />
     <orderEntry type="library" name="SBT: commons-logging:commons-logging:1.2:jar" level="project" />
     <orderEntry type="library" name="SBT: io.netty:netty:3.10.5.Final:jar" level="project" />
-    <orderEntry type="library" name="SBT: io.netty:netty-buffer:4.0.33.Final:jar" level="project" />
-    <orderEntry type="library" name="SBT: io.netty:netty-codec:4.0.33.Final:jar" level="project" />
-    <orderEntry type="library" name="SBT: io.netty:netty-codec-http:4.0.33.Final:jar" level="project" />
-    <orderEntry type="library" name="SBT: io.netty:netty-common:4.0.33.Final:jar" level="project" />
-    <orderEntry type="library" name="SBT: io.netty:netty-handler:4.0.33.Final:jar" level="project" />
-    <orderEntry type="library" name="SBT: io.netty:netty-transport:4.0.33.Final:jar" level="project" />
-    <orderEntry type="library" name="SBT: io.netty:netty-transport-native-epoll:4.0.33.Final:linux-x86_64:jar" level="project" />
     <orderEntry type="library" name="SBT: joda-time:joda-time:2.9.2:jar" level="project" />
     <orderEntry type="library" name="SBT: mysql:mysql-connector-java:5.1.38:jar" level="project" />
     <orderEntry type="library" name="SBT: org.apache.httpcomponents:httpclient:4.5.2:jar" level="project" />
@@ -173,5 +153,25 @@
     <orderEntry type="library" name="SBT: org.slf4j:jcl-over-slf4j:1.7.16:jar" level="project" />
     <orderEntry type="library" name="SBT: org.slf4j:jul-to-slf4j:1.7.16:jar" level="project" />
     <orderEntry type="library" name="SBT: org.slf4j:slf4j-api:1.7.16:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.netty:netty-reactive-streams:1.0.5:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.netty:netty-reactive-streams-http:1.0.5:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:build-link:2.5.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-datacommons_2.11:2.5.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-exceptions:2.5.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-functional_2.11:2.5.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-iteratees_2.11:2.5.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-json_2.11:2.5.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-netty-server_2.11:2.5.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-netty-utils:2.5.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-server_2.11:2.5.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-streams_2.11:2.5.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play_2.11:2.5.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: io.netty:netty-buffer:4.0.34.Final:jar" level="project" />
+    <orderEntry type="library" name="SBT: io.netty:netty-codec:4.0.34.Final:jar" level="project" />
+    <orderEntry type="library" name="SBT: io.netty:netty-codec-http:4.0.34.Final:jar" level="project" />
+    <orderEntry type="library" name="SBT: io.netty:netty-common:4.0.34.Final:jar" level="project" />
+    <orderEntry type="library" name="SBT: io.netty:netty-handler:4.0.34.Final:jar" level="project" />
+    <orderEntry type="library" name="SBT: io.netty:netty-transport:4.0.34.Final:jar" level="project" />
+    <orderEntry type="library" name="SBT: io.netty:netty-transport-native-epoll:4.0.34.Final:linux-x86_64:jar" level="project" />
   </component>
 </module>

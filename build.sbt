@@ -50,17 +50,15 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "util-core" % "6.33.0",
   "com.twitter" %% "bijection-util" % "0.9.2",
   "org.mongodb" %% "casbah" % "2.7.4",
-  "org.clapper" %% "grizzled-slf4j" % "1.0.2",
-  "joda-time" % "joda-time" % "2.9.2",
-  "org.joda" % "joda-convert" % "1.8.1",
+  "org.clapper" %% "grizzled-slf4j" % "1.0.3",
   "org.apache.httpcomponents" % "httpclient" % "4.5.2",
   "commons-io" % "commons-io" % "2.4",
   "com.rabbitmq" % "amqp-client" % "3.6.1",
   "mysql" % "mysql-connector-java" % "5.1.38",
-  "org.clapper" %% "avsl" % "1.0.2",
+  "org.clapper" %% "avsl" % "1.0.4",
   "com.typesafe.slick" %% "slick" % "3.1.1",
-  "com.typesafe.play" %% "play" % "2.5.0",
-  "com.typesafe.play" %% "play-netty-server" % "2.5.0",
+  "com.typesafe.play" %% "play" % "2.5.1",
+  "com.typesafe.play" %% "play-netty-server" % "2.5.1",
   "com.typesafe" % "config" % "1.3.0",
-  "org.scalatest" %% "scalatest" % "2.2.3" % "test"
+  "org.scalatest" %% "scalatest" % "2.2.6" % "test"
 ).map(_.exclude("org.slf4j", "slf4j-jdk14")).map(_.exclude("org.slf4j", "slf4j-log4j12"))
