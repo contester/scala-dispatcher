@@ -45,7 +45,7 @@ libraryDependencies ++= Seq(
   "io.netty" % "netty" % "3.10.5.Final",
   "com.twitter" %% "finagle-core" % "6.34.0",
   "com.twitter" %% "finagle-http" % "6.34.0",
-  "com.twitter" %% "finagle-memcachedx" % "6.27.0",
+  "com.twitter" %% "finagle-memcached" % "6.34.0",
   "com.twitter" %% "finagle-mysql" % "6.34.0",
   "com.twitter" %% "util-core" % "6.33.0",
   "com.twitter" %% "bijection-util" % "0.9.2",

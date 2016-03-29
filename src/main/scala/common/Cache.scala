@@ -2,7 +2,7 @@ package org.stingray.contester.common
 
 import com.twitter.io.Buf
 import com.twitter.util.{Time, Future}
-import com.twitter.finagle.Memcachedx
+import com.twitter.finagle.memcached.Client
 import grizzled.slf4j.Logging
 import com.google.protobuf.Message
 import org.stingray.contester.utils.ProtobufTools
@@ -29,7 +29,7 @@ trait ObjectCache {
 }
 
 class MemcachedObjectCache(host: String) extends ObjectCache with Logging {
-  val client = Memcachedx.newRichClient(host)
+  val client = Client(host)
 
   def cacheGet(key: String): Future[Option[Buf]] = {
     trace("Get: " + key)
@@ -38,9 +38,6 @@ class MemcachedObjectCache(host: String) extends ObjectCache with Logging {
 
   def cacheSet(key: String, value: Buf, expiry: Option[Time]=None): Future[Unit] = {
     trace("Set: " + key)
-    if (expiry.isDefined)
-      client.set(key, 0, expiry.get, value)
-    else
-      client.set(key, value)
+    client.set(key, 0, expiry.getOrElse(Time.epoch), value)
   }
 }
