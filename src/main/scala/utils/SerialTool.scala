@@ -1,10 +1,12 @@
 package org.stingray.contester.utils
 
-import com.twitter.util.{Await, Try, Future}
+import com.twitter.util.{Await, Future, Promise, Try}
+
 import collection.mutable
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.{ListenableFuture, SettableFuture}
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
+
 import grizzled.slf4j.Logging
 
 /** Memoizator/serializator makes sure there's only one outstanding async operation per key.
@@ -18,20 +20,7 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[Val
   /** Map with outstanding requests. Synchronized.
     * It's better to use ConcurrentMap, of course. But how I'm going to do that?
     */
-  private val data = new mutable.HashMap[KeyType, Future[ValueType]]()
-
-  /** Removes the key and returns the value.
-    *
-    * @param key Key to remove.
-    * @param v Value to return.
-    * @return v.
-    */
-  private[this] def removeKey(key: KeyType, v: Try[ValueType]) = {
-    synchronized {
-      data.remove(key)
-    }
-    Future.const(v)
-  }
+  private val data = new ConcurrentHashMap[KeyType, Future[ValueType]]()
 
   /** If the operation with key is already running, return its future. Otherwise, start it (by using get()) and
     * return its future.
@@ -39,14 +28,15 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, () => Future[Val
     * @param get Function to start the async op.
     * @return Result of the async op.
     */
-  def apply(key: KeyType, get: () => Future[ValueType]): Future[ValueType] =
-    synchronized {
-      if (data.contains(key)) {
-        data(key)
-      } else
-        data(key) = get()
-      data(key).transform(removeKey(key, _))
+  def apply(key: KeyType, get: () => Future[ValueType]): Future[ValueType] = {
+    val p = Promise[ValueType]
+    data.putIfAbsent(key, p) match {
+      case null =>
+        p.become(get().ensure(data.remove(key, p)))
+        p
+      case oldv => oldv
     }
+  }
 }
 
 /** Interesting class to build L1/L2 caches with fetch routine.
