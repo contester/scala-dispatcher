@@ -1,11 +1,9 @@
 package org.stingray.contester.problems
 
-import com.mongodb.casbah.Imports._
 import com.twitter.util.Future
 import org.stingray.contester.utils.Utils
 import grizzled.slf4j.Logging
 import com.google.common.collect.MapMaker
-import org.stingray.contester.common.GridfsObjectStore
 import java.net.URI
 
 case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
@@ -17,24 +15,6 @@ case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: L
     "stdio" -> stdio,
     "testerName" -> testerName,
     "answers" -> answers) ++ interactorName.map("interactorName" -> _)
-
-  def ::(problem: ProblemID) =
-    MongoDBObject(
-      List("_id" -> problem.pdbId, "id" -> problem.pid, "revision" -> problem.revision) ++ toList
-    )
-}
-
-object ProblemManifest {
-  def apply(m: MongoDBObject): ProblemManifest =
-    new ProblemManifest(
-      m.getAsOrElse[Int]("testCount", 1),
-      m.getAsOrElse[Long]("timeLimitMicros", 1000000),
-      m.getAsOrElse[Long]("memoryLimit", 64 * 1024 * 1024),
-      m.getAsOrElse[Boolean]("stdio", false),
-      m.getAsOrElse[String]("testerName", "check.exe"),
-      m.getAs[Iterable[Int]]("answers").getOrElse(Seq()),
-      m.getAs[String]("interactorName")
-    )
 }
 
 trait ProblemServerInterface {
@@ -51,24 +31,11 @@ trait ProblemFileStore {
 }
 
 trait SanitizeDb extends ProblemDb with ProblemFileStore
-
-class CommonProblemDb(mdb: MongoDB, mfs: GridfsObjectStore) extends SanitizeDb with Logging {
+/*
+class CommonProblemDb extends SanitizeDb with Logging {
   import collection.JavaConversions._
-  val localCache: collection.concurrent.Map[(String, Int), PDBProblem] = new MapMaker().weakValues().makeMap[(String, Int), PDBProblem]()
 
-  def buildIndexes: Future[Unit] =
-    Future {
-      trace("Ensuring indexes on problem db")
-      mdb("manifest").ensureIndex(Map("id" -> 1, "revision" -> 1), "uniqueProblem", true)
-    }
-
-  def setProblem(problem: ProblemID, manifest: ProblemManifest) =
-    Future {
-      trace("Inserting manifest: " + (problem :: manifest))
-      mdb("manifest").insert(problem :: manifest)
-      PDBProblem(this, problem, manifest)
-    }
-
+  def setProblem(problem: ProblemID, manifest: ProblemManifest) = ???
   private def getManifest(problem: ProblemID): Future[Option[ProblemManifest]] =
     Future {
       trace("Looking for manifest: " + problem)
@@ -122,3 +89,4 @@ class CommonProblemDb(mdb: MongoDB, mfs: GridfsObjectStore) extends SanitizeDb w
     }
 }
 
+*/

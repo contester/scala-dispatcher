@@ -1,5 +1,6 @@
 package org.stingray.contester.polygon
 
+/*
 import com.twitter.io.Buf
 import com.twitter.util.Future
 import org.stingray.contester.problems
@@ -48,3 +49,4 @@ class PolygonService(client: Service[PolygonClientRequest, Buf], pdb: ValueCache
   val contests = new ContestByPid(client, pdb)
   val problems = new ProblemByPid(client, pdb)
 }
+*/

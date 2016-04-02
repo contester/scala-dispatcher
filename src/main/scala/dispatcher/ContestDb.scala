@@ -1,5 +1,6 @@
 package org.stingray.contester.dispatcher
 
+/*
 import java.sql.Timestamp
 
 import akka.actor.{Props, ActorSystem, ActorRef}
@@ -92,3 +93,4 @@ class DbDispatchers(val pdata: ProblemData, val basePath: File, val invoker: Sol
       contestResolver, rabbitMq, dbnext)
   }
 }
+*/

@@ -1,5 +1,6 @@
 package org.stingray.contester.dispatcher
 
+/*
 import com.twitter.io.Buf
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
@@ -32,3 +33,4 @@ class ProblemData(pclient: Service[PolygonClientRequest, Buf], pdb: ValueCache[P
   def sanitizeProblem(problem: PolygonProblem): Future[Problem] =
     sanitizer(problem)
 }
+*/

@@ -7,7 +7,6 @@ import com.spingo.op_rabbit.Message
 import grizzled.slf4j.Logging
 import org.stingray.contester.common._
 import org.stingray.contester.invokers.TimeKey
-import org.stingray.contester.polygon.{PolygonProblem, PolygonURL}
 import org.stingray.contester.problems.Problem
 import org.stingray.contester.testing._
 import play.api.libs.json.{JsValue, Json, Writes}
@@ -30,6 +29,7 @@ case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
 
 case class FinishedTesting(submit: SubmitObject, testingId: Int, compiled: Boolean, passed: Int, taken: Int)
 
+/*
 class SubmitDispatcher(parent: DbDispatcher, db: JdbcBackend#DatabaseDef) extends Logging {
   import slick.driver.MySQLDriver.api._
   import org.stingray.contester.utils.Dbutil._
@@ -132,3 +132,4 @@ class SubmitDispatcher(parent: DbDispatcher, db: JdbcBackend#DatabaseDef) extend
   }
 }
 
+*/

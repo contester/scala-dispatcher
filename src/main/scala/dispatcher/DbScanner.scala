@@ -5,7 +5,6 @@ import slick.jdbc.{GetResult, JdbcBackend}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.immutable
 import grizzled.slf4j.Logging
-import org.stingray.contester.polygon.{ContestHandle, ContestWithProblems}
 import scala.concurrent.Future
 
 object PolygonContestId extends Logging {
@@ -32,6 +31,7 @@ case class ProblemRow(contest: Int, id: String, tests: Int, name: String, rating
 
 class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
+/*
 object ContestTableScanner {
   case object Rescan
   case class ContestMap(map: Map[Int, ContestRow])
@@ -139,3 +139,4 @@ class ContestTableScanner(d: ProblemData, db: JdbcBackend#DatabaseDef, contestRe
 
   context.system.scheduler.scheduleOnce(0 seconds, self, Rescan)
 }
+*/

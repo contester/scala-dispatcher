@@ -152,7 +152,6 @@ class InteractiveRunResult(first: SingleRunResult, second: SingleRunResult) exte
 }
 
 class StepResult(val name: String, v: LocalExecution) extends SingleRunResult(v) {
-  import com.mongodb.casbah.Implicits._
   override def toMap = super.toMap.+("name" -> name)
 }
 

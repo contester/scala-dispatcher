@@ -12,6 +12,12 @@ import slick.jdbc.{GetResult, JdbcBackend}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
+case class ServerSideEvalID(id: Int)
+
+object ServerSideEvalID {
+  implicit val formatServerSideEvalMessage = Json.format[ServerSideEvalID]
+}
+
 case class CustomTestObject(id: Int, contest: Int, team: Int, arrived: Timestamp, sourceModule: Module,
                             input: Array[Byte]) extends TimeKey with SubmitWithModule {
   val timestamp = arrived

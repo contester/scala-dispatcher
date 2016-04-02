@@ -7,6 +7,7 @@ import com.twitter.finagle.http.{Request, RequestBuilder, Response, Status}
 import com.twitter.util.Future
 import org.apache.http.client.utils.{URIBuilder, URLEncodedUtils}
 import org.stingray.contester.invokers.Sandbox
+import org.stingray.contester.utils.CachedConnectionHttpService
 import play.api.libs.json.{JsSuccess, Json, Reads}
 
 case class SimpleProblemDbException(reason: String) extends Throwable(reason)
@@ -84,11 +85,7 @@ object SimpleProblemDb {
 
   def apply(url: String) = {
     val parsed = new URI(url)
-    println(parsed)
-    val destPort = if (parsed.getPort == -1) 80 else parsed.getPort
-    val dest = s"${parsed.getHost}:${destPort}"
-    println(dest)
-    val client = Http.client.newService(dest)
+    val client = CachedConnectionHttpService(parsed)
     new SimpleProblemDb(url, client)
   }
 }

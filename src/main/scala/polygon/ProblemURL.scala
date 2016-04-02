@@ -1,5 +1,6 @@
 package org.stingray.contester.polygon
 
+/*
 import java.net.{URI, URL}
 import org.apache.http.client.utils.URLEncodedUtils
 import org.apache.http.message.BasicNameValuePair
@@ -64,4 +65,4 @@ class PolygonProblemHandle(val url: URL, val revision: Option[Int]) extends Prob
   def uri: URI =
     new URI(PolygonURL.withQuery(url, params.toMap).toString)
 }
-
+*/

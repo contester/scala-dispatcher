@@ -6,9 +6,8 @@ import collection.mutable
 import com.twitter.util.Future
 import org.stingray.contester.modules.ModuleFactory
 import java.util.concurrent.ConcurrentHashMap
-import org.stingray.contester.common.MongoDBInstance
 
-class InvokerRegistry(val contesterId: String, val mongoDb: MongoDBInstance) extends Registry with RequestStore[String, SchedulingKey, InvokerInstance] with Logging {
+class InvokerRegistry(val contesterId: String) extends Registry with RequestStore[String, SchedulingKey, InvokerInstance] with Logging {
   private[this] val channelMap = {
     import scala.collection.JavaConverters._
     new ConcurrentHashMap[RpcClient, Invoker]().asScala
@@ -17,7 +16,7 @@ class InvokerRegistry(val contesterId: String, val mongoDb: MongoDBInstance) ext
   def register(client: RpcClient): Unit = {
     trace("Registering client: %s".format(client))
     val invokerClient = new InvokerRpcClient(client)
-    invokerClient.identify(contesterId, mongoDb.uri.toString())
+    invokerClient.identify(contesterId, "")
       .map(new InvokerAPI(_, invokerClient))
       .flatMap { api =>
       ModuleFactory(api).map { factory =>

@@ -51,7 +51,6 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "util-core" % "6.33.0",
   "com.twitter" %% "bijection-util" % "0.9.2",
   "com.twitter" %% "storehaus" % "0.13.0",
-  "org.mongodb" %% "casbah" % "2.7.4",
   "org.clapper" %% "grizzled-slf4j" % "1.0.3",
   "org.apache.httpcomponents" % "httpclient" % "4.5.2",
   "commons-io" % "commons-io" % "2.4",

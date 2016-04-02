@@ -1,36 +1,30 @@
 package org.stingray.contester.dispatcher
 
-import java.io.File
-import java.net.{InetSocketAddress, URL}
+import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 
-import akka.actor.{ActorSystem, Props}
-import com.spingo.op_rabbit.{ConnectionParams, RabbitControl}
+import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
 import controllers.Assets
 import org.jboss.netty.bootstrap.ServerBootstrap
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.logging.{InternalLoggerFactory, Slf4JLoggerFactory}
+import org.stingray.contester.common.MemcachedObjectCache
+import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.invokers.InvokerRegistry
+import org.stingray.contester.problems.SimpleProblemDb
 import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.stingray.contester.testing.SolutionTester
-import org.stingray.contester.engine.InvokerSimpleApi
-import org.stingray.contester.common.{MemcachedObjectCache, MongoDBInstance}
-import org.stingray.contester.polygon._
-import org.stingray.contester.problems.{CommonProblemDb, SimpleProblemDb}
-import com.typesafe.config.{Config, ConfigFactory}
 import play.api.Logger
 
 object DispatcherServer extends App {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
 
   private val config = ConfigFactory.load()
-  private val mongoDb = MongoDBInstance(config.getString("pdb.mongoUrl")).right.get
 
   private val objectCache = new MemcachedObjectCache(config.getString("cache.host"))
 
-  private val polygonCache = new PolygonCache(mongoDb.db)
-  private val problemDb = new CommonProblemDb(mongoDb.db, mongoDb.objectStore)
-  private val invoker = new InvokerRegistry("contester", mongoDb)
+  private val invoker = new InvokerRegistry("contester")
 
   val invokerApi = new InvokerSimpleApi(invoker, objectCache)
   val tester = new SolutionTester(invokerApi)
@@ -53,9 +47,10 @@ object DispatcherServer extends App {
 
   Logger.info("Initializing dispatchers")
 
-  import scala.collection.JavaConversions._
   import slick.driver.MySQLDriver.api._
 
+  import scala.collection.JavaConversions._
+/*
   val dispatchers = if (config.hasPath("dispatcher.standard")) {
     val polygonBase = config.getConfig("polygons")
     val polygonNames = polygonBase.root().keys
@@ -88,12 +83,12 @@ object DispatcherServer extends App {
     }
     Some(result)
   } else None
-
+*/
   val moodles = 
   if (config.hasPath("dispatcher.moodles")) {
     for (name <- config.getStringList("dispatcher.moodles"); if config.hasPath(name + ".dbnext")) yield {
         val db = Database.forConfig(s"${name}.dbnext")
-        val dispatcher = new MoodleDispatcher(db, simpleDb.getOrElse(problemDb), tester, simpleDb.map(_.baseUrl))
+        val dispatcher = new MoodleDispatcher(db, simpleDb.get, tester, simpleDb.map(_.baseUrl))
         Logger.info(s"starting actor for ${name}")
         actorSystem.actorOf(MoodleTableScanner.props(db, dispatcher))
     }
@@ -101,9 +96,9 @@ object DispatcherServer extends App {
 
   Logger.info("Starting serving")
 
-  import play.core.server._
-  import play.api.routing.sird._
   import play.api.mvc._
+  import play.api.routing.sird._
+  import play.core.server._
 
   val server = NettyServer.fromRouter(ServerConfig(
   port = Some(config.getInt("dispatcher.port")))) {
