@@ -1,11 +1,9 @@
 package org.stingray.contester.common
 
-import com.google.protobuf.ByteString
-import com.twitter.util.Future
-import java.io.File
 import java.security.MessageDigest
 import java.util.zip.{Deflater, Inflater}
-import org.apache.commons.io.FileUtils
+
+import com.google.protobuf.ByteString
 import org.stingray.contester.proto.Blobs.Blob
 
 class BlobChecksumMismatch(oldChecksum: String, newChecksum: String) extends Throwable("%s vs. %s".format(oldChecksum, newChecksum))
@@ -58,9 +56,6 @@ object Blobs {
     } else
       Blob.newBuilder().setData(ByteString.copyFrom(x)).setSha1(ByteString.copyFrom(sha1)).build()
   }
-
-  def fromFile(file: File) =
-    Future(if (file.isFile) Some(storeBinary(FileUtils.readFileToByteArray(file))) else None)
 }
 
 trait SubmitWithModule {
