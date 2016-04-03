@@ -13,8 +13,10 @@ import org.stingray.contester.common.MemcachedObjectCache
 import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.problems.SimpleProblemDb
+import org.stingray.contester.proto.StatRequest
 import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.stingray.contester.testing.SolutionTester
+import org.stingray.contester.utils.ProtobufTools
 import play.api.Logger
 
 object DispatcherServer extends App {
@@ -46,6 +48,8 @@ object DispatcherServer extends App {
   implicit val actorSystem = ActorSystem("such-system")
 
   Logger.info("Initializing dispatchers")
+
+  val vf = ProtobufTools.createScalaProto[StatRequest](new Array[Byte](0))
 
   import slick.driver.MySQLDriver.api._
 
