@@ -34,6 +34,5 @@ class SimpleProblemTests extends FlatSpec with Matchers {
     SimpleProblemDb.parseSimpleProblemManifest(source0) shouldBe Some(SimpleProblemManifest(
       "direct://school.sgu.ru/moodle/1", 2, 20, 1000000, 16777216, false, "tester.exe",
       Set.empty, None))
-
   }
 }
