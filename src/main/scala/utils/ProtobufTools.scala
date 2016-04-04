@@ -59,28 +59,4 @@ object ProtobufTools {
     */
   def createProtobuf[I <: Message](opt: Option[Array[Byte]])(implicit manifest: Manifest[I]): I =
     opt.map(createProtobuf[I](_)).getOrElse(createEmpty[I])
-
-  def createScalaProto[I](b: Array[Byte])(implicit s: Parsable[I]) = s.parse(b)
-}
-
-trait Parsable[E] {
-  def parse(b: Array[Byte]): E
-}
-
-object Parsable {
-  import scala.language.experimental.macros
-  implicit def i[E]: Parsable[E] = macro ParsableImpl.parseImpl[E]
-}
-
-object ParsableImpl {
-  def parseImpl[E: c.WeakTypeTag](c: blackbox.Context): c.Tree = {
-    import c.universe._
-    val actualType = c.weakTypeOf[E]
-    c.info(c.enclosingPosition, actualType.toString, false)
-    q"""
-        new Parsable[$actualType]{
-          def parse(b: Array[Byte]): $actualType = $actualType.parseFrom(b)
-        }
-      """
-  }
 }

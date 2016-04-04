@@ -49,8 +49,6 @@ object DispatcherServer extends App {
 
   Logger.info("Initializing dispatchers")
 
-  val vf = ProtobufTools.createScalaProto[StatRequest](new Array[Byte](0))
-
   import slick.driver.MySQLDriver.api._
 
   import scala.collection.JavaConversions._
