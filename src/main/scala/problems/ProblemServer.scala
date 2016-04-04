@@ -8,7 +8,9 @@ import com.twitter.util.Future
 import org.apache.http.client.utils.{URIBuilder, URLEncodedUtils}
 import org.stingray.contester.invokers.Sandbox
 import org.stingray.contester.utils.CachedConnectionHttpService
-import play.api.libs.json.{JsSuccess, Json, Reads}
+import play.api.libs.json.{JsPath, JsSuccess, Json, Reads}
+
+import scala.collection.SetLike
 
 case class SimpleProblemDbException(reason: String) extends Throwable(reason)
 
@@ -41,7 +43,7 @@ class SimpleProblemTest(problem: SimpleProblem, val testId: Int) extends Test wi
 
   override def interactive: Boolean = problem.m.interactorName.isDefined
 
-  override def stdio: Boolean = problem.m.stdio.getOrElse(false)
+  override def stdio: Boolean = problem.m.stdio
 
   override def memoryLimit: Long = problem.m.memoryLimit
 
@@ -49,8 +51,7 @@ class SimpleProblemTest(problem: SimpleProblem, val testId: Int) extends Test wi
 }
 
 case class SimpleProblemManifest(id: String, revision: Int, testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
-                                 stdio: Option[Boolean], testerName: String, answers: Set[Int], interactorName: Option[String],
-                                 combinedHash: Option[String])
+                                 stdio: Boolean, testerName: String, answers: Set[Int], interactorName: Option[String])
 
 class SimpleProblem(val baseUrl: String, val m: SimpleProblemManifest, val id: ProblemID) extends Problem {
   /**
@@ -70,7 +71,22 @@ class SimpleProblem(val baseUrl: String, val m: SimpleProblemManifest, val id: P
 }
 
 object SimpleProblemManifest {
-  implicit val formatSimpleProblemManifest = Json.format[SimpleProblemManifest]
+  //implicit val formatSimpleProblemManifest = Json.format[SimpleProblemManifest]
+  import play.api.libs.functional.syntax._
+  val readsSimpleProblemManifestBuilder = (
+    (JsPath \ "id").read[String] and
+      (JsPath \ "revision").read[Int] and
+      (JsPath \ "testCount").read[Int] and
+      (JsPath \ "timeLimitMicros").read[Long] and
+      (JsPath \ "memoryLimit").read[Long] and
+      (JsPath \ "stdio").readNullable[Boolean].map(_.getOrElse(false)) and
+      (JsPath \ "testerName").readNullable[String].map(_.getOrElse("tester.exe")) and
+      (JsPath \ "answers").readNullable[List[Int]].map(_.getOrElse(Nil).toSet) and
+      (JsPath \ "interactorName").readNullable[String]
+    )
+
+  implicit val readsSimpleProblemManifest: Reads[SimpleProblemManifest] =
+    readsSimpleProblemManifestBuilder.apply(SimpleProblemManifest.apply _)
 }
 
 object SimpleProblemDb {

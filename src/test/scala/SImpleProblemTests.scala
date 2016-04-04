@@ -19,9 +19,8 @@ class SimpleProblemTests extends FlatSpec with Matchers {
         |"answers":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]}]""".stripMargin
 
     SimpleProblemDb.parseSimpleProblemManifest(source0) shouldBe Some(SimpleProblemManifest(
-      "direct://school.sgu.ru/moodle/1", 2, 20, 1000000, 16777216, None, "tester.exe",
-      (1 to 20).toSet, None, None
-    ))
+      "direct://school.sgu.ru/moodle/1", 2, 20, 1000000, 16777216, false, "tester.exe",
+      (1 to 20).toSet, None))
 
   }
 }
