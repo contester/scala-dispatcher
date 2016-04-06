@@ -134,7 +134,7 @@ class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) e
 
   override def getMostRecentProblem(problem: ProblemHandle): Future[Option[Problem]] = {
     receiveProblem(new URIBuilder(baseUrl+"problem/get/")
-      .addParameter("id", problem.uri.toASCIIString)
+      .addParameter("id", problem.handle)
       .build().toASCIIString)
   }
 }

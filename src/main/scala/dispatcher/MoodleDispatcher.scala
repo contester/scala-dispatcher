@@ -1,18 +1,17 @@
 package org.stingray.contester.dispatcher
 
-import akka.actor.{Actor, Props, Stash}
-import slick.jdbc.{GetResult, JdbcBackend}
-import org.stingray.contester.common._
-import java.sql.{ResultSet, Timestamp}
+import java.sql.Timestamp
 
+import akka.actor.{Actor, Props, Stash}
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
-import org.stingray.contester.problems.{DirectProblemHandle, ProblemDb, ProblemServerInterface}
+import org.stingray.contester.common._
+import org.stingray.contester.problems.{ProblemHandle, ProblemServerInterface}
 import org.stingray.contester.testing.{SingleProgress, SolutionTester, SolutionTestingResult}
-import java.net.URI
+import slick.jdbc.{GetResult, JdbcBackend}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
 
 
 case class MoodleSubmit(id: Int, problemId: String, arrived: Timestamp, sourceModule: Module) extends Submit {
@@ -110,7 +109,7 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
     }
 
   def run(item: MoodleSubmit): Future[Unit] = {
-    pdb.getMostRecentProblem(new DirectProblemHandle(new URI("direct://school.sgu.ru/moodle/" + item.problemId))).flatMap { problem =>
+    pdb.getMostRecentProblem(ProblemHandle(s"direct://school.sgu.ru/moodle/${item.problemId}")).flatMap { problem =>
       MoodleResultReporter.start(db, item).flatMap { reporter =>
         inv(item, item.sourceModule, problem.get, reporter, true,
           new InstanceSubmitTestingHandle(storeUrl.map("filer:" + _ + "fs/"), "school.sgu.ru/moodle", item.id, reporter.testingId), Map.empty).flatMap(reporter.finish)

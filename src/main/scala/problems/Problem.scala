@@ -246,8 +246,4 @@ private class PDBTest(val problem: PDBProblem, val testId: Int) extends Test wit
   def stdio: Boolean = problem.stdio
 }
 
-trait ProblemHandle {
-  def uri: URI
-}
-
-class DirectProblemHandle(val uri: URI) extends ProblemHandle
+case class ProblemHandle(handle: String) extends AnyVal
