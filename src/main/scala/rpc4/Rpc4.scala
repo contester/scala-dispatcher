@@ -63,7 +63,7 @@ class ServerPipelineFactory(registry: Registry) extends ChannelPipelineFactory {
   * Reads frames prefixed by 4-byte length.
   */
 private class SimpleFramer extends FrameDecoder {
-  def decode(ctx: ChannelHandlerContext, chan: Channel, buf: ChannelBuffer) = {
+  def decode(ctx: ChannelHandlerContext, chan: Channel, buf: ChannelBuffer): ChannelBuffer = {
     if (buf.readableBytes() > 4) {
       buf.markReaderIndex()
       val length = buf.readInt()
