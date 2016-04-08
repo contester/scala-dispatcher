@@ -28,13 +28,13 @@ class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubm
   def compile(r: CompileResult) =
     client.run(
       sqlu"""insert into mdl_contester_results (testingid, processed, result, test, timex, memory, testeroutput, testererror)
-            values ($testingId, NOW(), ${r.status.getNumber}, 0, ${r.time / 1000}, ${r.memory},
+            values ($testingId, NOW(), ${r.status.id}, 0, ${r.time / 1000}, ${r.memory},
         ${new String(r.stdOut, "UTF-8")}, ${new String(r.stdErr, "UTF-8")})""").map(_ => ())
 
   def test(id: Int, r: TestResult) =
     client.run(
       sqlu"""Insert into mdl_contester_results (testingid, processed, result, test, timex, memory, info, testeroutput,
-             testererror, testerexitcode) values ($testingId, NOW(), ${r.status.getNumber}, $id, ${r.solution.time / 1000},
+             testererror, testerexitcode) values ($testingId, NOW(), ${r.status.id}, $id, ${r.solution.time / 1000},
              ${r.solution.memory}, ${r.solution.returnCode.abs},
              ${new String(r.getTesterOutput, "UTF-8")}, ${new String(r.getTesterError, "UTF-8")},
              ${r.getTesterReturnCode.abs})""").map(_ => ())

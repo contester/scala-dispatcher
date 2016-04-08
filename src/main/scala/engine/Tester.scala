@@ -122,10 +122,7 @@ object Tester extends Logging {
       case (solutionResult, optHash) =>
         optHash.map { outputHash =>
           test.key.flatMap { testKey =>
-            objectCache.maybeCached[TesterRunResult, LocalExecution](
-              testKey.get + outputHash, None,
-              prepareAndRunTester(instance.restricted, instance.factory, test),
-              new TesterRunResult(_), _.value)
+            prepareAndRunTester(instance.restricted, instance.factory, test)
                 .map { testerResult =>
               (solutionResult, Some(testerResult))
             }

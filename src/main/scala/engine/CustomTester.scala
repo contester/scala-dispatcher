@@ -1,7 +1,7 @@
 package org.stingray.contester.engine
 
 import org.stingray.contester.common._
-import org.stingray.contester.proto.Blobs.Blob
+import org.stingray.contester.proto.Blob
 import org.stingray.contester.problems.TestLimits
 import grizzled.slf4j.Logging
 import org.stingray.contester.invokers.{InvokerInstance, Sandbox}

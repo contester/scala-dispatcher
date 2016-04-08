@@ -71,7 +71,7 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemD
   def statAndSave(sandbox: Sandbox, tester: InvokerRemoteFile, interactor: Option[InvokerRemoteFile]) = {
     val problemFiles = problemFileList(tester, interactor).map(x => x._1.name(sandbox.invoker.api.pathSeparator) -> x).toMap
     sandbox.invoker.api.stat(problemFiles.values.map(_._1), true).flatMap { filesToStore =>
-      val shrunkFileList = filesToStore.map(x => problemFiles(x.name))
+      val shrunkFileList = filesToStore.map(x => problemFiles(x.name)).toSeq
       sandbox.getGridfs(shrunkFileList).map { putResult =>
         val resultSet = putResult.map(x => problemFiles(x.name)).map(_._2).toSet
         val missing = ((((1 to problem.testCount).map(problem.inputName)) ++ List(problem.checkerName)).toSet -- resultSet)

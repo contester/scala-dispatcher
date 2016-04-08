@@ -11,24 +11,23 @@ case class GridfsGetEntry(local: String, remote: String, moduleType: Option[Stri
 
 class InvokerRpcClient(val client: RpcClient) {
   def getBinaryType(pathname: String): Future[BinaryTypeResponse] =
-    client.call[BinaryTypeResponse]("Contester.GetBinaryType",
+    client.call("Contester.GetBinaryType",
       BinaryTypeRequest(pathname = Some(pathname)),
-      BinaryTypeResponse.parseFrom(_))
+      BinaryTypeResponse.parseFrom)
 
   def execute(params: LocalExecutionParameters): Future[LocalExecutionResult] =
-    client.call("Contester.LocalExecute", params, LocalExecutionResult.parseFrom(_))
+    client.call("Contester.LocalExecute", params, LocalExecutionResult.parseFrom)
 
   def clear(sandbox: String) =
     client.callNoResult("Contester.Clear", ClearSandboxRequest(sandbox = Some(sandbox)))
 
   def put(file: FileBlob): Future[FileStat] =
-    client.call("Contester.Put", file, FileStat.parseFrom(_))
+    client.call("Contester.Put", file, FileStat.parseFrom)
 
   def get(name: String) =
-    client.call[FileBlob]("Contester.Get", GetRequest(name), FileBlob.parseFrom(_))
+    client.call("Contester.Get", GetRequest(name), FileBlob.parseFrom)
 
   def fileStat(names: Iterable[String], expand: Boolean, sandboxId: Option[String], calculateChecksum: Boolean) = {
-    val v = StatRequest(names.toSeq, sandboxId, expand=Some(expand), calculateChecksum=Some(calculateChecksum))
     client.call("Contester.Stat",
       StatRequest(names.toSeq, sandboxId, expand=Some(expand), calculateChecksum=Some(calculateChecksum)),
       FileStats.parseFrom(_))
