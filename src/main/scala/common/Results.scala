@@ -1,7 +1,7 @@
 package org.stingray.contester.common
 
-import org.stingray.contester.proto.Blobs.Blob
-import org.stingray.contester.proto.Local.{StatusCodes, LocalExecution, LocalExecutionParameters, LocalExecutionResult}
+import org.stingray.contester.proto.Blob
+import org.stingray.contester.proto.{StatusCodes, LocalExecution, LocalExecutionParameters, LocalExecutionResult}
 
 /**
  * Result of some run, operation, or test
@@ -24,7 +24,7 @@ trait RunResult extends Result {
 }
 
 class SingleRunResult(val value: LocalExecution) extends RunResult {
-  lazy val params = value.getParameters
+  lazy val params = value.parameters
   lazy val result = value.getResult
 
   lazy val returnCode = result.getReturnCode
@@ -91,7 +91,7 @@ class TesterRunResult(v: LocalExecution) extends SingleRunResult(v) {
 
 object SingleRunResult {
   def combine(params: LocalExecutionParameters, result: LocalExecutionResult) =
-    LocalExecution.newBuilder().setParameters(params).setResult(result).build()
+    LocalExecution(parameters = params, result = Some(result))
 
   def apply(params: LocalExecutionParameters, result: LocalExecutionResult) =
     new SingleRunResult(combine(params, result))
@@ -239,7 +239,7 @@ object StatusCode {
     Rejected -> "Rejected"
   )
 
-  def apply(code: StatusCodes) = reasons.getOrElse(code.getNumber, "Unknown status " + code)
+  def apply(code: StatusCodes) = reasons.getOrElse(code.id, "Unknown status " + code)
 }
 
 class RestoredResult(val status: Int) extends Result {

@@ -7,7 +7,7 @@ import org.stingray.contester.common.Blobs
 import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
 import org.stingray.contester.invokers.{RemoteFileName, Sandbox, InvokerAPI}
 import org.stingray.contester.problems.TestLimits
-import org.stingray.contester.proto.Local.LocalExecutionParameters
+import org.stingray.contester.proto.LocalExecutionParameters
 
 final class ModuleHandlerOps(val repr: Future[Seq[ModuleHandler]]) {
   def +(m: ModuleHandler): Future[Seq[ModuleHandler]] =

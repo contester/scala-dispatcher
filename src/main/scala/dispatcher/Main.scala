@@ -6,9 +6,12 @@ import java.util.concurrent.Executors
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import controllers.Assets
-import org.jboss.netty.bootstrap.ServerBootstrap
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
-import org.jboss.netty.logging.{InternalLoggerFactory, Slf4JLoggerFactory}
+import io.netty.bootstrap.ServerBootstrap
+import io.netty.channel.ChannelOption
+import io.netty.channel.nio.NioEventLoopGroup
+import io.netty.channel.socket.SocketChannel
+import io.netty.channel.socket.nio.NioServerSocketChannel
+import io.netty.util.internal.logging.{InternalLoggerFactory, Slf4JLoggerFactory}
 import org.stingray.contester.common.MemcachedObjectCache
 import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.invokers.InvokerRegistry
@@ -36,13 +39,22 @@ object DispatcherServer extends App {
       Some(SimpleProblemDb(config.getString("simpledb")))
     } else None
 
+  val ioGroup = new NioEventLoopGroup()
+
   private def bindInvokerTo(socket: InetSocketAddress) = {
-    val sf = new NioServerSocketChannelFactory(
+/*    val sf = new NioServerSocketChannelFactory(
       Executors.newCachedThreadPool(),
       Executors.newCachedThreadPool())
     val bs = new ServerBootstrap(sf)
     bs.setPipelineFactory(new ServerPipelineFactory(invoker))
-    bs.bind(socket)
+    bs.bind(socket)*/
+    val bs = new ServerBootstrap()
+    .group(ioGroup).channel(classOf[NioServerSocketChannel])
+        .childHandler(new ServerPipelineFactory[SocketChannel](invoker))
+//        .option(ChannelOption.SO_BACKLOG, 128)
+//      .childOption(ChannelOption.SO_KEEPALIVE, true)
+
+    bs.bind(socket).sync()
   }
 
   implicit val actorSystem = ActorSystem("such-system")

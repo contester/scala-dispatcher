@@ -1,7 +1,7 @@
 package org.stingray.contester.invokers
 
 import com.twitter.util.Future
-import org.stingray.contester.proto.Local.SandboxLocations
+import org.stingray.contester.proto.SandboxLocations
 
 class InvokerInstance(val invoker: Invoker, val index: Int, val data: SandboxLocations) extends HasCaps[String] {
   val restricted = new Sandbox(this, true, invoker.api.file(data.getRun))

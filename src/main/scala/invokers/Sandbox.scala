@@ -1,10 +1,10 @@
 package org.stingray.contester.invokers
 
-import org.stingray.contester.proto.Blobs.{FileBlob, Blob}
+import org.stingray.contester.proto.{FileBlob, Blob}
 import com.twitter.util.Future
 import org.stingray.contester.rpc4.RemoteError
 import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
-import org.stingray.contester.proto.Local.LocalExecutionParameters
+import org.stingray.contester.proto.LocalExecutionParameters
 
 class Sandbox(val instance: InvokerInstance, val restricted: Boolean, val path: RemoteFileName)  {
   import org.stingray.contester.ContesterImplicits._
@@ -16,7 +16,7 @@ class Sandbox(val instance: InvokerInstance, val restricted: Boolean, val path: 
   val localEnvironment = if (restricted) i.cleanedLocalEnvironment else i.localEnvWithPath
 
   def put(fileBlob: FileBlob): Future[InvokerRemoteFile] =
-    put(fileBlob.getData, fileBlob.getName)
+    put(fileBlob.getData, fileBlob.name)
 
   def put(blob: Blob, name: String): Future[InvokerRemoteFile] =
     i.put(sandboxId / name, blob)
@@ -27,7 +27,7 @@ class Sandbox(val instance: InvokerInstance, val restricted: Boolean, val path: 
   def putGridfs(source: String, dest: String): Future[Option[InvokerRemoteFile]] =
     putGridfs(source, sandboxId / dest)
 
-  def getGridfs(items: Iterable[(RemoteFileName, String, Option[String])]) =
+  def getGridfs(items: Seq[(RemoteFileName, String, Option[String])]) =
     i.getGridfs(items, sandboxId.name)
 
   def get(f: RemoteFileName): Future[FileBlob] =

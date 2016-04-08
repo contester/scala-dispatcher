@@ -4,30 +4,37 @@ import java.security.MessageDigest
 import java.util.zip.{Deflater, Inflater}
 
 import com.google.protobuf.ByteString
-import org.stingray.contester.proto.Blobs.Blob
+import org.stingray.contester.proto.Blob
 
 class BlobChecksumMismatch(oldChecksum: String, newChecksum: String) extends Throwable("%s vs. %s".format(oldChecksum, newChecksum))
 
 object Blobs {
   def bytesToString(x: Array[Byte]) = x.map("%02X" format _).mkString
 
+  private def zlibDecompress(x: ByteString, originalSize: Int): Array[Byte] = {
+    val decompressor = new Inflater()
+    decompressor.setInput(x.toByteArray)
+    val result = new Array[Byte](originalSize)
+    val size = decompressor.inflate(result)
+    if (size == originalSize)
+      result
+    else
+      new Array[Byte](0)
+  }
+
   def getBinary(x: Blob): Array[Byte] = {
-    val result = if (x.hasCompression) {
-      if (x.getCompression.getMethod == Blob.CompressionInfo.CompressionType.METHOD_ZLIB) {
-        val decompressor = new Inflater()
-        decompressor.setInput(x.getData.toByteArray)
-        val result = new Array[Byte](x.getCompression.getOriginalSize)
-        val size = decompressor.inflate(result)
-        if (size == x.getCompression.getOriginalSize)
-          result
-        else
-          new Array[Byte](0)
-      } else new Array[Byte](0)
-    } else x.getData.toByteArray
-    if (x.hasSha1) {
+    val result = x.compression.map { ci =>
+      ci.method match {
+        case Some(Blob.CompressionInfo.CompressionType.METHOD_ZLIB) =>
+          zlibDecompress(x.getData, ci.getOriginalSize)
+        case None => x.getData.toByteArray
+      }
+    }.getOrElse(x.getData.toByteArray)
+
+    x.sha1.foreach { bs =>
       val newSha1 = getSha1(result)
-      if (!x.getSha1.toByteArray.sameElements(newSha1)) {
-        throw new BlobChecksumMismatch(bytesToString(x.getSha1.toByteArray), bytesToString(newSha1))
+      if (!bs.toByteArray.sameElements(newSha1)) {
+        throw new BlobChecksumMismatch(bytesToString(bs.toByteArray), bytesToString(newSha1))
       }
     }
     result
@@ -49,12 +56,12 @@ object Blobs {
     val sha1 = getSha1(x)
 
     if (compressed.length < (x.length - 8)) {
-      Blob.newBuilder().setData(ByteString.copyFrom(compressed))
-        .setCompression(Blob.CompressionInfo.newBuilder().setOriginalSize(x.length)
-        .setMethod(Blob.CompressionInfo.CompressionType.METHOD_ZLIB))
-        .setSha1(ByteString.copyFrom(sha1)).build()
+      Blob(data = Some(ByteString.copyFrom(compressed)),
+        compression = Some(Blob.CompressionInfo(originalSize = Some(x.length),
+          method = Some(Blob.CompressionInfo.CompressionType.METHOD_ZLIB))),
+        sha1 = Some(ByteString.copyFrom(sha1)))
     } else
-      Blob.newBuilder().setData(ByteString.copyFrom(x)).setSha1(ByteString.copyFrom(sha1)).build()
+      Blob(data = Some(ByteString.copyFrom(x)), sha1 = Some(ByteString.copyFrom(sha1)))
   }
 }
 

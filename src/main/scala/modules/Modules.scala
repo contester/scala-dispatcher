@@ -2,7 +2,7 @@ package org.stingray.contester.modules
 
 import com.twitter.util.Future
 import org.stingray.contester.common._
-import org.stingray.contester.proto.Local.LocalExecutionParameters
+import org.stingray.contester.proto.LocalExecutionParameters
 import org.stingray.contester.utils.ExecutionArguments
 import org.stingray.contester.invokers.{InvokerAPI, Sandbox}
 import org.stingray.contester.ContesterImplicits._

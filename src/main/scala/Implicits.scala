@@ -2,7 +2,7 @@ package org.stingray.contester
 
 import com.twitter.util.Future
 import org.stingray.contester.utils._
-import proto.Local.LocalExecutionParameters
+import proto.LocalExecutionParameters
 import org.stingray.contester.invokers.{RemoteFileName, FileListOps}
 
 object ContesterImplicits {

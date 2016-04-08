@@ -1,8 +1,8 @@
 package org.stingray.contester.common
 
 import com.twitter.util.Future
-import org.stingray.contester.invokers.{InvokerRemoteFile, RemoteFileName, Sandbox}
 import org.apache.commons.io.FilenameUtils
+import org.stingray.contester.invokers.Sandbox
 
 object ObjectStore {
   def getMetadataString(metadata: Map[String, Any], key: String): String =

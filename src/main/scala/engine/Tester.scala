@@ -1,7 +1,6 @@
 package org.stingray.contester.engine
 
 import grizzled.slf4j.Logging
-import org.stingray.contester.proto.Local.{LocalExecution, LocalExecutionParameters, LocalExecutionResult}
 import org.stingray.contester.common._
 import org.stingray.contester.invokers._
 import org.stingray.contester.modules.{BinaryHandler, ModuleHandler}
@@ -17,6 +16,7 @@ import org.stingray.contester.rpc4.RemoteError
 import scala.Some
 import org.jboss.netty.buffer.{ChannelBuffer, ChannelBuffers, WrappedChannelBuffer}
 import com.google.protobuf.Message
+import org.stingray.contester.proto.{LocalExecution, LocalExecutionParameters, LocalExecutionResult}
 
 object Tester extends Logging {
   private def asRunResult(x: (LocalExecutionParameters, LocalExecutionResult), isJava: Boolean) =

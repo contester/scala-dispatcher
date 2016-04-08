@@ -1,70 +1,55 @@
 package org.stingray.contester.utils
 
-import org.stingray.contester.proto.Local.{LocalEnvironment, LocalExecutionParameters}
+import org.stingray.contester.proto.{LocalEnvironment, LocalExecutionParameters}
 import org.stingray.contester.invokers.Sandbox
 
 final class RichLocalExecutionParameters(val repr: LocalExecutionParameters) {
   import collection.JavaConversions._
 
   def fillCommandLine(applicationName: String, arguments: ExecutionArguments) =
-    repr.toBuilder.setApplicationName(applicationName)
-      .setCommandLine(arguments.get(applicationName))
-      .addAllCommandLineParameters(arguments.getList(applicationName)).build()
+    repr.withApplicationName(applicationName)
+      .withCommandLine(arguments.get(applicationName))
+      .withCommandLineParameters(arguments.getList(applicationName))
 
-  def outputToMemory = {
-    val builder = repr.toBuilder
-    builder.getStdErrBuilder.setMemory(true)
-    builder.getStdOutBuilder.setMemory(true)
-    builder.build()
-  }
-
-  def noOutput =
-    repr.toBuilder.clearStdOut().clearStdErr().build()
+  def outputToMemory =
+    repr.withStdErr(repr.getStdErr.withMemory(true))
+      .withStdOut(repr.getStdOut.withMemory(true))
 
   def win16 =
-    noOutput.toBuilder.clearApplicationName().build()
+    repr.clearStdOut.clearStdErr.clearApplicationName
 
-  def setCompiler() =
-    outputToMemory.toBuilder.setTimeLimitHardMicros(30 * 1000000).setJoinStdoutStderr(true).build()
+  def setCompiler =
+    outputToMemory.withTimeLimitHardMicros(30 * 1000000).withJoinStdoutStderr(true)
 
-  def setSolution() =
-    repr.toBuilder.setCheckIdleness(true).setRestrictUi(true).setProcessLimit(1).build()
+  def setSolution =
+    repr.withCheckIdleness(true).withRestrictUi(true).withProcessLimit(1)
 
   def setSanitizer() =
-    repr.toBuilder.setNoJob(true).build()
+    repr.withNoJob(true)
 
-  def setTester() =
-    outputToMemory.toBuilder.setTimeLimitHardMicros(120 * 1000000).setNoJob(true).setJoinStdoutStderr(true).build()
+  def setTester =
+    outputToMemory.withTimeLimitHardMicros(120 * 1000000).withNoJob(true).withJoinStdoutStderr(true)
 
-  def emulateStdio(s: Sandbox) = {
-    val builder = repr.toBuilder
-    builder.getStdInBuilder.setFilename((s.path / "input.txt").name)
-    builder.getStdOutBuilder.setFilename((s.path / "output.txt").name)
-    builder.build()
-  }
-
-  def joinStdoutErr() = {
-    val builder = repr.toBuilder
-    builder.setJoinStdoutStderr(true)
-    builder.build()
-  }
+  def emulateStdio(s: Sandbox) =
+    repr.withStdIn(repr.getStdIn.withFilename((s.path / "input.txt").name))
+      .withStdOut(repr.getStdOut.withFilename((s.path / "output.txt").name))
 
   def emulateStdioIf(x: Boolean, s: Sandbox) =
     if (x) emulateStdio(s) else repr
 
   def setMemoryLimit(limit: Long) =
-    repr.toBuilder.setMemoryLimit(limit).build()
+    repr.withMemoryLimit(limit)
 
   def setTimeLimitMicros(limit: Long) =
-    repr.toBuilder.setTimeLimitMicros(limit).build()
+    repr.withTimeLimitMicros(limit)
 
   def setEnvironment(env: LocalEnvironment) =
-    repr.toBuilder.setEnvironment(env).build()
+    repr.withEnvironment(env)
 
   def setSandboxId(sandboxId: String) =
-    repr.toBuilder.setSandboxId(sandboxId).build()
+    repr.withSandboxId(sandboxId)
 
   def setCurrentAndTemp(path: String) =
-    repr.toBuilder.setCurrentDirectory(path).setEnvironment(LocalEnvironmentTools.setTempTo(repr.getEnvironment, path)).build()
+    repr.withCurrentDirectory(path).withEnvironment(LocalEnvironmentTools.setTempTo(repr.getEnvironment, path))
 }
 

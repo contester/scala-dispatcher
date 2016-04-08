@@ -1,7 +1,7 @@
 package org.stingray.contester.invokers
 
 import org.apache.commons.io.FilenameUtils
-import org.stingray.contester.proto.Local.FileStat
+import org.stingray.contester.proto.FileStat
 
 class StorageFileName(val s: String) extends AnyVal
 
@@ -50,11 +50,7 @@ class InvokerRemoteFile(val invoker: InvokerAPI, st: FileStat)
   def isFile = !isDir
   def size = st.getSize
 
-  def checksum =
-    if (st.hasChecksum)
-      Some(st.getChecksum.toLowerCase)
-    else
-      None
+  def checksum = st.checksum.map(_.toLowerCase)
 }
 
 final class FileListOps(val repr: Iterable[RemoteFileName]) {

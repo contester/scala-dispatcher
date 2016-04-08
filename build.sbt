@@ -47,7 +47,7 @@ val opRabbitVersion = "1.3.0"
 libraryDependencies ++= Seq(
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
   "com.spingo" %% "op-rabbit-play-json"   % opRabbitVersion,
-  "io.netty" % "netty" % "3.10.5.Final",
+  "io.netty" % "netty-common" % "4.1.0.CR6",
   "com.twitter" %% "finagle-core" % "6.34.0",
   "com.twitter" %% "finagle-http" % "6.34.0",
   "com.twitter" %% "finagle-memcached" % "6.34.0",

@@ -1,6 +1,6 @@
 package org.stingray.contester.utils
 
-import org.stingray.contester.proto.Local.LocalExecutionParameters
+import org.stingray.contester.proto.LocalExecutionParameters
 
 trait ExecutionArguments {
   def get(applicationName: String): String
@@ -41,7 +41,7 @@ object CommandLineTools {
   import org.stingray.contester.ContesterImplicits._
 
   def fillCommandLine(applicationName: String, arguments: ExecutionArguments) =
-    LocalExecutionParameters.getDefaultInstance
+    LocalExecutionParameters.defaultInstance
       .fillCommandLine(applicationName, arguments)
 }
 

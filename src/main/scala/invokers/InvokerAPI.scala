@@ -1,15 +1,14 @@
 package org.stingray.contester.invokers
 
-import org.stingray.contester.proto.Local.{LocalExecutionResult, LocalExecutionParameters, FileStat, IdentifyResponse}
 import org.stingray.contester.utils.LocalEnvironmentTools
 import com.twitter.util.Future
-import org.stingray.contester.proto.Blobs.{Blob, FileBlob}
 import org.stingray.contester.modules.ModuleHandler
+import org.stingray.contester.proto._
 
 class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) {
   import collection.JavaConversions._
 
-  val sandboxes = clientId.getSandboxesList.toIndexedSeq
+  val sandboxes = clientId.sandboxes.toIndexedSeq
   val name = clientId.getInvokerId
 
   val cleanedLocalEnvironment = LocalEnvironmentTools.sanitizeLocalEnv(clientId.getEnvironment)
@@ -18,8 +17,8 @@ class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) {
   val platform = clientId.getPlatform
   val pathSeparator = clientId.getPathSeparator
 
-  val disks = clientId.getDisksList.map(file)
-  val programFiles = clientId.getProgramFilesList.map(file)
+  val disks = clientId.disks.map(file)
+  val programFiles = clientId.programFiles.map(file)
 
   override def toString =
     name
@@ -43,15 +42,15 @@ class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) {
     fileStat(what, false, None, calculateSha1)
 
   def put(remote: RemoteFileName, blob: Blob) =
-    client.put(FileBlob.newBuilder().setName(remote.name).setData(blob).build()).map(file)
+    client.put(FileBlob(name = remote.name, data = Some(blob))).map(file)
 
-  def putGridfs(items: Iterable[(String, RemoteFileName)], sandboxId: String): Future[Iterable[InvokerRemoteFile]] =
+  def putGridfs(items: Seq[(String, RemoteFileName)], sandboxId: String): Future[Seq[InvokerRemoteFile]] =
     client.gridfsPut(items.map(m => m._1 -> m._2.name(pathSeparator)), sandboxId).map(_.map(file))
 
-  def getGridfs(items: Iterable[(RemoteFileName, String, Option[String])], sandboxId: String): Future[Iterable[InvokerRemoteFile]] =
+  def getGridfs(items: Seq[(RemoteFileName, String, Option[String])], sandboxId: String): Future[Seq[InvokerRemoteFile]] =
     client.gridfsGet(items.map(m => new GridfsGetEntry(m._1.name(pathSeparator), m._2, m._3)), sandboxId).map(_.map(file))
 
-  def copyToStorage(items: Iterable[CopyToStorage], sandboxId: String): Future[Iterable[InvokerRemoteFile]] =
+  def copyToStorage(items: Seq[CopyToStorage], sandboxId: String): Future[Seq[InvokerRemoteFile]] =
     client.gridfsGet(items.map(m => new GridfsGetEntry(m.local.name(pathSeparator), m.storage.s, m.moduleType)), sandboxId).map(_.map(file))
 
   def executeConnected(first: LocalExecutionParameters, second: LocalExecutionParameters): Future[(LocalExecutionResult, LocalExecutionResult)] =
