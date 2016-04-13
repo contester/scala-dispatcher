@@ -4,10 +4,10 @@ import java.util.concurrent.TimeUnit
 
 import com.twitter.finagle.util.HashedWheelTimer
 import com.twitter.util.{Await, Duration, Future, Promise}
-import org.scalatest.FlatSpec
+import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.matchers.ShouldMatchers
 
-class SerialHashTests extends FlatSpec with ShouldMatchers {
+class SerialHashTests extends FlatSpec with Matchers {
   "HashQueue" should "return the same future for long-running request" in {
     val sq = new SerialHash[Int, Int]
     val p = new Promise[Int]()
@@ -18,13 +18,8 @@ class SerialHashTests extends FlatSpec with ShouldMatchers {
     q.setValue(8)
     p.setValue(1)
 
-    expectResult(1) {
-      Await.result(f1)
-    }
-
-    expectResult(1) {
-      Await.result(f2)
-    }
+    Await.result(f1) shouldBe 1
+    Await.result(f2) shouldBe 1
   }
 
   it should "return the same future N times for long-running request" in {
@@ -40,17 +35,12 @@ class SerialHashTests extends FlatSpec with ShouldMatchers {
     sq(1, () => p)
 
     val results = Future.collect((1 to 100).map(_ => sq(1, () => fx(4))))
-
     p.setValue(2)
 
-    expectResult((1 to 100).map(_ => 2)) {
-      Await.result(results)
-    }
-
-    expectResult(0) {
-      c
-    }
+    Await.result(results) shouldBe (1 to 100).map(_ => 2)
+    c shouldBe 0
   }
+
   it should "return different results when prev request is completed" in {
     val sq = new SerialHash[Int, Int]
     val p = new Promise[Int]()
@@ -58,29 +48,22 @@ class SerialHashTests extends FlatSpec with ShouldMatchers {
 
     val f1 = sq(1, () => p)
     p.setValue(2)
-    expectResult(2) {
-      Await.result(f1)
-    }
+    Await.result(f1) shouldBe 2
 
-    implicit val timer = HashedWheelTimer.Default
-    Await.result(Future.sleep(Duration(1, TimeUnit.SECONDS)))
+    //implicit val timer = HashedWheelTimer.Default
+    //Await.result(Future.sleep(Duration(1, TimeUnit.SECONDS)))
 
     val f2 = sq(1, () => q)
     f2 should not equal f1
     q.setValue(4)
-    expectResult(4) {
-      Await.result(f2)
-    }
+
+    Await.result(f2) shouldBe 4
   }
 
   it should "return different results for const requests" in {
     val sq = new SerialHash[Int, String]
 
-    expectResult("one") {
-      Await.result(sq(1, () => Future.value("one")))
-    }
-    expectResult("two") {
-      Await.result(sq(1, () => Future.value("two")))
-    }
+    Await.result(sq(1, () => Future.value("one"))) shouldBe "one"
+    Await.result(sq(1, () => Future.value("two"))) shouldBe "two"
   }
 }
