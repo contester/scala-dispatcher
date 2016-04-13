@@ -2,10 +2,7 @@ import com.trueaccord.scalapb.{ScalaPbPlugin => PB}
 
 PB.protobufSettings
 
-PB.javaConversions in PB.protobufConfig := true
-
 PB.flatPackage in PB.protobufConfig := true
-
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
 
