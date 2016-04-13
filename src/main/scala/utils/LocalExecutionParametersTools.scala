@@ -3,7 +3,7 @@ package org.stingray.contester.utils
 import org.stingray.contester.proto.{LocalEnvironment, LocalExecutionParameters}
 import org.stingray.contester.invokers.Sandbox
 
-final class RichLocalExecutionParameters(val repr: LocalExecutionParameters) {
+final class RichLocalExecutionParameters(val repr: LocalExecutionParameters) extends AnyVal {
   import collection.JavaConversions._
 
   def fillCommandLine(applicationName: String, arguments: ExecutionArguments) =
