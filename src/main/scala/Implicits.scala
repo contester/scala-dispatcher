@@ -15,9 +15,6 @@ object ContesterImplicits {
   implicit def FromRichLocalExecutionParameters(x: RichLocalExecutionParameters): LocalExecutionParameters =
     x.repr
 
-  implicit def future2ops[A](x: Future[A]): FutureOps[A] = new FutureOps(x)
-  implicit def ops2future[A](x: FutureOps[A]): Future[A] = x.repr
-
   implicit def flist2ops(x: Iterable[RemoteFileName]): FileListOps = new FileListOps(x)
   implicit def ops2flist(x: FileListOps): Iterable[RemoteFileName] = x.repr
   implicit def flist2str(x: Iterable[RemoteFileName]): Iterable[String] = x.map(_.name)

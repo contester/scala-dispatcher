@@ -4,13 +4,6 @@ import com.twitter.util.Future
 
 import scala.concurrent.{ExecutionContext, Future => ScalaFuture}
 
-class FutureOps[A](val repr: Future[A]) {
-  def ensureF(f: => Future[Any]): Future[A] =
-    repr.transform { v =>
-      f.flatMap(k => Future.const(v))
-    }
-}
-
 object Fu {
   val Done: ScalaFuture[Unit] = ScalaFuture.successful(())
 
