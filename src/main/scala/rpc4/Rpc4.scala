@@ -40,7 +40,9 @@ object DefaultChannelDisconnectedException extends ChannelDisconnectedException
   *
   * @param value String passed as error description.
   */
-class RemoteError(value: String) extends RuntimeException(value)
+case class RemoteError(value: String) extends RuntimeException(value)
+
+case class UnexpectedMessageTypeError(messageType: Header.MessageType) extends RuntimeException(messageType.name)
 
 /** Dispatcher's pipeline factory. Will produce a pipeline that speaks rpc4 and connects those to the registry.
   *
@@ -188,6 +190,8 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
               Future.value(deserializer.flatMap { d =>
                 rt.payload.map(p => parseWith(p, d))
               })
+            case x =>
+              Future.exception(UnexpectedMessageTypeError(x))
           }
         } finally {
           rt.payload.foreach(ReferenceCountUtil.release)

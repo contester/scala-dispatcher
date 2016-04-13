@@ -24,10 +24,11 @@ object Blobs {
 
   def getBinary(x: Blob): Array[Byte] = {
     val result = x.compression.map { ci =>
-      ci.method match {
-        case Some(Blob.CompressionInfo.CompressionType.METHOD_ZLIB) =>
+      ci.getMethod match {
+        case Blob.CompressionInfo.CompressionType.METHOD_ZLIB =>
           zlibDecompress(x.getData, ci.getOriginalSize)
-        case None => x.getData.toByteArray
+        case Blob.CompressionInfo.CompressionType.METHOD_NONE =>
+          x.getData.toByteArray
       }
     }.getOrElse(x.getData.toByteArray)
 
