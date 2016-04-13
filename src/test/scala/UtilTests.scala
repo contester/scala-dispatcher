@@ -1,11 +1,7 @@
 package org.stingray.contester.utils
 
-import java.util.concurrent.TimeUnit
-
-import com.twitter.finagle.util.HashedWheelTimer
-import com.twitter.util.{Await, Duration, Future, Promise}
+import com.twitter.util.{Await, Future, Promise}
 import org.scalatest.{FlatSpec, Matchers}
-import org.scalatest.matchers.ShouldMatchers
 
 class SerialHashTests extends FlatSpec with Matchers {
   "HashQueue" should "return the same future for long-running request" in {
