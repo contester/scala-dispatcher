@@ -1,10 +1,12 @@
 package org.stingray.contester.invokers
 
-import collection.mutable
-import com.twitter.util.{Duration, Future, Promise}
-import org.stingray.contester.utils.Utils
 import java.util.concurrent.TimeUnit
+
+import com.twitter.finagle.util.HashedWheelTimer
+import com.twitter.util.{Duration, Future, Promise}
 import grizzled.slf4j.Logging
+
+import scala.collection.mutable
 
 trait HasCaps[CapsType] {
   def caps: Iterable[CapsType]
@@ -21,7 +23,8 @@ class TooManyErrors(cause: RuntimeException) extends RuntimeException(cause)
 
 /**
  * Brains behind InvokerRegistry.
- * @tparam CapsType Type for capability ids.
+  *
+  * @tparam CapsType Type for capability ids.
  * @tparam KeyType Type for keys.
  * @tparam InvokerType Type for invokers. HasCaps[CapsType]
  */
@@ -43,9 +46,11 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
   private[this] def retryOrThrow[X](cap: CapsType, schedulingKey: KeyType, retries: Option[Int], e: RuntimeException, f: InvokerType => Future[X]): Future[X] =
     if (!retries.exists(_ > 0))
       Future.exception(new TooManyErrors(e))
-    else
-      Utils.later(Duration(2, TimeUnit.SECONDS))
+    else {
+      implicit val timer = HashedWheelTimer.Default
+      Future.sleep(Duration(2, TimeUnit.SECONDS))
         .flatMap(_ => get(cap, schedulingKey, retries.map(_ - 1))(f))
+    }
 
   def get[X](cap: CapsType, schedulingKey: KeyType, extra: AnyRef, retries: Option[Int] = Some(5))(f: InvokerType => Future[X]): Future[X] =
     getInvoker(cap, schedulingKey, extra).flatMap { invoker =>
@@ -102,7 +107,8 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
 
   /**
    * Re-add invoker to the system, marking it as available or immediately scheduling the work on it.
-   * @param invoker Invoker to add.
+    *
+    * @param invoker Invoker to add.
    */
   private[this] def addInvoker(invoker: InvokerType): Unit =
     if (stillAlive(invoker)) {
@@ -120,7 +126,8 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
 
   /**
    * Re-add invoker after being used by schedulingKey. Mark it as not used first, then re-add.
-   * @param invoker Invoker to re-add
+    *
+    * @param invoker Invoker to re-add
    * @param schedulingKey
    */
   private[this] def reuseInvoker(invoker: InvokerType, schedulingKey: KeyType): Unit =
@@ -133,7 +140,8 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
 
   /**
    * Mark invoker as bad.
-   * @param invoker
+    *
+    * @param invoker
    */
   private[this] def badInvoker(invoker: InvokerType): Unit =
     synchronized {
@@ -145,7 +153,8 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
 
   /**
    * Remove invokers.
-   * @param invokers
+    *
+    * @param invokers
    */
   protected def removeInvokers(invokers: Iterable[InvokerType]): Unit =
     synchronized {

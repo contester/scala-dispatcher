@@ -1,22 +1,16 @@
 package org.stingray.contester.engine
 
+import com.twitter.util.Future
 import grizzled.slf4j.Logging
+import org.apache.commons.io.FilenameUtils
+import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.common._
 import org.stingray.contester.invokers._
 import org.stingray.contester.modules.{BinaryHandler, ModuleHandler}
 import org.stingray.contester.problems.{Test, TestLimits}
-import org.apache.commons.io.FilenameUtils
-import com.twitter.util.{Duration, Future}
-import org.stingray.contester.ContesterImplicits._
-import org.stingray.contester.utils.{ProtobufTools, SandboxUtil, Utils}
-import java.util.concurrent.TimeUnit
-
+import org.stingray.contester.proto.{LocalExecutionParameters, LocalExecutionResult}
 import org.stingray.contester.rpc4.RemoteError
-
-import scala.Some
-import org.jboss.netty.buffer.{ChannelBuffer, ChannelBuffers, WrappedChannelBuffer}
-import com.google.protobuf.Message
-import org.stingray.contester.proto.{LocalExecution, LocalExecutionParameters, LocalExecutionResult}
+import org.stingray.contester.utils.SandboxUtil
 
 object Tester extends Logging {
   private def asRunResult(x: (LocalExecutionParameters, LocalExecutionResult), isJava: Boolean) =
@@ -91,11 +85,8 @@ object Tester extends Logging {
     test.prepareInput(sandbox)
       .flatMap { _ => test.prepareTester(sandbox)}
       .flatMap { _ => test.prepareTesterBinary(sandbox)}
-      .flatMap { testerName =>
-      Utils.later(Duration(500, TimeUnit.MILLISECONDS))
-        .flatMap { _ =>
+      .flatMap { testerName => // Used to have 500ms delay here.
         executeTester(sandbox, factory(FilenameUtils.getExtension(testerName)).asInstanceOf[BinaryHandler], testerName)
-      }
     }
 
   private def executeAndStoreSuccess(sandbox: Sandbox, factory: (String) => ModuleHandler,

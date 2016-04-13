@@ -2,6 +2,7 @@ package org.stingray.contester.utils
 
 import java.util.concurrent.TimeUnit
 
+import com.twitter.finagle.util.HashedWheelTimer
 import com.twitter.util.{Await, Duration, Future, Promise}
 import org.scalatest.FlatSpec
 import org.scalatest.matchers.ShouldMatchers
@@ -61,7 +62,8 @@ class SerialHashTests extends FlatSpec with ShouldMatchers {
       Await.result(f1)
     }
 
-    Await.result(Utils.later(Duration(1, TimeUnit.SECONDS)))
+    implicit val timer = HashedWheelTimer.Default
+    Await.result(Future.sleep(Duration(1, TimeUnit.SECONDS)))
 
     val f2 = sq(1, () => q)
     f2 should not equal f1

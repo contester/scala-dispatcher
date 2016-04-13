@@ -1,10 +1,6 @@
 package org.stingray.contester.problems
 
 import com.twitter.util.Future
-import org.stingray.contester.utils.Utils
-import grizzled.slf4j.Logging
-import com.google.common.collect.MapMaker
-import java.net.URI
 
 case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
                            stdio: Boolean, testerName: String, answers: Iterable[Int], interactorName: Option[String]) {
