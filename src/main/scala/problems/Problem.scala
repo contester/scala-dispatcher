@@ -1,9 +1,7 @@
 package org.stingray.contester.problems
 
-import org.stingray.contester.invokers.Sandbox
 import com.twitter.util.Future
-import collection.immutable
-import java.net.URI
+import org.stingray.contester.invokers.Sandbox
 
 /**
  * A problem from the testing engine point of view is a map TestID->Test.
