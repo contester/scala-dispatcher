@@ -60,22 +60,6 @@ trait ProblemWithRevision {
   }
 
   /**
-   * Basename used for sanitizing.
-   *
-   * TODO: Replace with shortened/hash?
- *
-   * @return Filesystem-compatible name.
-   */
-  final def destName = pid.replace('/', '.').replace(':', '.') + "." + revision.toString
-
-  /**
-   * Archive name written out for saniziting.
- *
-   * @return FIlesystem-compatible name.
-   */
-  final def zipName = destName + ".zip"
-
-  /**
    * Prefix in gridfs for all problem-related things.
  *
    * @return Gridf-compatible prefix.

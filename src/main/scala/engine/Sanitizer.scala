@@ -108,15 +108,18 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemD
 object Sanitizer extends Logging {
   private[this] val p7zFlags = "x" :: "-y" :: Nil
 
+  private[this] val destName = "p"
+  private[this] val zipName = "p.zip"
+
   private[this] def unpack(sandbox: Sandbox, problem: ProblemWithRevision, p7z: String): Future[RemoteFileName] =
-    sandbox.getExecutionParameters(p7z, p7zFlags ++ List("-o" + problem.destName, problem.zipName))
+    sandbox.getExecutionParameters(p7z, p7zFlags ++ List(s"-o${destName}", zipName))
       .flatMap(sandbox.execute)
-      .flatMap(_ => sandbox.stat(problem.destName, false))
+      .flatMap(_ => sandbox.stat(destName, false))
       .map(_.find(_.isDir).getOrElse(throw new UnpackError))
 
   // No need to get problem file; it will be already there - or we fail after putGridfs
   private[this] def sanitize(sandbox: Sandbox, problem: ProblemDescription, p7z: String) = {
-    sandbox.putGridfs(problem.archiveName, problem.zipName)
+    sandbox.putGridfs(problem.archiveName, zipName)
       .flatMap(_ => unpack(sandbox, problem, p7z))
       .flatMap(d => new ProblemSanitizer(sandbox, d, problem).sanitizeAndStore)
   }
