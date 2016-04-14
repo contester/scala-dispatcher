@@ -50,7 +50,7 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester,
                 Timex = ${tr.run.time / 1000},
                 Memory = ${tr.run.memory},
                 Info = ${tr.run.returnCode},
-                Result = ${tr.run.status.id},
+                Result = ${tr.run.status.value},
                 Processed = 255 where ID = ${item.id}"""
       )
     }.getOrElse {
@@ -58,7 +58,7 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester,
       db.run(sqlu"""update Eval set Output = ${tr.stdOut},
                 Timex = ${tr.time / 1000},
                 Memory = ${tr.memory},
-                Result = ${tr.status.id},
+                Result = ${tr.status.value},
                 Processed = 255 where ID = ${item.id}""")
     }.map { x =>
         rabbitMq ! Message.queue(CustomTestResult(item.id, item.contest, item.team), queue = "contester.evals")

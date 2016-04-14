@@ -239,7 +239,7 @@ object StatusCode {
     Rejected -> "Rejected"
   )
 
-  def apply(code: StatusCodes) = reasons.getOrElse(code.id, "Unknown status " + code)
+  def apply(code: StatusCodes) = reasons.getOrElse(code.value, "Unknown status " + code)
 }
 
 class RestoredResult(val status: Int) extends Result {

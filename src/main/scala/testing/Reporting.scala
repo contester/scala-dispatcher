@@ -59,7 +59,7 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
     val cval = if (r.success) 1 else 0
       client.run(
         sqlu"""insert into Results (UID, Submit, Result, Test, Timex, Memory, TesterOutput, TesterError)
-           values ($testingId, ${submit.id}, ${r.status.id}, 0, 0, 0, ${new String(r.stdOut, "cp866")},
+           values ($testingId, ${submit.id}, ${r.status.value}, 0, 0, 0, ${new String(r.stdOut, "cp866")},
             ${new String(r.stdErr, "cp866")})""").zip(
           client.run(sqlu"Update Submits set Compiled = ${cval} where ID = ${submit.id}"))
         .map(_ => ())
@@ -67,7 +67,7 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
 
   def test(testId: Int, result: TestResult): Future[Unit] =
     client.run(sqlu"""Insert into Results (UID, Submit, Result, Test, Timex, Memory, Info, TesterOutput,
-        TesterError, TesterExitCode) values ($testingId, ${submit.id}, ${result.status.id}, $testId,
+        TesterError, TesterExitCode) values ($testingId, ${submit.id}, ${result.status.value}, $testId,
         ${result.solution.time / 1000}, ${result.solution.memory}, ${result.solution.returnCode},
         ${result.getTesterOutput}, ${new String(result.getTesterError, "windows-1251")},
         ${result.getTesterReturnCode})""").map(_ => ())

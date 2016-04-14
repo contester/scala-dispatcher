@@ -3,7 +3,7 @@ package org.stingray.contester.invokers
 import org.apache.commons.io.FilenameUtils
 import org.stingray.contester.proto.FileStat
 
-class StorageFileName(val s: String) extends AnyVal
+case class StorageFileName(s: String) extends AnyVal
 
 case class CopyToStorage(local: RemoteFileName, storage: StorageFileName, moduleType: Option[String])
 
