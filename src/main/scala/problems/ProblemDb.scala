@@ -18,12 +18,12 @@ trait ProblemServerInterface {
 }
 
 trait ProblemDb extends ProblemServerInterface {
-  def setProblem(problem: ProblemID, manifest: ProblemManifest): Future[Problem]
-  def getProblem(problem: ProblemID): Future[Option[Problem]]
+  def setProblem(problem: ProblemWithRevision, manifest: ProblemManifest): Future[Problem]
+  def getProblem(problem: ProblemWithRevision): Future[Option[Problem]]
 }
 
 trait ProblemFileStore {
-  def getProblemFile(problem: ProblemID, getFn: => Future[Array[Byte]]): Future[Unit]
+  def getProblemFile(problem: ProblemWithRevision, getFn: => Future[Array[Byte]]): Future[Unit]
 }
 
 trait SanitizeDb extends ProblemDb with ProblemFileStore

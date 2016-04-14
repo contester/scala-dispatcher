@@ -53,7 +53,7 @@ class SimpleProblemTest(problem: SimpleProblem, val testId: Int) extends Test wi
 case class SimpleProblemManifest(id: String, revision: Int, testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
                                  stdio: Boolean, testerName: String, answers: Set[Int], interactorName: Option[String])
 
-class SimpleProblem(val baseUrl: String, val m: SimpleProblemManifest, val id: ProblemID) extends Problem {
+class SimpleProblem(val baseUrl: String, val m: SimpleProblemManifest, val id: ProblemWithRevision) extends Problem {
   /**
     * Override this method to provide sequence of tests.
     *
@@ -116,7 +116,7 @@ class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) e
       r.status match {
         case Status.Ok =>
           Future.value(parseSimpleProblemManifest(r.contentString).map { found =>
-            val pid = new SimpleProblemID(getSimpleUrlId(new URI(found.id)), found.revision)
+            val pid = new SimpleProblemWithRevision(getSimpleUrlId(new URI(found.id)), found.revision)
             new SimpleProblem(baseUrl + "fs/", found, pid)
           })
         case Status.NotFound =>

@@ -3,7 +3,7 @@ package org.stingray.contester.engine
 import org.stingray.contester.invokers._
 import grizzled.slf4j.Logging
 import com.twitter.util.Future
-import org.stingray.contester.problems.{ProblemManifest, ProblemID}
+import org.stingray.contester.problems.{ProblemManifest, ProblemWithRevision}
 import org.stingray.contester.modules.SevenzipHandler
 import org.stingray.contester.ContesterImplicits._
 import scala.util.matching.Regex
@@ -15,7 +15,7 @@ class UnpackError extends scala.Throwable
 class SanitizerError extends Throwable
 class ProblemFileNotFound extends SanitizerError
 
-trait ProblemDescription extends ProblemID with EarliestTimeKey {
+trait ProblemDescription extends ProblemWithRevision with EarliestTimeKey {
   def interactive: Boolean
   def stdio: Boolean
   def testCount: Int
@@ -108,7 +108,7 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemD
 object Sanitizer extends Logging {
   private[this] val p7zFlags = "x" :: "-y" :: Nil
 
-  private[this] def unpack(sandbox: Sandbox, problem: ProblemID, p7z: String): Future[RemoteFileName] =
+  private[this] def unpack(sandbox: Sandbox, problem: ProblemWithRevision, p7z: String): Future[RemoteFileName] =
     sandbox.getExecutionParameters(p7z, p7zFlags ++ List("-o" + problem.destName, problem.zipName))
       .flatMap(sandbox.execute)
       .flatMap(_ => sandbox.stat(problem.destName, false))
@@ -123,6 +123,7 @@ object Sanitizer extends Logging {
 
   /**
    * Sanitize a given problem.
+ *
    * @param instance Invoker instance to use.
    * @param problem Problem to sanitize. Problem archive already needs to be loaded into gridfs.
    * @return

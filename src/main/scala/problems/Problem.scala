@@ -9,12 +9,14 @@ import org.stingray.contester.invokers.Sandbox
 trait Problem {
   /**
    * Override this method to provide sequence of tests.
+ *
    * @return Sequence of tests.
    */
   protected def tests: Seq[Int]
 
   /**
    * Override this method to provide tests themselves.
+ *
    * @param key Test ID.
    * @return Test.
    */
@@ -27,15 +29,17 @@ trait Problem {
  * Identifier for a problem already in gridfs.
  * Has helper methods for all gridfs file names.
  */
-trait ProblemID {
+trait ProblemWithRevision {
   /**
-   * Defines problem ID in pdb/gridfs. Needs to be storage-compatible.
+    * Defines problem ID in pdb/gridfs. Needs to be storage-compatible.
+ *
    * @return Problem ID in pdb/gridfs.
    */
   def pid: String
 
   /**
    * Revision of a problem.
+ *
    * @return Revision.
    */
   def revision: Int
@@ -51,7 +55,7 @@ trait ProblemID {
     pid.hashCode() + revision.hashCode()
 
   override def equals(obj: Any): Boolean = obj match {
-    case other: ProblemID => (pid == other.pid) && (revision == other.revision)
+    case other: ProblemWithRevision => (pid == other.pid) && (revision == other.revision)
     case _ => super.equals(obj)
   }
 
@@ -59,24 +63,28 @@ trait ProblemID {
    * Basename used for sanitizing.
    *
    * TODO: Replace with shortened/hash?
+ *
    * @return Filesystem-compatible name.
    */
   final def destName = pid.replace('/', '.').replace(':', '.') + "." + revision.toString
 
   /**
    * Archive name written out for saniziting.
+ *
    * @return FIlesystem-compatible name.
    */
   final def zipName = destName + ".zip"
 
   /**
    * Prefix in gridfs for all problem-related things.
+ *
    * @return Gridf-compatible prefix.
    */
   final def prefix = "problem/" +  pdbId
 
   /**
    * Shorthand for creating all other paths.
+ *
    * @param suffix
    * @return
    */
@@ -85,12 +93,14 @@ trait ProblemID {
 
   /**
    * Checker path.
+ *
    * @return
    */
   final def checkerName = dbName("checker")
 
   /**
    * Prefix for a given test id.
+ *
    * @param testId Test id.
    * @return
    */
@@ -98,6 +108,7 @@ trait ProblemID {
 
   /**
    * Input data path.
+ *
    * @param testId Test id.
    * @return
    */
@@ -105,6 +116,7 @@ trait ProblemID {
 
   /**
    * Answer file path.
+ *
    * @param testId Test id.
    * @return
    */
@@ -112,12 +124,14 @@ trait ProblemID {
 
   /**
    * Archive path.
+ *
    * @return
    */
   final def archiveName = dbName("archive")
 
   /**
    * Interactor path.
+ *
    * @return
    */
   final def interactorName = dbName("interactor")
@@ -125,14 +139,16 @@ trait ProblemID {
 
 /**
  * Simplest problem ID, just by pid/revision.
- * @param pid Problem pid.
+ *
+ * @param pid      Problem pid.
  * @param revision Problem revision.
  */
-class SimpleProblemID(override val pid: String, override val revision: Int) extends ProblemID
+class SimpleProblemWithRevision(override val pid: String, override val revision: Int) extends ProblemWithRevision
 
 /**
  * A problem from testing engine point of view, built from ProblemID and additional info
  * (pulled from manifest, presumably).
+ *
  * @param pdb ProblemDB client.
  * @param id ProblemID instance.
  * @param testCount How many tests.
@@ -143,7 +159,7 @@ class SimpleProblemID(override val pid: String, override val revision: Int) exte
  * @param interactorName Some(original file name for interactor) or none.
  * @param stdio Is this a stdio problem or not.
  */
-class PDBProblem(val pdb: ProblemDb, val id: ProblemID, val testCount: Int, val timeLimitMicros: Long,
+class PDBProblem(val pdb: ProblemDb, val id: ProblemWithRevision, val testCount: Int, val timeLimitMicros: Long,
                  val memoryLimit: Long, val testerName: String, val answers: Set[Int],
                  val interactorName: Option[String], val stdio: Boolean) extends Problem {
   def tests: Seq[Int] = 1 to testCount
@@ -163,7 +179,7 @@ class PDBProblem(val pdb: ProblemDb, val id: ProblemID, val testCount: Int, val 
 }
 
 object PDBProblem {
-  def apply(pdb: ProblemDb, id: ProblemID, m: ProblemManifest) =
+  def apply(pdb: ProblemDb, id: ProblemWithRevision, m: ProblemManifest) =
     new PDBProblem(pdb, id, m.testCount, m.timeLimitMicros, m.memoryLimit, m.testerName, m.answers.toSet,
       m.interactorName, m.stdio)
 }
