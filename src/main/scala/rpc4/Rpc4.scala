@@ -1,18 +1,17 @@
 package org.stingray.contester.rpc4
 
-import java.io.{Closeable, InputStream}
 import java.nio.ByteOrder
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicReference}
 
 import com.trueaccord.scalapb.GeneratedMessage
 import com.twitter.io.Charsets
-import com.twitter.util.{Future, Promise, Return, Try}
+import com.twitter.util.{Future, Promise}
 import grizzled.slf4j.Logging
 import io.netty.buffer.{ByteBuf, ByteBufInputStream, ByteBufOutputStream, Unpooled}
 import io.netty.channel._
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder
-import io.netty.util.{ReferenceCountUtil, ReferenceCounted}
+import io.netty.util.ReferenceCountUtil
 import org.stingray.contester.rpc4.proto.Header
 
 /** Connected server registry. Will be called for connected and disconnected channels.
@@ -52,52 +51,12 @@ class ServerPipelineFactory[C <: Channel](registry: Registry) extends ChannelIni
   override def initChannel(ch: C): Unit = {
     val pipeline = ch.pipeline()
     pipeline.addFirst("RpcClient", new RpcClientImpl[C](ch, registry))
-    pipeline.addFirst("RpcDecoder", new RpcFramerDecoder)
     pipeline.addFirst("FrameDecoder", Framer.simpleFrameDecoder)
   }
 }
 
 object Framer {
   val simpleFrameDecoder = new LengthFieldBasedFrameDecoder(ByteOrder.BIG_ENDIAN, 64 * 1024 * 1024, 0, 4, 0, 4, true)
-  // val simpleFrameEncoder = new LengthFieldPrepender(ByteOrder.BIG_ENDIAN, 4, 0, false)
-}
-
-/** Decoded messages, contain header and optionally payload.
-  *
-  * @param header
-  * @param payload
-  */
-case class Rpc4Tuple(header: Header, payload: Option[ByteBuf]=None)
-
-/** Decoder. A message has a header and optionally a payload.
-  *
-  */
-private class RpcFramerDecoder extends SimpleChannelInboundHandler[ByteBuf] {
-  private[this] var storedHeader: Option[Header] = None
-
-  override def channelRead0(ctx: ChannelHandlerContext, msg: ByteBuf): Unit =
-      if (storedHeader.isEmpty) {
-        val header = try {
-          val stream = new ByteBufInputStream(msg)
-          try {
-            Header.parseFrom(stream)
-          } finally {
-            stream.close()
-          }
-        } finally {
-          ReferenceCountUtil.release(msg)
-        }
-        if (header.getPayloadPresent) {
-          storedHeader = Some(header)
-        } else {
-          ctx.fireChannelRead(Rpc4Tuple(header))
-        }
-      } else {
-        val header = storedHeader.get
-        storedHeader = None
-
-        ctx.fireChannelRead(Rpc4Tuple(header, Some(msg)))
-      }
 }
 
 trait RpcClient {
