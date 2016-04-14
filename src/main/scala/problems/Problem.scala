@@ -6,18 +6,9 @@ import collection.immutable
 import java.net.URI
 
 /**
- * A proxy for parent problem to limit the test set.
- * @param parent Problem.
- * @param tests Test set limit.
- */
-private class ProblemProxy(parent: Problem, protected val tests: Seq[Int]) extends Problem {
-  def getTest(key: Int): Test = parent.getTest(key)
-}
-
-/**
  * A problem from the testing engine point of view is a map TestID->Test.
  */
-trait Problem extends immutable.SortedMap[Int, Test] {
+trait Problem {
   /**
    * Override this method to provide sequence of tests.
    * @return Sequence of tests.
@@ -31,35 +22,7 @@ trait Problem extends immutable.SortedMap[Int, Test] {
    */
   def getTest(key: Int): Test
 
-  implicit def ordering: Ordering[Int] = Ordering.Int
-
-  def iterator: Iterator[(Int, Test)] =
-    tests.flatMap(i => get(i).map(i -> _)).iterator
-
-  def keysIteratorFrom(start: Int): Iterator[Int] =
-    tests.filter(_ >= start).filter(get(_).isDefined).iterator
-
-  def valuesIteratorFrom(start: Int): Iterator[Test] =
-    iteratorFrom(start).map(_._2)
-
-  def iteratorFrom(start: Int): Iterator[(Int, Test)] =
-    tests.filter(_ >= start).flatMap(i => get(i).map(i -> _)).iterator
-
-  def rangeImpl(from: Option[Int], until: Option[Int]): immutable.SortedMap[Int, Test] = {
-    val left = from.map(l => tests.filter(_ >= l)).getOrElse(tests)
-    val right = until.map(r => left.filter(_ <= r)).getOrElse(left)
-
-    new ProblemProxy(this, right)
-  }
-
-  def -(key: Int): immutable.SortedMap[Int, Test] =
-    new ProblemProxy(this, tests.filterNot(_ == key))
-
-  def get(key: Int): Option[Test] =
-    if (tests.contains(key))
-      Some(getTest(key))
-    else
-      None
+  def toSeq = tests.map(x => x -> getTest(x))
 }
 
 /**
