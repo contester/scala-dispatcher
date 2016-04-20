@@ -84,11 +84,11 @@ object ContestDescription {
 }
 
 private object PolygonProblemUtils {
-  def getPathPart(url: URL) =
+  def getPathPart(url: URI) =
     url.getPath.stripPrefix("/").stripSuffix("/")
 
-  def getPdbPath(url: URL): String =
-    ("polygon" :: url.getProtocol :: url.getHost :: (if (url.getPort != -1) url.getPort.toString :: getPathPart(url) :: Nil else getPathPart(url) :: Nil)).mkString("/")
+  def getPdbPath(url: URI): String =
+    ("polygon" :: url.getScheme :: url.getHost :: (if (url.getPort != -1) url.getPort.toString :: getPathPart(url) :: Nil else getPathPart(url) :: Nil)).mkString("/")
 }
 
 case class PolygonProblem(uri: URI, revision: Long, names: Map[String, String],
