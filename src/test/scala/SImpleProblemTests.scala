@@ -23,7 +23,7 @@ class SimpleProblemTests extends FlatSpec with Matchers {
       (1 to 20).toSet, None))
   }
 
-  "Json" should "decode empty answer list" in {
+  it should "decode empty answer list" in {
     val source0 =
       """[{
         |"id":"direct://school.sgu.ru/moodle/1",

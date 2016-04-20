@@ -4,6 +4,7 @@ import java.net.URI
 
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.io.Source
 import scala.xml.XML
 
 class NamingTests extends FlatSpec with Matchers {
@@ -13,35 +14,34 @@ class NamingTests extends FlatSpec with Matchers {
   }
 }
 
-object ContestTests {
-  val c0 = """<?xml version="1.0" encoding="utf-8" standalone="no"?>
-             |<contest url="https://polygon.codeforces.com/c/1">
-             |    <names>
-             |        <name language="english" value="ACM ICPC 2010-2011, NEERC, Southern Subregional Contest"/>
-             |    </names>
-             |    <statements>
-             |        <statement language="english" type="application/pdf" url="https://polygon.codeforces.com/c/1/english/statements.pdf"/>
-             |    </statements>
-             |    <problems>
-             |        <problem index="a" url="https://polygon.codeforces.com/p/dmatov/bencoding"/>
-             |        <problem index="b" url="https://polygon.codeforces.com/p/mmirzayanov/city-3d-model"/>
-             |        <problem index="c" url="https://polygon.codeforces.com/p/ralekseenkov/explode-them-all"/>
-             |        <problem index="d" url="https://polygon.codeforces.com/p/vgoldshteyn/fire-in-the-country"/>
-             |        <problem index="e" url="https://polygon.codeforces.com/p/nbond/kidnapping"/>
-             |        <problem index="f" url="https://polygon.codeforces.com/p/mmirzayanov/lift"/>
-             |        <problem index="g" url="https://polygon.codeforces.com/p/mmirzayanov/maximizing-roads-quality"/>
-             |        <problem index="h" url="https://polygon.codeforces.com/p/mmirzayanov/north-east"/>
-             |        <problem index="i" url="https://polygon.codeforces.com/p/mmirzayanov/oil-wells"/>
-             |        <problem index="j" url="https://polygon.codeforces.com/p/erogacheva/qf-2010-buoys"/>
-             |        <problem index="k" url="https://polygon.codeforces.com/p/DStepanenko/running-hero"/>
-             |        <problem index="l" url="https://polygon.codeforces.com/p/mmirzayanov/time-to-repair-roads"/>
-             |    </problems>
-             |</contest>""".stripMargin('|')
+object ParseTests {
+  val c0 = XML.load(getClass.getResourceAsStream("/contest1.xml"))
+  val p0 = XML.load(getClass.getResourceAsStream("/problem-mmirzayanov-qf-2009-trial-odds.xml"))
 }
 
-class ContestTests extends FlatSpec with Matchers {
-  import ContestTests._
+class ParseTests extends FlatSpec with Matchers {
+  import ParseTests._
   "contest" should "parse" in {
-    println(ContestDescription.parse(XML.loadString(c0)))
+    ContestDescription.parse(c0) shouldBe ContestDescription(
+      Map("english" -> "ACM ICPC 2010-2011, NEERC, Southern Subregional Contest"),
+      Map("E" -> "https://polygon.codeforces.com/p/nbond/kidnapping",
+        "J" -> "https://polygon.codeforces.com/p/erogacheva/qf-2010-buoys",
+        "F" -> "https://polygon.codeforces.com/p/mmirzayanov/lift",
+        "A" -> "https://polygon.codeforces.com/p/dmatov/bencoding",
+        "I" -> "https://polygon.codeforces.com/p/mmirzayanov/oil-wells",
+        "G" -> "https://polygon.codeforces.com/p/mmirzayanov/maximizing-roads-quality",
+        "L" -> "https://polygon.codeforces.com/p/mmirzayanov/time-to-repair-roads",
+        "B" -> "https://polygon.codeforces.com/p/mmirzayanov/city-3d-model",
+        "C" -> "https://polygon.codeforces.com/p/ralekseenkov/explode-them-all",
+        "H" -> "https://polygon.codeforces.com/p/mmirzayanov/north-east",
+        "K" -> "https://polygon.codeforces.com/p/DStepanenko/running-hero",
+        "D" -> "https://polygon.codeforces.com/p/vgoldshteyn/fire-in-the-country").mapValues(x => new URI(x))
+    )
+  }
+
+  "problem" should "parse" in {
+    PolygonProblem.parse(p0) shouldBe PolygonProblem(
+      new URI("https://polygon.codeforces.com/p/mmirzayanov/qf-2009-trial-odds"),16,
+      Map("english" -> "Odd Numbers"),1000,536870912,25,Set("trial"))
   }
 }

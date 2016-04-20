@@ -94,6 +94,23 @@ private object PolygonProblemUtils {
 case class PolygonProblem(uri: URI, revision: Long, names: Map[String, String],
                           timeLimitMicros: Long, memoryLimit: Long, testCount: Int, tags: Set[String])
 
+object PolygonProblem {
+  def parse(source: Elem): PolygonProblem = {
+    val mainTestSet =
+      (source \ "judging" \ "testset").filter(node => (node \ "@name").text == "tests")
+
+    PolygonProblem(
+      new URI((source \ "@url").text),
+      (source \ "@revision").text.toInt,
+      (source \ "names" \ "name").map(entry => ((entry \ "@language").text.toLowerCase, (entry \ "@value").text)).toMap,
+      (mainTestSet \ "time-limit").text.toInt,
+      (mainTestSet \ "memory-limit").text.toLong,
+      (mainTestSet \ "test-count").text.toInt,
+      (source \ "tags" \ "tag").map(entry => (entry \ "@value").text).toSet
+    )
+  }
+}
+
 /*
 class PolygonProblem0(val source: Elem, val externalUrl: Option[URL]) extends ProblemDescription {
   override def toString = "PolygonProblem(%s, %d)".format(url, revision)
