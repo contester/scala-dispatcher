@@ -1,23 +1,10 @@
 package org.stingray.contester.polygon
 
-import com.twitter.util.Future
-import org.stingray.contester.utils.ValueCache
-import java.net.URL
-
 import com.twitter.finagle.redis.Client
 import com.twitter.finagle.redis.util.StringToChannelBuffer
 import com.twitter.io.Charsets
-
-trait PolygonCacheKey {
-  def url: URL
-}
-
-trait PolygonContestKey extends PolygonCacheKey with ProvidesRedisKey {
-  def redisKey = s"rawContest/${url.toString}"
-}
-trait PolygonProblemKey extends PolygonCacheKey {
-  def revision: Option[Int]
-}
+import com.twitter.util.Future
+import org.stingray.contester.utils.ValueCache
 
 trait ProvidesRedisKey {
   def redisKey: String
