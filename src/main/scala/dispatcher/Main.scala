@@ -1,10 +1,10 @@
 package org.stingray.contester.dispatcher
 
-import java.net.InetSocketAddress
+import java.net.{InetSocketAddress, URI}
 import java.util.concurrent.Executors
 
 import akka.actor.ActorSystem
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ConfigFactory, ConfigObject, ConfigValueType}
 import controllers.Assets
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelOption
@@ -15,11 +15,12 @@ import io.netty.util.internal.logging.{InternalLoggerFactory, Slf4JLoggerFactory
 import org.stingray.contester.common.MemcachedObjectCache
 import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.invokers.InvokerRegistry
+import org.stingray.contester.polygon._
 import org.stingray.contester.problems.SimpleProblemDb
 import org.stingray.contester.proto.StatRequest
 import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.stingray.contester.testing.SolutionTester
-import org.stingray.contester.utils.ProtobufTools
+import org.stingray.contester.utils.{CachedConnectionHttpService, CachedHttpService, ProtobufTools}
 import play.api.Logger
 
 object DispatcherServer extends App {
@@ -42,17 +43,9 @@ object DispatcherServer extends App {
   val ioGroup = new NioEventLoopGroup()
 
   private def bindInvokerTo(socket: InetSocketAddress) = {
-/*    val sf = new NioServerSocketChannelFactory(
-      Executors.newCachedThreadPool(),
-      Executors.newCachedThreadPool())
-    val bs = new ServerBootstrap(sf)
-    bs.setPipelineFactory(new ServerPipelineFactory(invoker))
-    bs.bind(socket)*/
     val bs = new ServerBootstrap()
     .group(ioGroup).channel(classOf[NioServerSocketChannel])
         .childHandler(new ServerPipelineFactory[SocketChannel](invoker))
-//        .option(ChannelOption.SO_BACKLOG, 128)
-//      .childOption(ChannelOption.SO_KEEPALIVE, true)
 
     bs.bind(socket).sync()
   }
@@ -60,6 +53,10 @@ object DispatcherServer extends App {
   implicit val actorSystem = ActorSystem("such-system")
 
   Logger.info("Initializing dispatchers")
+
+  val polygons = Polygons.fromConfig(config.getConfig("polygons").root())
+
+  val polygonClient = PolygonClient(PolygonFilter(AuthPolygonMatcher(polygons.values).apply) andThen CachedHttpService)
 
   import slick.driver.MySQLDriver.api._
 

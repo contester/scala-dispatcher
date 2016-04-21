@@ -7,9 +7,11 @@ import com.twitter.finagle.http.{MediaType, Request, RequestBuilder, Response}
 import com.twitter.finagle.{Filter, Service}
 import com.twitter.io.Buf
 import com.twitter.util.Future
+import com.typesafe.config.{ConfigObject, ConfigValueType}
 import grizzled.slf4j.Logging
-import org.apache.http.client.utils.URLEncodedUtils
+import org.apache.http.client.utils.{URIBuilder, URIUtils, URLEncodedUtils}
 import org.apache.http.message.BasicNameValuePair
+import org.stingray.contester.dispatcher.PolygonContestId
 
 import scala.xml.Elem
 
@@ -27,7 +29,31 @@ case class PolygonAuthInfo2(username: String, password: String) {
   def toPostBody = URLEncodedUtils.format(toParams, Charsets.UTF_8)
 }
 
+object Polygons {
+  def fromConfig(config: ConfigObject) = {
+    import scala.collection.JavaConversions._
+
+    config.flatMap {
+      case (k, v) =>
+        v.valueType() match {
+          case ConfigValueType.OBJECT =>
+            val o = v.asInstanceOf[ConfigObject].toConfig
+            Some(PolygonConfig(k, Seq(new URI(o.getString("url"))),
+              PolygonAuthInfo2(o.getString("username"), o.getString("password"))))
+          case _ => None
+        }
+    }
+  }.map(x => x.shortName -> x).toMap
+}
+
 case class PolygonConfig(shortName: String, uri: Iterable[URI], authInfo: PolygonAuthInfo2)
+
+case class PolygonContestResolver(polygons: Map[String, PolygonConfig]) {
+  def getContestURI(pcid: PolygonContestId): Option[PolygonContest] =
+    polygons.get(pcid.polygon).map { p =>
+      PolygonContest(URIUtils.resolve(p.uri.head, s"c/${pcid.contestId}/contest.xml"))
+    }
+}
 
 case class AuthPolygonMatcher(config: Iterable[PolygonConfig]) {
   // private val polygonBaseRe = new Regex("^(.*/)(c/\\d+/?.*|p/[^/]+/[^/]/?.*)$")
@@ -62,6 +88,7 @@ case class PolygonFilter(matcher: URI => Option[PolygonConfig]) extends Filter[U
     }
 }
 
+/*
 object PolygonClient extends Logging {
   def asFile(x: Response) =
     x.content
@@ -70,6 +97,7 @@ object PolygonClient extends Logging {
     Buf.ByteArray.Owned.extract(Buf.ByteArray.coerce(buffer))
   }
 }
+*/
 
 // parsed contest xml
 case class ContestDescription(names: Map[String, String], problems: Map[String, URI])

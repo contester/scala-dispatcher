@@ -7,7 +7,7 @@ import javax.net.ssl.SSLContext
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.twitter.finagle.{Http, Service}
 import com.twitter.finagle.http.{Request, Response}
-import com.twitter.util.StorageUnit
+import com.twitter.util.{Future, StorageUnit}
 import org.apache.http.HttpHost
 import org.apache.http.client.utils.URIUtils
 
@@ -39,6 +39,11 @@ object CachedConnectionHttpService extends Function[HttpHost, Service[Request, R
 
   def apply(uri: URI): Service[Request, Response] =
     apply(URIUtils.extractHost(uri))
+}
+
+object CachedHttpService extends Service[Request, Response] {
+  override def apply(request: Request): Future[Response] =
+    CachedConnectionHttpService(new URI(request.uri))(request)
 }
 
 object URIParse {
