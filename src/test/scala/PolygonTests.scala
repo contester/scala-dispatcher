@@ -2,6 +2,7 @@ package org.stingray.contester.polygon
 
 import java.net.URI
 
+import com.typesafe.config.ConfigFactory
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
@@ -43,5 +44,35 @@ class ParseTests extends FlatSpec with Matchers {
     PolygonProblem.parse(p0) shouldBe PolygonProblem(
       new URI("https://polygon.codeforces.com/p/mmirzayanov/qf-2009-trial-odds"),16,
       Map("english" -> "Odd Numbers"),1000,536870912,25,Set("trial"))
+  }
+}
+
+object ConfigTests {
+  val configText =
+    """
+      |polygons {
+      |  default {
+      |    url = "http://foo/bar"
+      |    username = u1
+      |    password = p1
+      |  }
+      |  secret {
+      |    url = "http://dsdd/"
+      |    username = u2
+      |    password = p2
+      |  }
+      |}
+    """.stripMargin
+
+  val configConf = ConfigFactory.parseString(configText)
+}
+
+class ConfigTests extends FlatSpec with Matchers {
+  import ConfigTests._
+  "configs" should "parse" in {
+    Polygons.fromConfig(configConf.getConfig("polygons").root()) shouldBe Map(
+      "default" -> PolygonConfig("default", Seq(new URI("http://foo/bar")), PolygonAuthInfo2("u1", "p1")),
+      "secret" -> PolygonConfig("secret", Seq(new URI("http://dsdd/")), PolygonAuthInfo2("u2", "p2"))
+    )
   }
 }
