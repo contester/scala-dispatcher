@@ -1,6 +1,6 @@
 package org.stingray.contester.polygon
 
-import java.net.{URI, URL}
+import java.net.URI
 
 import com.google.common.base.Charsets
 import com.twitter.finagle.http.{MediaType, Request, RequestBuilder, Response}
@@ -8,15 +8,10 @@ import com.twitter.finagle.{Filter, Service}
 import com.twitter.io.Buf
 import com.twitter.util.Future
 import com.typesafe.config.{ConfigObject, ConfigValueType}
-import grizzled.slf4j.Logging
-import org.apache.http.client.utils.{URIBuilder, URIUtils, URLEncodedUtils}
+import org.apache.http.client.utils.URLEncodedUtils
 import org.apache.http.message.BasicNameValuePair
-import org.stingray.contester.dispatcher.PolygonContestId
 
 import scala.xml.Elem
-
-class PolygonClientHttpException(reason: String) extends Throwable(reason)
-class PolygonAuthException(url: URL) extends Throwable(url.toString)
 
 case class PolygonAuthInfo2(username: String, password: String) {
   import scala.collection.JavaConversions._
@@ -47,13 +42,6 @@ object Polygons {
 }
 
 case class PolygonConfig(shortName: String, uri: Iterable[URI], authInfo: PolygonAuthInfo2)
-
-case class PolygonContestResolver(polygons: Map[String, PolygonConfig]) {
-  def getContestURI(pcid: PolygonContestId): Option[PolygonContest] =
-    polygons.get(pcid.polygon).map { p =>
-      PolygonContest(URIUtils.resolve(p.uri.head, s"c/${pcid.contestId}/contest.xml"))
-    }
-}
 
 case class AuthPolygonMatcher(config: Iterable[PolygonConfig]) {
   // private val polygonBaseRe = new Regex("^(.*/)(c/\\d+/?.*|p/[^/]+/[^/]/?.*)$")

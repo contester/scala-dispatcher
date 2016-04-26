@@ -1,48 +1,36 @@
 package org.stingray.contester.dispatcher
 
-import akka.actor.{Props, Actor}
+import akka.actor.{Actor, Props}
+import com.twitter.util.Future
 import slick.jdbc.{GetResult, JdbcBackend}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.immutable
 import grizzled.slf4j.Logging
-import scala.concurrent.Future
+import org.stingray.contester.polygon._
 
-object PolygonContestId extends Logging {
-  def parseSource(source: String): (String, Int) = {
-    val splits = source.split(':')
-    if (splits.length == 1)
-      ("default", splits(0).toInt)
-    else
-      (splits(0), splits(1).toInt)
-  }
+import scala.concurrent.{Future => ScalaFuture}
 
-  def apply(source: String): PolygonContestId = {
-    val parsed = parseSource(source)
-    trace((source, parsed))
-    PolygonContestId(parsed._1, parsed._2)
-  }
-
-}
-
-case class PolygonContestId(polygon: String, contestId: Int)
 
 case class ContestRow(id: Int, name: String, polygonId: PolygonContestId, schoolMode: Boolean, Language: String)
 case class ProblemRow(contest: Int, id: String, tests: Int, name: String, rating: Int)
 
 class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
-/*
+
 object ContestTableScanner {
   case object Rescan
   case class ContestMap(map: Map[Int, ContestRow])
   case class GetContest(id: Int)
-  case class GetContestResponse(row: ContestHandle)
+  //case class GetContestResponse(row: ContestHandle)
 
-  def props(d: ProblemData, db: JdbcBackend#DatabaseDef, contestResolver: PolygonContestId => ContestHandle) =
-    Props(classOf[ContestTableScanner], d, db, contestResolver)
+  type PolygonClientT = ContestResolver with PolygonContestClient with PolygonProblemClient
+
+  def props(db: JdbcBackend#DatabaseDef, resolver: PolygonClientT) =
+    Props(classOf[ContestTableScanner], db, resolver)
 }
 
-class ContestTableScanner(d: ProblemData, db: JdbcBackend#DatabaseDef, contestResolver: PolygonContestId => ContestHandle)
+class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: ContestTableScanner.PolygonClientT)
   extends Actor with Logging {
   import slick.driver.MySQLDriver.api._
   import org.stingray.contester.utils.Dbutil._
@@ -68,8 +56,8 @@ class ContestTableScanner(d: ProblemData, db: JdbcBackend#DatabaseDef, contestRe
     if (rowName != contestName)
       db.run(sqlu"update Contests set Name = $contestName where ID = $contestId")
     else
-      Future.successful(0)
-
+      ScalaFuture.successful(0)
+/*
   private def singleContest(r: ContestRow, c: ContestWithProblems, oldp: Seq[ProblemRow]): Future[Unit] = {
     val m = oldp.filter(_.contest == r.id).map(v => v.id.toUpperCase -> v).toMap
 
@@ -94,11 +82,35 @@ class ContestTableScanner(d: ProblemData, db: JdbcBackend#DatabaseDef, contestRe
     }
     nameChange.zip(deletes).zip(Future.sequence(updates)).map(_ => ())
   }
-
+*/
   import org.stingray.contester.utils.Fu._
 
-  private def updateContests(contestList: Iterable[ContestRow]): Future[Unit] = {
-    val cmap = contestList.map(x => contestResolver(x.polygonId) -> x).toMap
+  private def resolveContests(pcids: Seq[PolygonContestId]): Future[Map[PolygonContestId, ContestDescription]] = {
+    Future.collect(pcids.flatMap { pcid =>
+      resolver.getContestURI(pcid).map { contestUri =>
+        resolver.getContest(contestUri).map(d => pcid -> d)
+      }
+    }).map { collected =>
+      collected.flatMap {
+        case (pcid, Some(v)) => Some(pcid -> v)
+        case (pcid, None) =>
+          info(s"Failed to resolve $pcid")
+          None
+      }.toMap
+    }
+  }
+/*
+  private def updateContests(contestList: Seq[ContestRow]): Future[Unit] = {
+    contestList.flatMap { contestRow =>
+      resolver.getContestURI(contestRow.polygonId).map { contestURI =>
+        contestRow -> contestURI
+      }
+    }.map {
+      case (contestRow, contestURI) =>
+        resolver.getContest(contestURI).map
+    }
+
+
     d.getContests(contestList.map(_.polygonId).toSet.toSeq.map(contestResolver))
       .zip(getProblemsFromDb)
       .flatMap {
@@ -111,7 +123,7 @@ class ContestTableScanner(d: ProblemData, db: JdbcBackend#DatabaseDef, contestRe
         )
     }.map(_ => ())
   }
-
+*/
   def getNewContestMap: Future[Map[Int, ContestRow]] =
     getContestsFromDb.map(_.map(v => v.id -> v).toMap)
 
@@ -122,21 +134,20 @@ class ContestTableScanner(d: ProblemData, db: JdbcBackend#DatabaseDef, contestRe
       trace("Contest map received")
       data = map
 
-    case GetContest(cid) =>
-      sender ! GetContestResponse(contestResolver(data(cid).polygonId))
+    //case GetContest(cid) =>
+    //  sender ! GetContestResponse(contestResolver(data(cid).polygonId))
 
     case Rescan =>
       trace("Starting contest rescan")
       getNewContestMap.foreach { newMap =>
         trace(s"Contest rescan done, $newMap")
         self ! ContestMap(newMap)
-        updateContests(newMap.values).onComplete { _ =>
+/*        updateContests(newMap.values).onComplete { _ =>
           trace("Scheduling next rescan")
           context.system.scheduler.scheduleOnce(60 seconds, self, Rescan)
-        }
+        }*/
       }
   }
 
   context.system.scheduler.scheduleOnce(0 seconds, self, Rescan)
 }
-*/
