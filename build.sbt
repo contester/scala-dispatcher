@@ -52,6 +52,7 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "util-core" % "6.33.0",
   "com.twitter" %% "bijection-util" % "0.9.2",
   "org.clapper" %% "grizzled-slf4j" % "1.0.4",
+  "com.github.nscala-time" %% "nscala-time" % "2.12.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.2",
   "commons-io" % "commons-io" % "2.4",
   "com.rabbitmq" % "amqp-client" % "3.6.1",

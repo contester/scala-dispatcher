@@ -22,14 +22,6 @@ trait SingleProgress {
   def test(id: Int, r: TestResult): Future[Unit]
 }
 
-object NullReporter extends SingleProgress {
-  def compile(r: CompileResult): Future[Unit] = Future.successful()
-
-  def test(id: Int, r: TestResult): Future[Unit] = Future.successful()
-
-  def finish(r: SolutionTestingResult): Future[Unit] = Future.successful()
-}
-
 class CombinedSingleProgress(val db: DBSingleResultReporter, val raw: RawLogResultReporter) extends SingleProgress {
   def compile(r: CompileResult): Future[Unit] = db.compile(r).zip(raw.compile(r)).map(_ => ())
 
@@ -115,6 +107,11 @@ class DBReporter(val client: JdbcBackend#DatabaseDef) {
       sqlu"""Replace Submits (Contest, Arrived, Team, Task, ID, Ext, Computer, TestingID, Touched, Finished)
       values (${submit.contestId}, ${submit.arrived}, ${submit.teamId}, ${submit.problemId}, ${submit.id},
       ${submit.sourceModule.moduleType}, ${submit.computer}, $testingId, NOW(), 0)""")
+
+  def allocateAndRegister(submit: SubmitObject, problemId: String): Future[Int] =
+    allocateTesting(submit.id, problemId).flatMap { testingId =>
+      registerTestingOnly(submit, testingId).map { _ => testingId }
+    }
 
   // Get testing ID from submit row, or None
   private def getTestingIdFromSubmit(submitId: Int): Future[Option[Int]] =

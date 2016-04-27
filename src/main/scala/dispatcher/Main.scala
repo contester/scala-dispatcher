@@ -1,13 +1,12 @@
 package org.stingray.contester.dispatcher
 
-import java.net.{InetSocketAddress, URI}
-import java.util.concurrent.Executors
+import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
-import com.typesafe.config.{ConfigFactory, ConfigObject, ConfigValueType}
+import com.twitter.finagle.redis.Client
+import com.typesafe.config.ConfigFactory
 import controllers.Assets
 import io.netty.bootstrap.ServerBootstrap
-import io.netty.channel.ChannelOption
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
@@ -17,10 +16,9 @@ import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.polygon._
 import org.stingray.contester.problems.SimpleProblemDb
-import org.stingray.contester.proto.StatRequest
 import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.stingray.contester.testing.SolutionTester
-import org.stingray.contester.utils.{CachedConnectionHttpService, CachedHttpService, ProtobufTools}
+import org.stingray.contester.utils.CachedHttpService
 import play.api.Logger
 
 object DispatcherServer extends App {
@@ -56,7 +54,7 @@ object DispatcherServer extends App {
 
   val polygons = Polygons.fromConfig(config.getConfig("polygons").root())
 
-  val polygonClient = PolygonClient(PolygonFilter(AuthPolygonMatcher(polygons.values).apply) andThen CachedHttpService)
+ // val polygonClient = PolygonClient(Client(config.getString("redis")), PolygonFilter(AuthPolygonMatcher(polygons.values).apply) andThen CachedHttpService)
 
   import slick.driver.MySQLDriver.api._
 

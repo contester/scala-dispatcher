@@ -12,20 +12,15 @@ import slick.jdbc.{GetResult, JdbcBackend}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-case class ServerSideEvalID(id: Int)
-
-object ServerSideEvalID {
-  implicit val formatServerSideEvalMessage = Json.format[ServerSideEvalID]
-}
-
 case class CustomTestObject(id: Int, contest: Int, team: Int, arrived: Timestamp, sourceModule: Module,
                             input: Array[Byte]) extends TimeKey with SubmitWithModule {
   val timestamp = arrived
 }
-import slick.driver.MySQLDriver.api._
-import org.stingray.contester.utils.Dbutil._
 
 object CustomTestObject {
+  import slick.driver.MySQLDriver.api._
+  import org.stingray.contester.utils.Dbutil._
+
   implicit val getResult = GetResult(r =>
     CustomTestObject(r.nextInt(), r.nextInt(), r.nextInt(), r.nextTimestamp(),
       new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBytes())
@@ -38,10 +33,11 @@ object CustomTestResult {
   implicit val formatCustomTestResult = Json.format[CustomTestResult]
 }
 
-class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester, storeId: String, rabbitMq: ActorRef) {
+class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester, storeUrl: Option[String], rabbitMq: ActorRef) {
+  import slick.driver.MySQLDriver.api._
+  import org.stingray.contester.utils.Dbutil._
   import org.stingray.contester.utils.Fu._
   import com.spingo.op_rabbit.PlayJsonSupport._
-
 
   def recordResult(item: CustomTestObject, result: CustomTestingResult) =
     result.test.map { tr =>
@@ -74,6 +70,6 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester,
 
 
   def run(item: CustomTestObject): Future[Unit] =
-    invoker.custom(item, item.sourceModule, item.input, new GridfsPath(storeId + "/eval"), item.id)
+    invoker.custom(item, item.sourceModule, item.input, new GridfsPath(storeUrl.map("filer:" + _ + "fs/") + "/eval"), item.id)
       .flatMap(x => recordResult(item, x))
 }

@@ -2,17 +2,21 @@ package org.stingray.contester.dispatcher
 
 import java.sql.{ResultSet, Timestamp}
 
+import akka.actor.ActorRef
 import com.spingo.op_rabbit.PlayJsonSupport._
 import com.spingo.op_rabbit.Message
+import com.twitter.util.{Future, Return, Throw}
 import grizzled.slf4j.Logging
 import org.stingray.contester.common._
 import org.stingray.contester.invokers.TimeKey
+import org.stingray.contester.polygon.{PolygonContestId, PolygonProblemClient}
 import org.stingray.contester.problems.Problem
 import org.stingray.contester.testing._
 import play.api.libs.json.{JsValue, Json, Writes}
 import slick.jdbc.{GetResult, JdbcBackend}
+
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Future => ScalaFuture}
 import scala.util.{Failure, Success}
 
 trait Submit extends TimeKey with SubmitWithModule {
@@ -20,7 +24,8 @@ trait Submit extends TimeKey with SubmitWithModule {
 }
 
 case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
-                        arrived: Timestamp, sourceModule: Module, override val schoolMode: Boolean, computer: Long)
+                        arrived: Timestamp, sourceModule: Module, override val schoolMode: Boolean, computer: Long,
+                        polygonId: PolygonContestId)
   extends Submit {
   val timestamp = arrived
   override def toString =
@@ -29,18 +34,22 @@ case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
 
 case class FinishedTesting(submit: SubmitObject, testingId: Int, compiled: Boolean, passed: Int, taken: Int)
 
-/*
-class SubmitDispatcher(parent: DbDispatcher, db: JdbcBackend#DatabaseDef) extends Logging {
+case object ProblemNotFoundError extends Throwable
+
+class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, inv: SolutionTester,
+                       storeUrl: Option[String], rabbitMq: ActorRef) extends Logging {
   import slick.driver.MySQLDriver.api._
   import org.stingray.contester.utils.Dbutil._
 
   implicit val getSubmitObject = GetResult(r =>
     SubmitObject(r.nextInt(), r.nextInt(), r.nextInt(), r.nextString(), r.nextTimestamp(),
-    new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBoolean(), r.nextLong()
+    new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBoolean(), r.nextLong(), PolygonContestId(r.nextString())
     )
   )
 
-  def getSubmit(id: Int) =
+  import org.stingray.contester.utils.Fu._
+
+  def getSubmit(id: Int): Future[Option[SubmitObject]] =
     db.run(
     sql"""
       select
@@ -52,27 +61,14 @@ class SubmitDispatcher(parent: DbDispatcher, db: JdbcBackend#DatabaseDef) extend
       and Contests.ID = NewSubmits.Contest
       and Contests.PolygonID != '' and NewSubmits.ID = $id""".as[SubmitObject]).map(_.headOption)
 
-  def markWith(id: Int, value: Int) =
+  def markWith(id: Int, value: Int): Future[Int] =
     db.run(sqlu"update NewSubmits set Processed = $value where ID = $id")
 
-  import org.stingray.contester.utils.Fu._
-  def createTestingInfo(reporter: DBReporter, m: SubmitObject): Future[TestingInfo] =
-    parent.getPolygonProblem(m.contestId, m.problemId).flatMap { polygonProblem =>
-      reporter.allocateTesting(m.id, polygonProblem.handle.uri.toString).flatMap { testingId =>
-        new RawLogResultReporter(parent.basePath, m).start.map { _ =>
-          new TestingInfo(testingId, polygonProblem.handle.uri.toString, Seq())
-        }
-      }
-    }
-
-  def getTestingInfo(reporter: DBReporter, m: SubmitObject) =
-    reporter.getAnyTestingAndState(m.id).flatMap(_.map(Future.successful).getOrElse(createTestingInfo(reporter, m)))
-
-  def calculateTestingResult(m: SubmitObject, ti: TestingInfo, sr: SolutionTestingResult) = {
+  def calculateTestingResult(m: SubmitObject, ti: Int, sr: SolutionTestingResult) = {
     val taken = sr.tests.length
     val passed = sr.tests.count(x => x._2.success)
 
-    FinishedTesting(m, ti.testingId, sr.compilation.success, passed, taken)
+    FinishedTesting(m, ti, sr.compilation.success, passed, taken)
   }
 
   implicit val submitObjectWrites = new Writes[SubmitObject] {
@@ -98,38 +94,32 @@ class SubmitDispatcher(parent: DbDispatcher, db: JdbcBackend#DatabaseDef) extend
       )
   }
 
-  def runq(id: Int) =
-    getSubmit(id).flatMap { submitOption =>
-      run(submitOption.get).andThen {
-        case Success(s) => markWith(id, 255)
-        case Failure(f) => markWith(id, 254)
-      }
+
+  def runq(id: Int): ScalaFuture[Unit] =
+    getSubmit(id).flatMap {
+      case Some(submit) =>
+        run(submit).transform {
+          case Return(x) => markWith(id, 255).unit
+          case Throw(x) => markWith(id, 254).unit
+        }
+      case None => Future.Done
     }
 
-  // main test entry point
-  def run(m: SubmitObject) = {
-    val reporter = new DBReporter(db)
-    getTestingInfo(reporter, m).flatMap { testingInfo =>
-      reporter.registerTestingOnly(m, testingInfo.testingId).flatMap { _ =>
-        val combinedProgress = new CombinedSingleProgress(
-          new DBSingleResultReporter(db, m, testingInfo.testingId),
-          new RawLogResultReporter(parent.basePath, m))
+  val reporter = new DBReporter(db)
 
-        parent.pdata.getPolygonProblem(PolygonURL(testingInfo.problemId))
-          .flatMap(x => parent.pdata.sanitizeProblem(x)).flatMap { problem =>
-          parent.invoker(m, m.sourceModule, problem, combinedProgress, m.schoolMode,
-            new InstanceSubmitTestingHandle(None, parent.storeId, m.id, testingInfo.testingId),
-            testingInfo.state.toMap.mapValues(new RestoredResult(_))).flatMap { (sr: SolutionTestingResult) =>
-            combinedProgress.db.finish(sr, m.id, testingInfo.testingId).zip(combinedProgress.raw.finish(sr))
-            .map {_ =>
-              parent.rabbitMq ! Message.exchange(calculateTestingResult(m, testingInfo, sr), exchange = "contester.submitdone")
-              ()
-            }
+  def run(m: SubmitObject): Future[Unit] =
+    pdb.getProblem(m.polygonId, m.problemId).flatMap {
+      case Some(problem) =>
+        reporter.allocateAndRegister(m, "").flatMap { testingId =>
+          val progress = new DBSingleResultReporter(db, m, testingId)
+          inv(m, m.sourceModule, problem, progress, m.schoolMode,
+            new InstanceSubmitTestingHandle(storeUrl.map("filer:" + _ + "fs/"), "school.sgu.ru/moodle", m.id, testingId),
+            Map.empty
+          ).flatMap { testingResult =>
+            rabbitMq ! Message.exchange(calculateTestingResult(m, testingId, testingResult), exchange = "contester.submitdone")
+            progress.finish(testingResult, m.id, testingId)
           }
         }
-      }
+      case None => Future.exception(ProblemNotFoundError)
     }
-  }
 }
-
-*/

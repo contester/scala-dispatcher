@@ -6,6 +6,21 @@ import proto.LocalExecutionParameters
 import org.stingray.contester.invokers.{RemoteFileName, FileListOps}
 
 object ContesterImplicits {
+  implicit class FutureOption[A](x: Future[Option[A]]) {
+    def flatMapOption[B](f: A => Future[B]): Future[Option[B]] =
+      x.flatMap {
+        case Some(v) => f(v).map(Some(_))
+        case None => Future.None
+      }
+
+    def mapOption[B](f: A => B): Future[Option[B]] =
+      x.map {
+        case Some(v) => Some(f(v))
+        case None => None
+      }
+  }
+
+
   implicit def CreateExecutionArgumentsList(x: List[String]): ExecutionArguments = new ExecutionArgumentsList(x)
   implicit def CreateExecutionArgumentsString(x: String): ExecutionArguments = new ExecutionArgumentsString(x)
 

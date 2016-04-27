@@ -19,11 +19,16 @@ class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
 
 object ContestTableScanner {
-  case object Rescan
-  case class ContestMap(map: Map[Int, ContestRow])
-  case class GetContest(id: Int)
-  //case class GetContestResponse(row: ContestHandle)
 
+  case object Rescan
+
+  case class ContestMap(map: Map[Int, ContestRow])
+
+  case class GetContest(id: Int)
+
+  //case class GetContestResponse(row: ContestHandle)
+}
+/*
   type PolygonClientT = ContestResolver with PolygonContestClient with PolygonProblemClient
 
   def props(db: JdbcBackend#DatabaseDef, resolver: PolygonClientT) =
@@ -57,7 +62,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: ContestTableSca
       db.run(sqlu"update Contests set Name = $contestName where ID = $contestId")
     else
       ScalaFuture.successful(0)
-/*
+
   private def singleContest(r: ContestRow, c: ContestWithProblems, oldp: Seq[ProblemRow]): Future[Unit] = {
     val m = oldp.filter(_.contest == r.id).map(v => v.id.toUpperCase -> v).toMap
 
@@ -82,7 +87,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: ContestTableSca
     }
     nameChange.zip(deletes).zip(Future.sequence(updates)).map(_ => ())
   }
-*/
+
   import org.stingray.contester.utils.Fu._
 
   private def resolveContests(pcids: Seq[PolygonContestId]): Future[Map[PolygonContestId, ContestDescription]] = {
@@ -99,7 +104,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: ContestTableSca
       }.toMap
     }
   }
-/*
+
   private def updateContests(contestList: Seq[ContestRow]): Future[Unit] = {
     contestList.flatMap { contestRow =>
       resolver.getContestURI(contestRow.polygonId).map { contestURI =>
@@ -123,7 +128,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: ContestTableSca
         )
     }.map(_ => ())
   }
-*/
+
   def getNewContestMap: Future[Map[Int, ContestRow]] =
     getContestsFromDb.map(_.map(v => v.id -> v).toMap)
 
@@ -142,12 +147,13 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: ContestTableSca
       getNewContestMap.foreach { newMap =>
         trace(s"Contest rescan done, $newMap")
         self ! ContestMap(newMap)
-/*        updateContests(newMap.values).onComplete { _ =>
+        updateContests(newMap.values).onComplete { _ =>
           trace("Scheduling next rescan")
           context.system.scheduler.scheduleOnce(60 seconds, self, Rescan)
-        }*/
+        }
       }
   }
 
   context.system.scheduler.scheduleOnce(0 seconds, self, Rescan)
 }
+*/
