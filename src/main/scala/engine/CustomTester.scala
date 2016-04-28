@@ -23,16 +23,16 @@ object CustomTester extends Logging {
   private[this] val maxOutputSize = 64 * 1024 * 10
   private[this] val outputFileName = "output.txt"
 
-  private def getOutput(sandbox: Sandbox, resultName: HasGridfsPath): Future[Option[Blob]] =
+  private def getOutput(sandbox: Sandbox, resultName: String): Future[Option[Blob]] =
     sandbox.stat(outputFileName, true)
       .map(_.find(_.size < maxOutputSize))
       .flatMap(_.map { remoteFile =>
-      SandboxUtil.copyFromSandbox(sandbox, resultName.toGridfsPath, remoteFile, None).flatMap { _ =>
+      SandboxUtil.copyFromSandbox(sandbox, resultName, remoteFile, None).flatMap { _ =>
         sandbox.get(remoteFile).map(x => Some(x.getData))
       }
     }.getOrElse(Future.None))
 
-  def apply(instance: InvokerInstance, module: Module, input: Array[Byte], resultName: HasGridfsPath): Future[CustomTestResult] = {
+  def apply(instance: InvokerInstance, module: Module, input: Array[Byte], resultName: String): Future[CustomTestResult] = {
     val moduleHandler = instance.factory(module.moduleType).asInstanceOf[BinaryHandler]
       instance.restricted.put(Blobs.storeBinary(input), "input.txt")
         .flatMap{ _ => Tester.executeSolution(instance.restricted, moduleHandler, module, CustomTestLimits, true) }

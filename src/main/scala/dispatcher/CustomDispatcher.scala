@@ -33,7 +33,7 @@ object CustomTestResult {
   implicit val formatCustomTestResult = Json.format[CustomTestResult]
 }
 
-class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester, storeUrl: Option[String], rabbitMq: ActorRef) {
+class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester, store: TestingStore, rabbitMq: ActorRef) {
   import slick.driver.MySQLDriver.api._
   import org.stingray.contester.utils.Dbutil._
   import org.stingray.contester.utils.Fu._
@@ -70,6 +70,6 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester,
 
 
   def run(item: CustomTestObject): Future[Unit] =
-    invoker.custom(item, item.sourceModule, item.input, new GridfsPath(storeUrl.map("filer:" + _ + "fs/") + "/eval"), item.id)
+    invoker.custom(item, item.sourceModule, item.input, store.custom(item.id))
       .flatMap(x => recordResult(item, x))
 }

@@ -65,12 +65,12 @@ object Tester extends Logging {
     }
   }
 
-  private def storeFile(sandbox: Sandbox, storeAs: HasGridfsPath, storeWhat: RemoteFileName): Future[Option[String]] =
+  private def storeFile(sandbox: Sandbox, storeAs: String, storeWhat: RemoteFileName): Future[Option[String]] =
     sandbox.invoker.api.stat(Seq(storeWhat), true)
-      .map(_.headOption).flatMap(_.map(_ => SandboxUtil.copyFromSandbox(sandbox, storeAs.toGridfsPath, storeWhat, None)).getOrElse(Future.None))
+      .map(_.headOption).flatMap(_.map(_ => SandboxUtil.copyFromSandbox(sandbox, storeAs, storeWhat, None)).getOrElse(Future.None))
 
   def apply(instance: InvokerInstance, module: Module, test: Test,
-            resultName: HasGridfsPath, objectCache: ObjectCache): Future[TestResult] =
+            resultName: String, objectCache: ObjectCache): Future[TestResult] =
     (if (test.interactive)
       testInteractive(instance, module, test)
     else
@@ -90,7 +90,7 @@ object Tester extends Logging {
     }
 
   private def executeAndStoreSuccess(sandbox: Sandbox, factory: (String) => ModuleHandler,
-                                     test: Test, module: Module, resultName: HasGridfsPath,
+                                     test: Test, module: Module, resultName: String,
                                      cache: ObjectCache): Future[(RunResult, Option[String])] =
     test.prepareInput(sandbox)
       .flatMap { _ =>
@@ -107,7 +107,7 @@ object Tester extends Logging {
   // TODO: restore caching of test results. Use ScalaCache and better keys (not just outputHash)
 
   private def testOld(instance: InvokerInstance, module: Module, test: Test,
-                      resultName: HasGridfsPath, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] =
+                      resultName: String, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] =
     executeAndStoreSuccess(instance.restricted, instance.factory, test, module, resultName, objectCache)
       .flatMap {
       case (solutionResult, optHash) =>

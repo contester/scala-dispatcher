@@ -7,20 +7,20 @@ import com.twitter.util.Future
 import org.stingray.contester.modules.ScriptLanguage
 
 class InvokerSimpleApi(val registry: InvokerRegistry, val objectCache: ObjectCache) {
-  def compile(key: SchedulingKey, m: Module, stored: HasGridfsPath): Future[(CompileResult, Option[Module])] =
+  def compile(key: SchedulingKey, m: Module, stored: String): Future[(CompileResult, Option[Module])] =
     registry(m.moduleType, key, "compile")(Compiler(_, m, stored))
 
-  def test(key: SchedulingKey, m: Module, t: Test, storePrefix: HasGridfsPath): Future[TestResult] =
-    registry(m.moduleType, key, t)(Tester(_, m, t, storePrefix, objectCache))
+  def test(key: SchedulingKey, m: Module, t: Test, stored: String): Future[TestResult] =
+    registry(m.moduleType, key, t)(Tester(_, m, t, stored, objectCache))
 
   def custom(key: SchedulingKey, m: Module, input: Array[Byte],
-             resultName: HasGridfsPath): Future[CustomTestResult] =
+             resultName: String): Future[CustomTestResult] =
     registry(m.moduleType, key, "custom")(CustomTester(_, m, input, resultName))
 
   def sanitize(key: ProblemDescription): Future[ProblemManifest] =
     registry("zip", key, "sanitize")(Sanitizer(_, key))
 
-  def maybeCompile(key: SchedulingKey, m: Module, stored: HasGridfsPath): Future[(CompileResult, Option[Module])] = {
+  def maybeCompile(key: SchedulingKey, m: Module, stored: String): Future[(CompileResult, Option[Module])] = {
     if (ScriptLanguage.list(m.moduleType))
       Future.value((ScriptingLanguageResult, Some(m)))
     else

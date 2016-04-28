@@ -11,8 +11,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import java.io.File
-import scala.concurrent.{Future => ScalaFuture}
 
+import org.stingray.contester.common.TestingStore
+
+import scala.concurrent.{Future => ScalaFuture}
 import org.stingray.contester.testing.SolutionTester
 import org.stingray.contester.polygon.{PolygonProblem, PolygonProblemClient}
 
@@ -29,10 +31,10 @@ object SubmitMessage {
 
 class DbDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient,
                    invoker: SolutionTester,
-                   storeUrl: Option[String],
+                   store: TestingStore,
                    rabbitMq: ActorRef) extends Logging {
-  val dispatcher = new SubmitDispatcher(db, pdb, invoker, storeUrl, rabbitMq)
-  val evaldispatcher = new CustomTestDispatcher(db, invoker, storeUrl, rabbitMq)
+  val dispatcher = new SubmitDispatcher(db, pdb, invoker, store, rabbitMq)
+  val evaldispatcher = new CustomTestDispatcher(db, invoker, store, rabbitMq)
 
   implicit val actorSystem = ActorSystem("such-system")
   //val pscanner = actorSystem.actorOf(ContestTableScanner.props(pdata, dbnext, contestResolver))

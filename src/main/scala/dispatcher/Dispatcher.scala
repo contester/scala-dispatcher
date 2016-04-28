@@ -37,7 +37,7 @@ case class FinishedTesting(submit: SubmitObject, testingId: Int, compiled: Boole
 case object ProblemNotFoundError extends Throwable
 
 class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, inv: SolutionTester,
-                       storeUrl: Option[String], rabbitMq: ActorRef) extends Logging {
+                       store: TestingStore, rabbitMq: ActorRef) extends Logging {
   import slick.driver.MySQLDriver.api._
   import org.stingray.contester.utils.Dbutil._
 
@@ -113,7 +113,7 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
         reporter.allocateAndRegister(m, "").flatMap { testingId =>
           val progress = new DBSingleResultReporter(db, m, testingId)
           inv(m, m.sourceModule, problem, progress, m.schoolMode,
-            new InstanceSubmitTestingHandle(storeUrl.map("filer:" + _ + "fs/"), "school.sgu.ru/moodle", m.id, testingId),
+            store.submit(m.id, testingId),
             Map.empty
           ).flatMap { testingResult =>
             rabbitMq ! Message.exchange(calculateTestingResult(m, testingId, testingResult), exchange = "contester.submitdone")

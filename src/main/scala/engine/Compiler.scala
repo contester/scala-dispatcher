@@ -15,11 +15,11 @@ object Compiler extends Logging {
       handler.compile(sandbox)
     }
 
-  private def storeCompiledModule(sandbox: Sandbox, stored: HasGridfsPath, sourceHash: String,
+  private def storeCompiledModule(sandbox: Sandbox, stored: String, sourceHash: String,
                                   module: CompiledModule): Future[Option[Module]] =
-    SandboxUtil.putModule(sandbox, stored.toGridfsPath, sandbox.sandboxId / module.filename, module.moduleType)
+    SandboxUtil.putModule(sandbox, stored, sandbox.sandboxId / module.filename, module.moduleType)
 
-  def apply(instance: InvokerInstance, module: Module, stored: HasGridfsPath): Future[(CompileResult, Option[Module])] =
+  def apply(instance: InvokerInstance, module: Module, stored: String): Future[(CompileResult, Option[Module])] =
     justCompile(instance.unrestricted, instance.factory(module.moduleType).asInstanceOf[SourceHandler], module)
       .flatMap {
       case (compileResult, compiledModuleOption) =>

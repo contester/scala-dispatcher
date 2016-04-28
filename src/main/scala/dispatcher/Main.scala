@@ -11,7 +11,7 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.util.internal.logging.{InternalLoggerFactory, Slf4JLoggerFactory}
-import org.stingray.contester.common.MemcachedObjectCache
+import org.stingray.contester.common.{MemcachedObjectCache, TestingStore}
 import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.polygon._
@@ -97,7 +97,8 @@ object DispatcherServer extends App {
   if (config.hasPath("dispatcher.moodles")) {
     for (name <- config.getStringList("dispatcher.moodles"); if config.hasPath(name + ".dbnext")) yield {
         val db = Database.forConfig(s"${name}.dbnext")
-        val dispatcher = new MoodleDispatcher(db, simpleDb.get, tester, simpleDb.map(_.baseUrl))
+        val ts = TestingStore(simpleDb.get.baseUrl, "school.sgu.ru/moodle")
+        val dispatcher = new MoodleDispatcher(db, simpleDb.get, tester, ts)
         Logger.info(s"starting actor for ${name}")
         actorSystem.actorOf(MoodleTableScanner.props(db, dispatcher))
     }

@@ -66,7 +66,7 @@ object MoodleTableScanner {
     Props(classOf[MoodleTableScanner], db, dispatcher)
 }
 
-class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface, inv: SolutionTester, storeUrl: Option[String]) extends Logging {
+class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface, inv: SolutionTester, store: TestingStore) extends Logging {
   import slick.driver.MySQLDriver.api._
   implicit val getMoodleSubmit = GetResult(r=>
     MoodleSubmit(r.nextInt(), r.nextInt().toString, r.nextTimestamp(), new ByteBufferModule(r.nextString(), r.nextBytes()))
@@ -112,7 +112,7 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
     pdb.getMostRecentProblem(ProblemHandle(s"direct://school.sgu.ru/moodle/${item.problemId}")).flatMap { problem =>
       MoodleResultReporter.start(db, item).flatMap { reporter =>
         inv(item, item.sourceModule, problem.get, reporter, true,
-          new InstanceSubmitTestingHandle(storeUrl.map("filer:" + _ + "fs/"), "school.sgu.ru/moodle", item.id, reporter.testingId), Map.empty).flatMap(reporter.finish)
+          store.submit(item.id, reporter.testingId), Map.empty).flatMap(reporter.finish)
       }
     }
   }
