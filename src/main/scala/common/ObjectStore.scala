@@ -58,8 +58,6 @@ case class TestingStore(baseUrl: String, handle: String) {
     CustomTestingHandle(Some(baseUrl), handle, testingId)
 }
 
-case class ObjectMetaData(originalSize: Long, sha1sum: Option[String], moduleType: Option[String], compressionType: Option[String])
-
 trait Module {
   def moduleType: String
   def moduleHash: String
