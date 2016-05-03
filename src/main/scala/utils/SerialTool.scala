@@ -173,3 +173,26 @@ trait ValueCache[KeyType, ValueType] {
 
   def put(key: KeyType, value: ValueType): Future[Unit]
 }
+
+/*
+
+ScannerCache3
+
+get():
+1. inmemory cache hit -> return
+   miss ->
+     singleflight from here
+     redis cache hit -> return, fill inmemory cache
+     miss ->
+       polygon get success -> return, fill redis cache
+       miss (error) -> return error
+
+refresh():
+  polygon get success -> update redis cache, return
+  failure -> return old result
+
+Contest: Updating, must refresh
+Problem (url only): Updating, must refresh, store revision, store full id
+Problem (full id): Immutable except NotFound
+
+ */

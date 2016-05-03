@@ -11,25 +11,86 @@ import com.twitter.io.{BufInputStream, Charsets}
 import com.twitter.util.{Duration, Future}
 import org.apache.http.client.utils.URIBuilder
 import org.stingray.contester.problems.Problem
+import org.stingray.contester.utils.ScannerCache
 
 import scala.xml.XML
 
-case class PolygonContest(uri: URI) extends AnyVal
+case class PolygonContest(uri: URI) extends AnyVal {
+  def redisKey = s"polygonContest/$uri"
+}
 
-case class PolygonProblemID(uri: URI, revision: Option[Int]) {
+case class PolygonProblemShort(uri: URI) extends AnyVal
+
+case class PolygonProblemID(uri: URI, revision: Int) {
+
   def fileUri: URI = {
-    val r = new URIBuilder(uri)
-    revision.map(rev => r.addParameter("revision", rev.toString)).getOrElse(r).build()
+    new URIBuilder(uri).addParameter("revision", revision.toString).build()
   }
 
   def fullUri: URI = {
-    val r = new URIBuilder(uri.resolve("problem.xml"))
-    revision.map(rev => r.addParameter("revision", rev.toString)).getOrElse(r).build()
+    new URIBuilder(uri.resolve("problem.xml")).addParameter("revision", revision.toString).build()
   }
+
+  def redisKey = s"polygonProblem/${fullUri}"
+}
+
+case class ContestWithProblems(contest: ContestDescription, problems: Map[String, PolygonProblem])
+
+trait PolygonContestClient {
+  def getContest(contest: PolygonContest): Future[ContestWithProblems]
 }
 
 trait PolygonProblemClient {
   def getProblem(contest: PolygonContestId, problem: String): Future[Option[Problem]]
+}
+
+case class PolygonProblemNotFoundException(problem: PolygonProblemID) extends Throwable
+case class PolygonContestNotFoundException(contest: PolygonContest) extends Throwable
+
+case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: Client) {
+  private[this] def parseContest(content: String) =
+    ContestDescription.parse(XML.loadString(content))
+
+  private[this] def parseProblem(content: String) =
+    PolygonProblem.parse(XML.loadString(content))
+
+  def nearGetContest(contest: PolygonContest): Future[Option[ContestDescription]] =
+    store.get(StringToChannelBuffer(contest.redisKey)).map { v =>
+      v.map(x => parseContest(x.toString(Charsets.Utf8)))
+    }
+
+  def nearPutContest(contest: PolygonContest, content: String): Future[ContestDescription] = {
+    val parsed = parseContest(content)
+    store.set(StringToChannelBuffer(contest.redisKey), StringToChannelBuffer(content)).map(_ => parsed)
+  }
+
+  def farGetContest(contest: PolygonContest) =
+    service(contest.uri).map {
+      case Some(x) => x.response.contentString
+      case None => throw PolygonContestNotFoundException(contest)
+    }
+
+  val contestScanner = new ScannerCache[PolygonContest, ContestDescription, String] {
+    override def nearGet(key: PolygonContest): Future[Option[ContestDescription]] = nearGetContest(key)
+    override def farGet(key: PolygonContest): Future[String] = farGetContest(key)
+    override def nearPut(key: PolygonContest, value: String): Future[ContestDescription] = nearPutContest(key, value)
+  }
+
+  def nearGetProblem(problem: PolygonProblemID): Future[Option[PolygonProblem]] =
+    store.get(StringToChannelBuffer(problem.redisKey)).map { v =>
+      v.map(x => parseProblem(x.toString(Charsets.Utf8)))
+    }
+
+  def nearPutProblem(problem: PolygonProblemID, content: String): Future[PolygonProblem] = {
+    val parsed = parseProblem(content)
+    store.set(StringToChannelBuffer(problem.redisKey), StringToChannelBuffer(content)).map(_ => parsed)
+  }
+
+  def farGetProblem(problem: PolygonProblemID) =
+    service(problem.fullUri).map {
+      case Some(x) => x.response.contentString
+      case None => throw PolygonProblemNotFoundException(problem)
+    }
 }
 
 /*

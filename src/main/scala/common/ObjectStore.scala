@@ -4,16 +4,6 @@ import com.twitter.util.Future
 import org.apache.commons.io.FilenameUtils
 import org.stingray.contester.invokers.Sandbox
 
-object ObjectStore {
-  def getMetadataString(metadata: Map[String, Any], key: String): String =
-    metadata.getOrElse(key, "") match {
-      case s: String =>
-        s
-      case _ =>
-        ""
-    }
-}
-
 trait CompiledModuleStore {
   def compiledModule: String
 }
