@@ -14,6 +14,7 @@ class SimpleSanitizer(invoker: InvokerSimpleApi) extends Function[ProblemDescrip
     }
 }
 
+/*
 abstract class ProblemDBSanitizer[ProblemType <: ProblemDescription](db: SanitizeDb,
                          simpleSanitizer: Function[ProblemDescription, Future[ProblemManifest]])
   extends ScannerCache[ProblemType, Problem, ProblemManifest] {
@@ -28,4 +29,4 @@ abstract class ProblemDBSanitizer[ProblemType <: ProblemDescription](db: Sanitiz
       .flatMap(_ => simpleSanitizer(key))
 
   def getProblemFile(key: ProblemType): Future[Array[Byte]]
-}
+}*/

@@ -2,16 +2,16 @@ package org.stingray.contester.polygon
 
 import java.io.InputStream
 import java.net.URI
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 
 import com.twitter.finagle.Service
 import com.twitter.finagle.redis.Client
 import com.twitter.finagle.redis.util.StringToChannelBuffer
 import com.twitter.io.{BufInputStream, Charsets}
-import com.twitter.util.{Duration, Future}
+import com.twitter.util.{Duration, Future, Promise}
 import org.apache.http.client.utils.URIBuilder
 import org.stingray.contester.problems.Problem
-import org.stingray.contester.utils.ScannerCache
+import org.stingray.contester.utils.{ScannerCache, SerialHash}
 
 import scala.xml.XML
 
@@ -47,34 +47,37 @@ trait PolygonProblemClient {
 case class PolygonProblemNotFoundException(problem: PolygonProblemID) extends Throwable
 case class PolygonContestNotFoundException(contest: PolygonContest) extends Throwable
 
-case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: Client) {
-  private[this] def parseContest(content: String) =
+
+case class ContestClient1(service: Service[URI, Option[PolygonResponse]], store: Client)
+  extends ScannerCache[PolygonContest, ContestDescription, String]{
+  def parse(content: String) =
     ContestDescription.parse(XML.loadString(content))
 
-  private[this] def parseProblem(content: String) =
-    PolygonProblem.parse(XML.loadString(content))
+  def nearGet(contest: PolygonContest): Future[Option[String]] =
+    store.get(StringToChannelBuffer(contest.redisKey)).map(_.map(_.toString(Charsets.Utf8)))
 
-  def nearGetContest(contest: PolygonContest): Future[Option[ContestDescription]] =
-    store.get(StringToChannelBuffer(contest.redisKey)).map { v =>
-      v.map(x => parseContest(x.toString(Charsets.Utf8)))
-    }
 
-  def nearPutContest(contest: PolygonContest, content: String): Future[ContestDescription] = {
-    val parsed = parseContest(content)
-    store.set(StringToChannelBuffer(contest.redisKey), StringToChannelBuffer(content)).map(_ => parsed)
-  }
+  override def nearPut(key: PolygonContest, value: String): Future[Unit] =
+    store.set(StringToChannelBuffer(key.redisKey), StringToChannelBuffer(value))
 
-  def farGetContest(contest: PolygonContest) =
+  def farGet(contest: PolygonContest): Future[String] =
     service(contest.uri).map {
       case Some(x) => x.response.contentString
       case None => throw PolygonContestNotFoundException(contest)
     }
+}
 
-  val contestScanner = new ScannerCache[PolygonContest, ContestDescription, String] {
-    override def nearGet(key: PolygonContest): Future[Option[ContestDescription]] = nearGetContest(key)
-    override def farGet(key: PolygonContest): Future[String] = farGetContest(key)
-    override def nearPut(key: PolygonContest, value: String): Future[ContestDescription] = nearPutContest(key, value)
-  }
+case class ProblemClient1(service: Service[URI, Option[PolygonResponse]], store: Client) {
+  private[this] def parse(content: String) =
+    PolygonProblem.parse(XML.loadString(content))
+
+  private[this] val data = new ConcurrentHashMap[PolygonProblemShort, PolygonProblem]()
+
+}
+
+case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: Client) {
+  private[this] def parseProblem(content: String) =
+    PolygonProblem.parse(XML.loadString(content))
 
   def nearGetProblem(problem: PolygonProblemID): Future[Option[PolygonProblem]] =
     store.get(StringToChannelBuffer(problem.redisKey)).map { v =>
