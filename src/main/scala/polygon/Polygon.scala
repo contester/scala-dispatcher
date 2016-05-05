@@ -8,8 +8,10 @@ import com.twitter.finagle.{Filter, Service}
 import com.twitter.io.Buf
 import com.twitter.util.Future
 import com.typesafe.config.{ConfigObject, ConfigValueType}
-import org.apache.http.client.utils.URLEncodedUtils
+import org.apache.http.client.utils.{URIBuilder, URLEncodedUtils}
 import org.apache.http.message.BasicNameValuePair
+import org.stingray.contester.engine.ProblemDescription
+import org.stingray.contester.problems.ProblemWithRevision
 
 import scala.xml.Elem
 
@@ -25,7 +27,7 @@ case class PolygonAuthInfo2(username: String, password: String) {
 }
 
 object Polygons {
-  def fromConfig(config: ConfigObject) = {
+  def fromConfig(config: ConfigObject): Map[String, PolygonConfig] = {
     import scala.collection.JavaConversions._
 
     config.flatMap {
@@ -41,7 +43,10 @@ object Polygons {
   }.map(x => x.shortName -> x).toMap
 }
 
-case class PolygonConfig(shortName: String, uri: Iterable[URI], authInfo: PolygonAuthInfo2)
+case class PolygonConfig(shortName: String, uri: Iterable[URI], authInfo: PolygonAuthInfo2) {
+  def contest(id: Int): PolygonContest =
+    PolygonContest(uri.head.resolve(s"c/${id}/contest.xml"))
+}
 
 case class AuthPolygonMatcher(config: Iterable[PolygonConfig]) {
   // private val polygonBaseRe = new Regex("^(.*/)(c/\\d+/?.*|p/[^/]+/[^/]/?.*)$")
@@ -108,7 +113,20 @@ private object PolygonProblemUtils {
 }
 
 case class PolygonProblem(uri: URI, revision: Long, names: Map[String, String],
-                          timeLimitMicros: Long, memoryLimit: Long, testCount: Int, tags: Set[String])
+                          timeLimitMicros: Long, memoryLimit: Long, testCount: Int, tags: Set[String]) extends ProblemDescription {
+  /**
+    * Defines problem ID in pdb/gridfs. Needs to be storage-compatible.
+    *
+    * @return Problem ID in pdb/gridfs.
+    */
+  override def pid: String = PolygonProblemUtils.getPdbPath(uri)
+
+  override def interactive: Boolean = tags("interactive")
+
+  override def stdio: Boolean = tags("stdio")
+
+  def toId = PolygonProblemID(uri, revision)
+}
 
 object PolygonProblem {
   def parse(source: Elem): PolygonProblem = {

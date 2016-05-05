@@ -7,11 +7,12 @@ import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 import com.twitter.finagle.Service
 import com.twitter.finagle.redis.Client
 import com.twitter.finagle.redis.util.StringToChannelBuffer
-import com.twitter.io.{BufInputStream, Charsets}
+import com.twitter.io.{Buf, BufInputStream, Charsets}
 import com.twitter.util.{Duration, Future, Promise}
 import org.apache.http.client.utils.URIBuilder
-import org.stingray.contester.problems.Problem
-import org.stingray.contester.utils.{ScannerCache, SerialHash}
+import org.stingray.contester.engine.InvokerSimpleApi
+import org.stingray.contester.problems.{Problem, SanitizeDb, SimpleProblemDb}
+import org.stingray.contester.utils.{Fu, ScannerCache, SerialHash}
 
 import scala.xml.XML
 
@@ -26,8 +27,7 @@ case class PolygonProblemShort(uri: URI) extends AnyVal {
   }
 }
 
-case class PolygonProblemID(uri: URI, revision: Int) {
-
+case class PolygonProblemID(uri: URI, revision: Long) {
   def fileUri: URI = {
     new URIBuilder(uri).addParameter("revision", revision.toString).build()
   }
@@ -42,7 +42,7 @@ case class PolygonProblemID(uri: URI, revision: Int) {
 case class ContestWithProblems(contest: ContestDescription, problems: Map[String, PolygonProblem])
 
 trait PolygonContestClient {
-  def getContest(contest: PolygonContest): Future[ContestWithProblems]
+  def getContest(contest: PolygonContestId): Future[ContestWithProblems]
 }
 
 trait PolygonProblemClient {
@@ -51,7 +51,7 @@ trait PolygonProblemClient {
 
 case class PolygonProblemNotFoundException(problem: PolygonProblemShort) extends Throwable
 case class PolygonContestNotFoundException(contest: PolygonContest) extends Throwable
-
+case class PolygonProblemFileNotFoundException(problem: PolygonProblemID) extends Throwable
 
 case class ContestClient1(service: Service[URI, Option[PolygonResponse]], store: Client)
   extends ScannerCache[PolygonContest, ContestDescription, String]{
@@ -90,25 +90,45 @@ case class ProblemClient1(service: Service[URI, Option[PolygonResponse]], store:
     store.set(StringToChannelBuffer(key.redisKey), StringToChannelBuffer(value))
 }
 
-case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: Client)
+case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: Client,
+                         polygonMap: Map[String, PolygonConfig], pdb: SanitizeDb, inv: InvokerSimpleApi)
   extends PolygonContestClient with PolygonProblemClient {
 
   private[this] val contestClient = ContestClient1(service, store)
   private[this] val problemClient = ProblemClient1(service, store)
 
-  override def getContest(contest: PolygonContest): Future[ContestWithProblems] =
-    contestClient.refresh(contest).flatMap { cdesc =>
+  private[this] def resolve(contest: PolygonContestId) =
+    polygonMap(contest.polygon).contest(contest.contestId)
+
+  override def getContest(contest: PolygonContestId): Future[ContestWithProblems] =
+    contestClient.refresh(resolve(contest)).flatMap { cdesc =>
       Future.collect(cdesc.problems.mapValues(PolygonProblemShort).mapValues(problemClient.refresh)).map { pmap =>
         ContestWithProblems(cdesc, pmap)
       }
     }
 
-  override def getProblem(contest: PolygonContestId, problem: String): Future[Option[Problem]] = ???
-
-  def getProblemFile(problem: PolygonProblemID): Future[Option[InputStream]] =
-    service(problem.fileUri).map { respOpt =>
-      respOpt.map { resp =>
-        new BufInputStream(resp.response.content)
+  override def getProblem(contest: PolygonContestId, problem: String): Future[Option[Problem]] =
+    contestClient(resolve(contest)).flatMap { cdesc =>
+      Fu.liftOption(cdesc.problems.get(problem).map(PolygonProblemShort).map(problemClient)).flatMap {
+        case None => Future.None
+        case Some(p) =>
+          pdb.getProblem(p).flatMap {
+            case Some(x) => Future.value(Some(x))
+            case None =>
+              pdb.ensureProblemFile(p, getProblemFile(p.toId)).flatMap { _ =>
+                inv.sanitize(p).flatMap { m =>
+                  pdb.setProblem(p, m).map { pp =>
+                    Some(pp)
+                  }
+                }
+              }
+          }
       }
+    }
+
+  def getProblemFile(problem: PolygonProblemID): Future[Buf] =
+    service(problem.fileUri).flatMap {
+      case Some(r) => Future.value(r.response.content)
+      case None => Future.exception(PolygonProblemFileNotFoundException(problem))
     }
 }

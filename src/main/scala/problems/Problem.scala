@@ -42,7 +42,7 @@ trait ProblemWithRevision {
  *
    * @return Revision.
    */
-  def revision: Int
+  def revision: Long
 
   /**
    * Constructed ID for a problem. Used as part of paths and as _id in manifest collection.
@@ -127,7 +127,7 @@ trait ProblemWithRevision {
  * @param pid      Problem pid.
  * @param revision Problem revision.
  */
-class SimpleProblemWithRevision(override val pid: String, override val revision: Int) extends ProblemWithRevision
+class SimpleProblemWithRevision(override val pid: String, override val revision: Long) extends ProblemWithRevision
 
 /**
  * A problem from testing engine point of view, built from ProblemID and additional info

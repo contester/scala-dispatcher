@@ -2,15 +2,15 @@ package org.stingray.contester.problems
 
 import java.net.URI
 
-import com.twitter.finagle.{Http, Service}
+import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, RequestBuilder, Response, Status}
+import com.twitter.io.Buf
 import com.twitter.util.Future
-import org.apache.http.client.utils.{URIBuilder, URLEncodedUtils}
+import org.apache.http.client.utils.URIBuilder
 import org.stingray.contester.invokers.Sandbox
 import org.stingray.contester.utils.CachedConnectionHttpService
 import play.api.libs.json.{JsPath, JsSuccess, Json, Reads}
 
-import scala.collection.SetLike
 
 case class SimpleProblemDbException(reason: String) extends Throwable(reason)
 
@@ -106,13 +106,14 @@ object SimpleProblemDb {
   }
 }
 
-class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) extends ProblemServerInterface {
+case class ProblemArchiveUploadException(x: AnyRef) extends Throwable
+
+class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) extends ProblemServerInterface with SanitizeDb {
   import SimpleProblemDb._
 
   private def receiveProblem(url: String): Future[Option[Problem]] = {
     val request = RequestBuilder().url(url).buildGet()
     client(request).flatMap { r =>
-      println(r)
       r.status match {
         case Status.Ok =>
           Future.value(parseSimpleProblemManifest(r.contentString).map { found =>
@@ -137,4 +138,40 @@ class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) e
       .addParameter("id", problem.handle)
       .build().toASCIIString)
   }
+
+  private def checkProblemArchive(problem: ProblemWithRevision) = {
+    val request = RequestBuilder().url(baseUrl + "fs/" + problem.archiveName).buildHead()
+    client(request).map { r =>
+      r.status match {
+        case Status.Ok => true
+        case _ => false
+      }
+    }
+  }
+
+  private def uploadProblemArchive(problem: ProblemWithRevision, is: Buf) = {
+    val request = RequestBuilder().url(baseUrl + "fs/" + problem.archiveName).buildPut(is)
+    client(request).flatMap { r =>
+      r.status match {
+        case Status.Ok => Future.Done
+        case x => Future.exception(ProblemArchiveUploadException(x))
+      }
+    }
+  }
+
+  override def setProblem(problem: ProblemWithRevision, manifest: ProblemManifest): Future[Problem] = ???
+
+  override def getProblem(problem: ProblemWithRevision): Future[Option[Problem]] =
+    receiveProblem(new URIBuilder(baseUrl+"problem/get/")
+      .addParameter("id", problem.pid)
+      .addParameter("revision", problem.revision.toString)
+      .build().toASCIIString)
+
+  override def ensureProblemFile(problem: ProblemWithRevision, getFn: => Future[Buf]): Future[Unit] =
+    checkProblemArchive(problem).flatMap {
+      case true => Future.Done
+      case false => getFn.flatMap { is =>
+        uploadProblemArchive(problem, is)
+      }
+    }
 }

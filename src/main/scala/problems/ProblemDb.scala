@@ -1,5 +1,6 @@
 package org.stingray.contester.problems
 
+import com.twitter.io.Buf
 import com.twitter.util.Future
 
 case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
@@ -23,7 +24,7 @@ trait ProblemDb extends ProblemServerInterface {
 }
 
 trait ProblemFileStore {
-  def getProblemFile(problem: ProblemWithRevision, getFn: => Future[Array[Byte]]): Future[Unit]
+  def ensureProblemFile(problem: ProblemWithRevision, getFn: => Future[Buf]): Future[Unit]
 }
 
 trait SanitizeDb extends ProblemDb with ProblemFileStore

@@ -16,4 +16,7 @@ object Fu {
   implicit def twitterToScalaFuture[T](f: Future[T])(implicit ec: ExecutionContext): ScalaFuture[T] = {
     UtilBijections.twitter2ScalaFuture[T].apply(f)
   }
+
+  def liftOption[A](f: Option[Future[A]]): Future[Option[A]] =
+    f.map(_.map(Some(_))).getOrElse(Future.None)
 }
