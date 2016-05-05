@@ -128,6 +128,16 @@ trait ValueCache[KeyType, ValueType] {
   def put(key: KeyType, value: ValueType): Future[Unit]
 }
 
+object ScannerCache {
+  def apply[A, B, C](parseFunc: C => B, nearGetFunc: A => Future[Option[C]], nearPutFunc: (A, C) => Future[Unit],
+                     farGetFunc: A => Future[C]): ScannerCache[A, B, C] = new ScannerCache[A, B, C] {
+    override def parse(what: C): B = parseFunc(what)
+    override def farGet(key: A): Future[C] = farGetFunc(key)
+    override def nearGet(key: A): Future[Option[C]] = nearGetFunc(key)
+    override def nearPut(key: A, value: C): Future[Unit] = nearPutFunc(key, value)
+  }
+}
+
 /*
 
 ScannerCache3

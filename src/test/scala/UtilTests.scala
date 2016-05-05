@@ -63,3 +63,80 @@ class SerialHashTests extends FlatSpec with Matchers {
     Await.result(sq(1, () => Future.value("two"))) shouldBe "two"
   }
 }
+
+
+class ScannerCacheTests extends FlatSpec with Matchers {
+  "ScannerCache" should "behave transparently" in {
+    val c = ScannerCache[Int, Int, Int](x => x, x => Future.None, (x, y) => Future.Done, x => Future.value(x))
+
+    Await.result(c(1)) shouldBe 1
+    Await.result(c(2)) shouldBe 2
+  }
+
+  it should "serialize properly" in {
+    val p = new Promise[Int]()
+
+    val c = ScannerCache[Int, Int, Int](x => x, x => Future.None, (x, y) => Future.Done, x => p)
+    val f1 = c(1)
+    val f2 = c(1)
+    c(1).isDefined shouldBe false
+    p.setValue(2)
+    Await.result(f1) shouldBe 2
+    Await.result(f2) shouldBe 2
+    Await.result(c(1)) shouldBe 2
+  }
+
+  it should "actually cache" in {
+    var b = false
+    val p = new Promise[Int]()
+    def fx(x: Int) =
+      if (b)
+        Future.exception(new RuntimeException("foo"))
+      else {
+        b = true
+        p
+      }
+
+    val c = ScannerCache[Int, Int, Int](x => x, _ => Future.None, (_, _) => Future.Done, fx)
+
+    val f1 = c(1)
+    val f2 = c(1)
+
+    p.setValue(2)
+
+      Await.result(f1) shouldBe 2
+
+      Await.result(f2) shouldBe 2
+
+    val f3 = c(1)
+      Await.result(f3) shouldBe 2
+  }
+
+  it should "rescan" in {
+    var cnt = 0
+    def fx(x: Int) = {
+      cnt += 1
+      Future.value(x)
+    }
+
+    val c = ScannerCache[Int, Int, Int](x => x, _ => Future.None, (_, _) => Future.Done, fx)
+
+    Await.result(c(1))
+    Await.result(c(1))
+    cnt shouldBe 1
+    Await.result(c(2).join(c(2)))
+    cnt shouldBe 2
+    Await.result(c.refresh(1))
+    cnt shouldBe 3
+  }
+
+  it should "use near-cache" in {
+    val c = ScannerCache[Int, Int, Int](x => x, _ => Future.value(Some(5)), (_, _) => Future.Done, _ => Future.value(7))
+
+    Await.result(c(1)) shouldBe 5
+    Await.result(c(1)) shouldBe 5
+    Await.result(c.refresh(1)) shouldBe 7
+    Await.result(c(1)) shouldBe 7
+  }
+
+}

@@ -19,7 +19,12 @@ case class PolygonContest(uri: URI) extends AnyVal {
   def redisKey = s"polygonContest/$uri"
 }
 
-case class PolygonProblemShort(uri: URI) extends AnyVal
+case class PolygonProblemShort(uri: URI) extends AnyVal {
+  def redisKey = s"polygonProblem/$uri"
+  def fullUri: URI = {
+    new URIBuilder(uri.resolve("problem.xml")).build()
+  }
+}
 
 case class PolygonProblemID(uri: URI, revision: Int) {
 
@@ -44,7 +49,7 @@ trait PolygonProblemClient {
   def getProblem(contest: PolygonContestId, problem: String): Future[Option[Problem]]
 }
 
-case class PolygonProblemNotFoundException(problem: PolygonProblemID) extends Throwable
+case class PolygonProblemNotFoundException(problem: PolygonProblemShort) extends Throwable
 case class PolygonContestNotFoundException(contest: PolygonContest) extends Throwable
 
 
@@ -67,72 +72,38 @@ case class ContestClient1(service: Service[URI, Option[PolygonResponse]], store:
     }
 }
 
-case class ProblemClient1(service: Service[URI, Option[PolygonResponse]], store: Client) {
-  private[this] def parse(content: String) =
+case class ProblemClient1(service: Service[URI, Option[PolygonResponse]], store: Client)
+  extends ScannerCache[PolygonProblemShort, PolygonProblem, String] {
+  def parse(content: String) =
     PolygonProblem.parse(XML.loadString(content))
 
-  private[this] val data = new ConcurrentHashMap[PolygonProblemShort, PolygonProblem]()
+  override def nearGet(key: PolygonProblemShort): Future[Option[String]] =
+    store.get(StringToChannelBuffer(key.redisKey)).map(_.map(_.toString(Charsets.Utf8)))
 
-}
-
-case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: Client) {
-  private[this] def parseProblem(content: String) =
-    PolygonProblem.parse(XML.loadString(content))
-
-  def nearGetProblem(problem: PolygonProblemID): Future[Option[PolygonProblem]] =
-    store.get(StringToChannelBuffer(problem.redisKey)).map { v =>
-      v.map(x => parseProblem(x.toString(Charsets.Utf8)))
-    }
-
-  def nearPutProblem(problem: PolygonProblemID, content: String): Future[PolygonProblem] = {
-    val parsed = parseProblem(content)
-    store.set(StringToChannelBuffer(problem.redisKey), StringToChannelBuffer(content)).map(_ => parsed)
-  }
-
-  def farGetProblem(problem: PolygonProblemID) =
-    service(problem.fullUri).map {
+  override def farGet(key: PolygonProblemShort): Future[String] =
+    service(key.fullUri).map {
       case Some(x) => x.response.contentString
-      case None => throw PolygonProblemNotFoundException(problem)
+      case None => throw PolygonProblemNotFoundException(key)
     }
+
+  override def nearPut(key: PolygonProblemShort, value: String): Future[Unit] =
+    store.set(StringToChannelBuffer(key.redisKey), StringToChannelBuffer(value))
 }
 
-/*
+case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: Client)
+  extends PolygonContestClient with PolygonProblemClient {
 
-Refresher/resolver:
-refreshContest(cid: PolygonContest): Future[Option[ContestDescription]]
-getContest(cid: PolygonContest): Future[Option[ContestDescription]]
+  private[this] val contestClient = ContestClient1(service, store)
+  private[this] val problemClient = ProblemClient1(service, store)
 
-refreshProblem
-
-
-
-case class ContestWithProblems(contest: ContestDescription, problems: Map[String, PolygonProblem])
-
-case class PolygonClient(store: Client, service: Service[URI, Option[PolygonResponse]]) {
-
-  private def getContest(contest: PolygonContest): Future[ContestDescription] =
-    store.get(StringToChannelBuffer(s"polygonContest/${contest.uri}")).flatMap {
-      case Some(x) => Future.value(ContestDescription.parse(XML.loadString(x.toString(Charsets.Utf8))))
-      case None => Future.sleep(Duration(2, TimeUnit.SECONDS)).flatMap(_ => getContest(contest))
-    }
-
-  private def fetchContests(contests: Seq[PolygonContest]) =
-    Future.collect(contests.map { contest =>
-      service(contest.uri).map { respOpt =>
-        respOpt.map { resp =>
-          contest -> (resp.response.contentString, ContestDescription.parse(XML.loadString(resp.response.contentString)))
-        }
-      }.handle {
-        case _ => None
-      }
-    }).map(_.flatten.toMap)
-
-  def fetchProblem(problem: PolygonProblemID): Future[Option[PolygonProblem]] =
-    service(problem.fullUri).map { responseOption =>
-      responseOption.map { response =>
-        PolygonProblem.parse(XML.loadString(response.response.contentString))
+  override def getContest(contest: PolygonContest): Future[ContestWithProblems] =
+    contestClient.refresh(contest).flatMap { cdesc =>
+      Future.collect(cdesc.problems.mapValues(PolygonProblemShort).mapValues(problemClient.refresh)).map { pmap =>
+        ContestWithProblems(cdesc, pmap)
       }
     }
+
+  override def getProblem(contest: PolygonContestId, problem: String): Future[Option[Problem]] = ???
 
   def getProblemFile(problem: PolygonProblemID): Future[Option[InputStream]] =
     service(problem.fileUri).map { respOpt =>
@@ -141,4 +112,3 @@ case class PolygonClient(store: Client, service: Service[URI, Option[PolygonResp
       }
     }
 }
-*/
