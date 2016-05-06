@@ -16,7 +16,7 @@ trait ObjectCache {
                                            unwrap: (S) => I)(implicit manifest: Manifest[I]): Future[S] =
     cacheGet(key).flatMap { optValue =>
       optValue
-          .map(ProtobufTools.createProtobuf[I](_))
+          .map(ProtobufTools.createProtobuf[I])
           .map(wrap)
           .map(Future.value)
           .getOrElse {

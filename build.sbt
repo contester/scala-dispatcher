@@ -41,26 +41,28 @@ resolvers ++= Seq(
 
 val opRabbitVersion = "1.3.0"
 
+val finagleVersion = "6.35.0"
+
 libraryDependencies ++= Seq(
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
   "com.spingo" %% "op-rabbit-play-json"   % opRabbitVersion,
   "io.netty" % "netty-common" % "4.1.0.CR7",
-  "com.twitter" %% "finagle-core" % "6.34.0",
-  "com.twitter" %% "finagle-http" % "6.34.0",
-  "com.twitter" %% "finagle-memcached" % "6.34.0",
-  "com.twitter" %% "finagle-redis" % "6.34.0",
-  "com.twitter" %% "util-core" % "6.33.0",
+  "com.twitter" %% "finagle-core" % finagleVersion,
+  "com.twitter" %% "finagle-http" % finagleVersion,
+  "com.twitter" %% "finagle-memcached" % finagleVersion,
+  "com.twitter" %% "finagle-redis" % finagleVersion,
+  "com.twitter" %% "util-core" % "6.34.0",
   "com.twitter" %% "bijection-util" % "0.9.2",
   "org.clapper" %% "grizzled-slf4j" % "1.0.4",
   "com.github.nscala-time" %% "nscala-time" % "2.12.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.2",
-  "commons-io" % "commons-io" % "2.4",
+  "commons-io" % "commons-io" % "2.5",
   "com.rabbitmq" % "amqp-client" % "3.6.1",
   "mysql" % "mysql-connector-java" % "5.1.38",
-  "org.clapper" %% "avsl" % "1.0.4",
+  "org.clapper" %% "avsl" % "1.0.7",
   "com.typesafe.slick" %% "slick" % "3.1.1",
-  "com.typesafe.play" %% "play" % "2.5.1",
-  "com.typesafe.play" %% "play-netty-server" % "2.5.1",
+  "com.typesafe.play" %% "play" % "2.5.3",
+  "com.typesafe.play" %% "play-netty-server" % "2.5.3",
   "com.typesafe" % "config" % "1.3.0",
   "org.scalatest" %% "scalatest" % "2.2.6" % "test"
 ).map(_.exclude("org.slf4j", "slf4j-jdk14")).map(_.exclude("org.slf4j", "slf4j-log4j12"))

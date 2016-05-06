@@ -38,7 +38,7 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemD
   private[this] def useGenerator(gen: RemoteFileName) =
     sandbox.getExecutionParameters(gen.name, Nil)
       .map(_.setCurrentAndTemp(gen.parent.name(sandbox.invoker.api.pathSeparator)).setSanitizer)
-      .flatMap(sandbox.execute(_)).map(trace(_)).map(_ => this)
+      .flatMap(sandbox.execute).map(trace(_)).map(_ => this)
 
   private[this] def sanitize =
     detectGenerator.flatMap(g => g.map(useGenerator(_)).getOrElse(Future.value(this)))
@@ -51,7 +51,7 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemD
         .filter(x => testerRe.findFirstIn(x.basename.toLowerCase).nonEmpty)
         .map(x => x.ext.toLowerCase -> x).toMap
       m.get("exe").orElse(m.get("jar"))
-    }.flatMap(_.map(Future.value(_)).getOrElse(Future.exception(new TesterNotFoundException)))
+    }.flatMap(_.map(Future.value).getOrElse(Future.exception(new TesterNotFoundException)))
 
   private[this] def acceptableIds = Set("exe", "jar")
 

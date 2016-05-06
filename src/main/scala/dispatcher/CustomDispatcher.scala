@@ -42,7 +42,7 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester,
   def recordResult(item: CustomTestObject, result: CustomTestingResult) =
     result.test.map { tr =>
       db.run(
-        sqlu"""update Eval set Output = ${tr.output.map(Blobs.getBinary(_)).getOrElse("".getBytes)},
+        sqlu"""update Eval set Output = ${tr.output.map(Blobs.getBinary).getOrElse("".getBytes)},
                 Timex = ${tr.run.time / 1000},
                 Memory = ${tr.run.memory},
                 Info = ${tr.run.returnCode},

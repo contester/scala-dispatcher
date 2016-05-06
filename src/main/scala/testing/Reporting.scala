@@ -83,7 +83,7 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
     finishTesting(testingId).zip(finishSubmit(submitId, result)).map(_ => ())
 }
 
-case class TestingInfo(val testingId: Int, val problemId: String, val state: Seq[(Int, Int)])
+case class TestingInfo(testingId: Int, problemId: String, state: Seq[(Int, Int)])
 
 class DBReporter(val client: JdbcBackend#DatabaseDef) {
   /**

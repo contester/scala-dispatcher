@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module external.linked.project.id="scala-dispatcher-build" external.linked.project.path="$MODULE_DIR$/../../project" external.root.project.path="$MODULE_DIR$/../.." external.system.id="SBT" sbt.imports="sbt._, Keys._, dsl._, _root_.sbtprotobuf.ProtobufPlugin._, _root_.net.virtualvoid.sbt.graph.Plugin._, _root_.com.trueaccord.scalapb.ScalaPbPlugin._, _root_.com.typesafe.sbt.SbtNativePackager.autoImport._, _root_.com.typesafe.sbt.packager.archetypes.JavaAppPackaging.autoImport._, _root_.com.typesafe.sbt.packager.archetypes.jar.ClasspathJarPlugin.autoImport._, _root_.com.typesafe.sbt.packager.archetypes.jar.LauncherJarPlugin.autoImport._, _root_.com.typesafe.sbt.packager.debian.DebianPlugin.autoImport._, _root_.com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._, _root_.com.typesafe.sbt.packager.jdkpackager.JDKPackagerPlugin.autoImport._, _root_.com.typesafe.sbt.packager.linux.LinuxPlugin.autoImport._, _root_.com.typesafe.sbt.packager.rpm.RpmPlugin.autoImport._, _root_.com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport._, _root_.com.typesafe.sbt.packager.windows.WindowsPlugin.autoImport._, _root_.play.twirl.sbt.SbtTwirl.autoImport._, _root_.com.timushev.sbt.updates.UpdatesPlugin.autoImport._, _root_.sbt.plugins.IvyPlugin, _root_.sbt.plugins.JvmPlugin, _root_.sbt.plugins.CorePlugin, _root_.sbt.plugins.JUnitXmlReportPlugin, _root_.com.typesafe.sbt.SbtNativePackager, _root_.com.typesafe.sbt.packager.archetypes.AkkaAppPackaging, _root_.com.typesafe.sbt.packager.archetypes.JavaAppPackaging, _root_.com.typesafe.sbt.packager.archetypes.JavaServerAppPackaging, _root_.com.typesafe.sbt.packager.archetypes.jar.ClasspathJarPlugin, _root_.com.typesafe.sbt.packager.archetypes.jar.LauncherJarPlugin, _root_.com.typesafe.sbt.packager.debian.DebianDeployPlugin, _root_.com.typesafe.sbt.packager.debian.DebianPlugin, _root_.com.typesafe.sbt.packager.debian.JDebPackaging, _root_.com.typesafe.sbt.packager.docker.DockerPlugin, _root_.com.typesafe.sbt.packager.jdkpackager.JDKPackagerDeployPlugin, _root_.com.typesafe.sbt.packager.jdkpackager.JDKPackagerPlugin, _root_.com.typesafe.sbt.packager.linux.LinuxPlugin, _root_.com.typesafe.sbt.packager.rpm.RpmDeployPlugin, _root_.com.typesafe.sbt.packager.rpm.RpmPlugin, _root_.com.typesafe.sbt.packager.universal.UniversalDeployPlugin, _root_.com.typesafe.sbt.packager.universal.UniversalPlugin, _root_.com.typesafe.sbt.packager.windows.WindowsDeployPlugin, _root_.com.typesafe.sbt.packager.windows.WindowsPlugin, _root_.play.twirl.sbt.SbtTwirl, _root_.com.timushev.sbt.updates.UpdatesPlugin" sbt.resolvers="$USER_HOME$/.ivy2/cache|ivy|Local cache, http://scala-tools.org/repo-releases/|maven|scala tools, http://oss.sonatype.org/content/repositories/snapshots/|maven|Sonatype snapshots, http://spingo-oss.s3.amazonaws.com/repositories/releases|maven|SpinGo OSS, http://maven.twttr.com/|maven|twitter.com, http://typesafe.artifactoryonline.com/typesafe/repo|maven|typesafe artefactory, http://stingr.net/maven|maven|stingr.net, https://repo1.maven.org/maven2/|maven|public, http://repo.typesafe.com/typesafe/releases|maven|Typesafe Repository" type="SBT_MODULE" version="4">
+<module external.linked.project.id="scala-dispatcher-build" external.linked.project.path="$MODULE_DIR$/../../project" external.root.project.path="$MODULE_DIR$/../.." external.system.id="SBT" sbt.imports="sbt._, Keys._, dsl._, _root_.net.virtualvoid.sbt.graph.Plugin._, _root_.com.trueaccord.scalapb.ScalaPbPlugin._, _root_.sbtprotobuf.ProtobufPlugin._, _root_.com.typesafe.sbt.SbtNativePackager.autoImport._, _root_.com.typesafe.sbt.packager.archetypes.JavaAppPackaging.autoImport._, _root_.com.typesafe.sbt.packager.archetypes.jar.ClasspathJarPlugin.autoImport._, _root_.com.typesafe.sbt.packager.archetypes.jar.LauncherJarPlugin.autoImport._, _root_.com.typesafe.sbt.packager.debian.DebianPlugin.autoImport._, _root_.com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._, _root_.com.typesafe.sbt.packager.jdkpackager.JDKPackagerPlugin.autoImport._, _root_.com.typesafe.sbt.packager.linux.LinuxPlugin.autoImport._, _root_.com.typesafe.sbt.packager.rpm.RpmPlugin.autoImport._, _root_.com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport._, _root_.com.typesafe.sbt.packager.windows.WindowsPlugin.autoImport._, _root_.play.twirl.sbt.SbtTwirl.autoImport._, _root_.com.timushev.sbt.updates.UpdatesPlugin.autoImport._, _root_.sbt.plugins.IvyPlugin, _root_.sbt.plugins.JvmPlugin, _root_.sbt.plugins.CorePlugin, _root_.sbt.plugins.JUnitXmlReportPlugin, _root_.com.typesafe.sbt.SbtNativePackager, _root_.com.typesafe.sbt.packager.archetypes.AkkaAppPackaging, _root_.com.typesafe.sbt.packager.archetypes.JavaAppPackaging, _root_.com.typesafe.sbt.packager.archetypes.JavaServerAppPackaging, _root_.com.typesafe.sbt.packager.archetypes.jar.ClasspathJarPlugin, _root_.com.typesafe.sbt.packager.archetypes.jar.LauncherJarPlugin, _root_.com.typesafe.sbt.packager.debian.DebianDeployPlugin, _root_.com.typesafe.sbt.packager.debian.DebianPlugin, _root_.com.typesafe.sbt.packager.debian.JDebPackaging, _root_.com.typesafe.sbt.packager.docker.DockerPlugin, _root_.com.typesafe.sbt.packager.jdkpackager.JDKPackagerDeployPlugin, _root_.com.typesafe.sbt.packager.jdkpackager.JDKPackagerPlugin, _root_.com.typesafe.sbt.packager.linux.LinuxPlugin, _root_.com.typesafe.sbt.packager.rpm.RpmDeployPlugin, _root_.com.typesafe.sbt.packager.rpm.RpmPlugin, _root_.com.typesafe.sbt.packager.universal.UniversalDeployPlugin, _root_.com.typesafe.sbt.packager.universal.UniversalPlugin, _root_.com.typesafe.sbt.packager.windows.WindowsDeployPlugin, _root_.com.typesafe.sbt.packager.windows.WindowsPlugin, _root_.play.twirl.sbt.SbtTwirl, _root_.com.timushev.sbt.updates.UpdatesPlugin" sbt.resolvers="$USER_HOME$/.ivy2/cache|ivy|Local cache, http://scala-tools.org/repo-releases/|maven|scala tools, http://oss.sonatype.org/content/repositories/snapshots/|maven|Sonatype snapshots, http://spingo-oss.s3.amazonaws.com/repositories/releases|maven|SpinGo OSS, http://maven.twttr.com/|maven|twitter.com, http://typesafe.artifactoryonline.com/typesafe/repo|maven|typesafe artefactory, http://stingr.net/maven|maven|stingr.net, https://repo1.maven.org/maven2/|maven|public, http://repo.typesafe.com/typesafe/releases|maven|Typesafe Repository" type="SBT_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="false">
     <output url="file://$MODULE_DIR$/../../project/target/idea-classes" />
     <output-test url="file://$MODULE_DIR$/../../project/target/idea-test-classes" />
@@ -22,9 +22,9 @@
           <root url="jar://$USER_HOME$/.ivy2/cache/com.lihaoyi/fastparse-utils_2.10/jars/fastparse-utils_2.10-0.3.4.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.lihaoyi/fastparse_2.10/jars/fastparse_2.10-0.3.4.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.trueaccord.lenses/lenses_2.10/jars/lenses_2.10-0.4.5.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/com.trueaccord.scalapb/compilerplugin_2.10/jars/compilerplugin_2.10-0.5.25.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.trueaccord.scalapb/compilerplugin_2.10/jars/compilerplugin_2.10-0.5.26.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.trueaccord.scalapb/protoc-bridge_2.10/jars/protoc-bridge_2.10-0.1.4.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/com.trueaccord.scalapb/scalapb-runtime_2.10/jars/scalapb-runtime_2.10-0.5.25.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.trueaccord.scalapb/scalapb-runtime_2.10/jars/scalapb-runtime_2.10-0.5.26.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe.play/twirl-api_2.10/jars/twirl-api_2.10-1.1.1.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe.play/twirl-compiler_2.10/jars/twirl-compiler_2.10-1.1.1.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe.play/twirl-parser_2.10/jars/twirl-parser_2.10-1.1.1.jar!/" />
@@ -63,9 +63,9 @@
           <root url="jar://$USER_HOME$/.ivy2/cache/org.sonatype.sisu/sisu-guice/jars/sisu-guice-3.1.0-no_aop.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.tukaani/xz/jars/xz-1.4.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.vafer/jdeb/jars/jdeb-1.3.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.github.gseitz/sbt-protobuf/jars/sbt-protobuf-0.5.1.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.github.gseitz/sbt-protobuf/jars/sbt-protobuf-0.5.2.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.timushev.sbt/sbt-updates/jars/sbt-updates-0.1.9.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.trueaccord.scalapb/sbt-scalapb/jars/sbt-scalapb-0.5.25.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.trueaccord.scalapb/sbt-scalapb/jars/sbt-scalapb-0.5.26.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.typesafe.sbt/sbt-native-packager/jars/sbt-native-packager-1.0.3.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.typesafe.sbt/sbt-twirl/jars/sbt-twirl-1.1.1.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/net.virtual-void/sbt-dependency-graph/jars/sbt-dependency-graph-0.7.5.jar!/" />
@@ -148,15 +148,14 @@
           <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.typesafe.sbt/sbt-twirl/srcs/sbt-twirl-1.1.1-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/actions/srcs/actions-0.13.11-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/interface/srcs/interface-0.13.11-sources.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/com.trueaccord.scalapb/compilerplugin_2.10/srcs/compilerplugin_2.10-0.5.25-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.timushev.sbt/sbt-updates/srcs/sbt-updates-0.1.9-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.codehaus.plexus/plexus-interpolation/srcs/plexus-interpolation-1.19-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.trueaccord.scalapb/protoc-bridge_2.10/srcs/protoc-bridge_2.10-0.1.4-sources.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.trueaccord.scalapb/sbt-scalapb/srcs/sbt-scalapb-0.5.26-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/run/srcs/run-0.13.11-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/cross/srcs/cross-0.13.11-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-reflect/srcs/scala-reflect-2.10.6-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt.ivy/ivy/srcs/ivy-2.3.0-sbt-2cc8d2761242b072cedb0a04cb39435c4fa24f9a-sources.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/com.trueaccord.scalapb/scalapb-runtime_2.10/srcs/scalapb-runtime_2.10-0.5.25-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.trueaccord.lenses/lenses_2.10/srcs/lenses_2.10-0.4.5-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/persist/srcs/persist-0.13.11-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/classpath/srcs/classpath-0.13.11-sources.jar!/" />
@@ -170,7 +169,6 @@
           <root url="jar://$USER_HOME$/.ivy2/cache/org.bouncycastle/bcprov-jdk15on/srcs/bcprov-jdk15on-1.51-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.eclipse.sisu/org.eclipse.sisu.plexus/srcs/org.eclipse.sisu.plexus-0.0.0.M5-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.json4s/json4s-core_2.10/srcs/json4s-core_2.10-3.2.10-sources.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.trueaccord.scalapb/sbt-scalapb/srcs/sbt-scalapb-0.5.25-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe.play/twirl-compiler_2.10/srcs/twirl-compiler_2.10-1.1.1-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/main-settings/srcs/main-settings-0.13.11-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/relation/srcs/relation-0.13.11-sources.jar!/" />
@@ -209,6 +207,7 @@
           <root url="jar://$USER_HOME$/.ivy2/cache/org.codehaus.plexus/plexus-component-annotations/srcs/plexus-component-annotations-1.5.5-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/collections/srcs/collections-0.13.11-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/javax.annotation/jsr250-api/srcs/jsr250-api-1.0-sources.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.trueaccord.scalapb/scalapb-runtime_2.10/srcs/scalapb-runtime_2.10-0.5.26-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/cache/srcs/cache-0.13.11-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.maven/maven-plugin-api/srcs/maven-plugin-api-3.2.2-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/compiler-ivy-integration/srcs/compiler-ivy-integration-0.13.11-sources.jar!/" />
@@ -217,11 +216,13 @@
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/process/srcs/process-0.13.11-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.maven/maven-model-builder/srcs/maven-model-builder-3.2.2-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.codehaus.plexus/plexus-utils/srcs/plexus-utils-3.0.17-sources.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.github.gseitz/sbt-protobuf/srcs/sbt-protobuf-0.5.2-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.maven/maven-artifact/srcs/maven-artifact-3.2.2-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/compiler-integration/srcs/compiler-integration-0.13.11-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/aopalliance/aopalliance/srcs/aopalliance-1.0-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.maven/maven-model/srcs/maven-model-3.2.2-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.sonatype.sisu/sisu-guava/srcs/sisu-guava-0.9.9-sources.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.trueaccord.scalapb/compilerplugin_2.10/srcs/compilerplugin_2.10-0.5.26-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe.play/twirl-parser_2.10/srcs/twirl-parser_2.10-1.1.1-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/ivy/srcs/ivy-0.13.11-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/srcs/test-interface-1.0-sources.jar!/" />
@@ -230,7 +231,6 @@
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/tracking/srcs/tracking-0.13.11-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/javax.inject/javax.inject/srcs/javax.inject-1-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.maven/maven-core/srcs/maven-core-3.2.2-sources.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.10/sbt_0.13/com.github.gseitz/sbt-protobuf/srcs/sbt-protobuf-0.5.1-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.google.guava/guava/srcs/guava-10.0.1-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/control/srcs/control-0.13.11-sources.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.maven/maven-repository-metadata/srcs/maven-repository-metadata-3.2.2-sources.jar!/" />

@@ -50,8 +50,8 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
   def fvs(m: ModuleHandler): Future[Seq[ModuleHandler]] = Future.value(Seq(m))
   def fcf(s: Seq[Future[Seq[ModuleHandler]]]): Future[Seq[ModuleHandler]] = Future.collect(s).map(_.flatten)
 
-  implicit def plain2rich(x: Future[Seq[ModuleHandler]]) = new ModuleHandlerOps(x)
-  implicit def rich2plain(x: ModuleHandlerOps) = x.repr
+  implicit def plain2rich(x: Future[Seq[ModuleHandler]]): ModuleHandlerOps = new ModuleHandlerOps(x)
+  implicit def rich2plain(x: ModuleHandlerOps): Future[Seq[ModuleHandler]] = x.repr
 
   private def win16(ntvdm: String) =
     add(api.disks / "WINDOWS" / "System32" / "cmd.exe", win16Compilers(_)) +
