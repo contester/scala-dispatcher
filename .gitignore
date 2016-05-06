@@ -5,3 +5,4 @@ project/boot/
 /.idea/workspace.xml
 /dispatcher.conf
 /server.conf
+/dispatcher-0.1
