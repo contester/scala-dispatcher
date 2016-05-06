@@ -60,7 +60,7 @@ object SourceHandler {
   }
 
   def checkForFile(sandbox: Sandbox, filename: String): Future[Boolean] =
-    sandbox.stat(filename, false).map(!_.isFile.isEmpty)
+    sandbox.stat(filename, false).map(_.isFile.nonEmpty)
 
   def stepAndCheck(stepName: String, sandbox: Sandbox, applicationName: String, arguments: ExecutionArguments, resultName: String): Future[(StepResult, Boolean)] =
     step(stepName, sandbox, applicationName, arguments).flatMap { stepResult =>

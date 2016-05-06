@@ -51,7 +51,7 @@ case class PolygonConfig(shortName: String, uri: Iterable[URI], authInfo: Polygo
 case class AuthPolygonMatcher(config: Iterable[PolygonConfig]) {
   // private val polygonBaseRe = new Regex("^(.*/)(c/\\d+/?.*|p/[^/]+/[^/]/?.*)$")
   def apply(uri: URI): Option[PolygonConfig] = {
-    config.find(_.uri.find(_.relativize(uri) != uri).isDefined)
+    config.find(_.uri.exists(_.relativize(uri) != uri))
   }
 }
 

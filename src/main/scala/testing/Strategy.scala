@@ -22,7 +22,7 @@ trait TestingStrategy {
     if (tests.nonEmpty)
       test(tests.head).flatMap { etr =>
         if (etr._1)
-          sequential(tests.tail).map(x => etr :: x.toList)
+          sequential(tests.tail).map(x => etr :: x)
         else Future.value(etr :: Nil)
       }
     else Future.value(Nil)
