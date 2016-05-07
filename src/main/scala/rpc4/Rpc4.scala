@@ -144,8 +144,8 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
             case Header.MessageType.ERROR =>
               Future.exception(new RemoteError(rt.payload.map(_.toString(Charsets.Utf8)).getOrElse("Unknown")))
             case Header.MessageType.RESPONSE =>
-              Future.value(deserializer.map { d =>
-                parseWith(rt.payload.getOrElse(new EmptyByteBuf(ByteBufAllocator.DEFAULT)),d)
+              Future.value(deserializer.flatMap { d =>
+                rt.payload.map(p => parseWith(p,d))
               })
             case x =>
               Future.exception(UnexpectedMessageTypeError(x))
