@@ -4,7 +4,7 @@ import java.nio.ByteOrder
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicReference}
 
-import com.trueaccord.scalapb.GeneratedMessage
+import com.trueaccord.scalapb.{GeneratedMessage, GeneratedMessageCompanion, Message}
 import com.twitter.io.Charsets
 import com.twitter.util.{Future, Promise}
 import grizzled.slf4j.Logging
@@ -63,8 +63,8 @@ trait RpcClient {
   def callFull[T](methodName: String, payload: Option[GeneratedMessage],
               deserializer: Option[Deserializer[T]]): Future[Option[T]]
 
-  def call[T](methodName: String, payload: GeneratedMessage, deserializer: (ByteBufInputStream) => T): Future[T] =
-    callFull(methodName, Some(payload), Some(deserializer)).map(_.get)
+  def call[A <: GeneratedMessage with Message[A]](methodName: String, payload: GeneratedMessage, deserializer: GeneratedMessageCompanion[A]): Future[A] =
+    callFull[A](methodName, Some(payload), Some(deserializer.parseFrom)).map(_.getOrElse(deserializer.defaultInstance))
 
   def callNoResult(methodName: String, payload: GeneratedMessage): Future[Unit] =
     callFull(methodName, Some(payload), None).unit
