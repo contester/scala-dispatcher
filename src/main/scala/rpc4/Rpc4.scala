@@ -60,11 +60,11 @@ class ServerPipelineFactory[C <: Channel](registry: Registry) extends ChannelIni
 trait RpcClient {
   type Deserializer[T] = (ByteBufInputStream) => T
 
-  def callFull[T](methodName: String, payload: Option[GeneratedMessage],
-              deserializer: Option[Deserializer[T]]): Future[Option[T]]
+  def callFull[A <: GeneratedMessage with Message[A]](methodName: String, payload: Option[GeneratedMessage],
+              deserializer: Option[GeneratedMessageCompanion[A]]): Future[Option[A]]
 
   def call[A <: GeneratedMessage with Message[A]](methodName: String, payload: GeneratedMessage, deserializer: GeneratedMessageCompanion[A]): Future[A] =
-    callFull[A](methodName, Some(payload), Some(deserializer.parseFrom)).map(_.getOrElse(deserializer.defaultInstance))
+    callFull[A](methodName, Some(payload), Some(deserializer)).map(_.getOrElse(deserializer.defaultInstance))
 
   def callNoResult(methodName: String, payload: GeneratedMessage): Future[Unit] =
     callFull(methodName, Some(payload), None).unit
@@ -114,7 +114,9 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
     b
   }
 
-  def callFull[T](methodName: String, payload: Option[GeneratedMessage], deserializer: Option[Deserializer[T]]): Future[Option[T]] = {
+  def callFull[A <: GeneratedMessage with Message[A]](methodName: String,
+                                                      payload: Option[GeneratedMessage],
+                                                      deserializer: Option[GeneratedMessageCompanion[A]]): Future[Option[A]] = {
     if (disconnected.get())
       Future.exception(DefaultChannelDisconnectedException)
     else {
@@ -145,7 +147,7 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
               Future.exception(new RemoteError(rt.payload.map(_.toString(Charsets.Utf8)).getOrElse("Unknown")))
             case Header.MessageType.RESPONSE =>
               Future.value(deserializer.flatMap { d =>
-                rt.payload.map(p => parseWith(p,d))
+                rt.payload.map(p => parseWith(p,d.parseFrom))
               })
             case x =>
               Future.exception(UnexpectedMessageTypeError(x))
