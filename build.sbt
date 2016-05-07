@@ -45,11 +45,16 @@ val finagleVersion = "6.35.0"
 
 val nettyVersion = "4.1.0.CR7"
 
+val playVersion = "2.4.6"
+
 libraryDependencies ++= Seq(
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
   "com.spingo" %% "op-rabbit-play-json"   % opRabbitVersion,
   "io.netty" % "netty-common" % nettyVersion,
   "io.netty" % "netty-transport-native-epoll" % nettyVersion,
+  "io.netty" % "netty-codec-http" % nettyVersion,
+  "io.netty" % "netty-codec" % nettyVersion,
+  "io.netty" % "netty-handler" % nettyVersion,
   "com.twitter" %% "finagle-core" % finagleVersion,
   "com.twitter" %% "finagle-http" % finagleVersion,
   "com.twitter" %% "finagle-memcached" % finagleVersion,
@@ -64,8 +69,8 @@ libraryDependencies ++= Seq(
   "mysql" % "mysql-connector-java" % "5.1.38",
   "org.clapper" %% "avsl" % "1.0.7",
   "com.typesafe.slick" %% "slick" % "3.1.1",
-  "com.typesafe.play" %% "play" % "2.5.3",
-  "com.typesafe.play" %% "play-netty-server" % "2.5.3",
+  "com.typesafe.play" %% "play" % playVersion,
+  "com.typesafe.play" %% "play-netty-server" % playVersion,
   "com.typesafe" % "config" % "1.3.0",
   "org.scalatest" %% "scalatest" % "2.2.6" % "test"
 ).map(_.exclude("org.slf4j", "slf4j-jdk14")).map(_.exclude("org.slf4j", "slf4j-log4j12"))

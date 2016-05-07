@@ -19,13 +19,16 @@ class InvokerRegistry(val contesterId: String) extends Registry with RequestStor
     invokerClient.identify(contesterId, "")
       .map(new InvokerAPI(_, invokerClient))
       .flatMap { api =>
-      ModuleFactory(api).map { factory =>
+        trace("whee" -> api)
+      ModuleFactory(api).onFailure(error("whee", _)).map { factory =>
+        trace("blah" -> factory)
         new Invoker(api, factory)
       }
     }.map { invoker =>
+      trace(client -> invoker)
       channelMap.put(client, invoker)
       addInvokers(invoker.instances)
-    }
+    }.onFailure(error("wat", _))
   }
 
   def unregister(client: RpcClient): Unit = {

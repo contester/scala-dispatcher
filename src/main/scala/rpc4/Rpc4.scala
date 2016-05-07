@@ -8,9 +8,10 @@ import com.trueaccord.scalapb.GeneratedMessage
 import com.twitter.io.Charsets
 import com.twitter.util.{Future, Promise}
 import grizzled.slf4j.Logging
-import io.netty.buffer.{ByteBuf, ByteBufInputStream, ByteBufOutputStream, Unpooled}
+import io.netty.buffer._
 import io.netty.channel._
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder
+import io.netty.handler.logging.LoggingHandler
 import io.netty.util.ReferenceCountUtil
 import org.stingray.contester.rpc4.proto.Header
 
@@ -51,12 +52,9 @@ class ServerPipelineFactory[C <: Channel](registry: Registry) extends ChannelIni
   override def initChannel(ch: C): Unit = {
     val pipeline = ch.pipeline()
     pipeline.addFirst("RpcClient", new RpcClientImpl[C](ch, registry))
-    pipeline.addFirst("FrameDecoder", Framer.simpleFrameDecoder)
+    pipeline.addFirst("FrameDecoder",
+      new LengthFieldBasedFrameDecoder(ByteOrder.BIG_ENDIAN, 64 * 1024 * 1024, 0, 4, 0, 4, true))
   }
-}
-
-object Framer {
-  val simpleFrameDecoder = new LengthFieldBasedFrameDecoder(ByteOrder.BIG_ENDIAN, 64 * 1024 * 1024, 0, 4, 0, 4, true)
 }
 
 trait RpcClient {
@@ -146,14 +144,14 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
             case Header.MessageType.ERROR =>
               Future.exception(new RemoteError(rt.payload.map(_.toString(Charsets.Utf8)).getOrElse("Unknown")))
             case Header.MessageType.RESPONSE =>
-              Future.value(deserializer.flatMap { d =>
-                rt.payload.map(p => parseWith(p, d))
+              Future.value(deserializer.map { d =>
+                parseWith(rt.payload.getOrElse(new EmptyByteBuf(ByteBufAllocator.DEFAULT)),d)
               })
             case x =>
               Future.exception(UnexpectedMessageTypeError(x))
           }
         } finally {
-          rt.payload.foreach(ReferenceCountUtil.release)
+          //rt.payload.foreach(ReferenceCountUtil.release)
         }
       }.onSuccess { r =>
         trace(s"Result($methodName): $r")
@@ -161,17 +159,22 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
     }
   }
 
-  def messageReceived(header: Header, payload: Option[ByteBuf]) =
+  def messageReceived(header: Header, payload: Option[ByteBuf]) = {
+    trace(s"msgs: ${requests.size}")
     requests.remove(header.getSequence.toInt) match {
       case None =>
-        payload.foreach(ReferenceCountUtil.release)
+        trace(s"Sequence id mismatch: ${header}")
+        //payload.foreach(ReferenceCountUtil.release)
       case Some(p) =>
         header.getMessageType match {
           case Header.MessageType.ERROR | Header.MessageType.RESPONSE =>
             p.setValue(RpcTuple1(header, payload))
-          case _ => payload.foreach(ReferenceCountUtil.release)
+          case v =>
+            trace(s"Message type mismatch: ${v}")
+          //case _ => payload.foreach(ReferenceCountUtil.release)
         }
     }
+  }
 
   private def parseWith[T](msg: ByteBuf, d: (ByteBufInputStream) => T): T = {
     val stream = new ByteBufInputStream(msg)
@@ -182,20 +185,28 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
     }
   }
 
-  private def parseHeader(msg: ByteBuf): Header =
-    try {
-      parseWith(msg, Header.parseFrom)
-    } finally {
-      ReferenceCountUtil.release(msg)
-    }
+  private def parseHeader(msg: ByteBuf): Header = {
+    val t = parseWith(msg, Header.parseFrom)
+    trace(s"h: ${t}")
+    t
+  }
+//    try {
+//    } finally {
+      //ReferenceCountUtil.release(msg)
+//    }
 
-  override def channelRead0(ctx: ChannelHandlerContext, msg: ByteBuf): Unit =
+  override def channelRead0(ctx: ChannelHandlerContext, msg: ByteBuf): Unit = {
     storedHeader.getAndSet(None) match {
       case Some(header) =>
         messageReceived(header, Some(msg))
       case None =>
-        storedHeader.set(Some(parseHeader(msg)))
+        val parsed = parseHeader(msg)
+        if (parsed.getPayloadPresent)
+          storedHeader.set(Some(parsed))
+        else
+          messageReceived(parsed, None)
     }
+  }
 
   override def channelUnregistered(ctx: ChannelHandlerContext): Unit = {
     registry.unregister(this)
