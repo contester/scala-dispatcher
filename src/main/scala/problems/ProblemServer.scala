@@ -10,7 +10,7 @@ import grizzled.slf4j.Logging
 import org.apache.http.client.utils.URIBuilder
 import org.stingray.contester.invokers.Sandbox
 import org.stingray.contester.utils.CachedConnectionHttpService
-import play.api.libs.json.{JsPath, JsSuccess, Json, Reads}
+import play.api.libs.json._
 
 
 case class SimpleProblemDbException(reason: String) extends Throwable(reason)
@@ -88,6 +88,22 @@ object SimpleProblemManifest {
 
   implicit val readsSimpleProblemManifest: Reads[SimpleProblemManifest] =
     readsSimpleProblemManifestBuilder.apply(SimpleProblemManifest.apply _)
+
+  implicit val writesSimpleProblemManifest = new Writes[SimpleProblemManifest] {
+    override def writes(o: SimpleProblemManifest): JsValue = {
+      val f = Json.obj("id" -> o.id,
+        "revision" -> o.revision,
+        "testCount" -> o.testCount,
+        "timeLimitMicros" -> o.timeLimitMicros,
+        "memoryLimit" -> o.memoryLimit,
+        "stdio" -> o.stdio,
+        "testerName" -> o.testerName,
+        "answers" -> o.answers.toList)
+      if (o.interactorName.isDefined) {
+        f ++ Json.obj("interactorName" -> o.interactorName)
+      } else f
+    }
+  }
 }
 
 object SimpleProblemDb extends Logging {
@@ -163,7 +179,18 @@ class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) e
     }
   }
 
-  override def setProblem(problem: ProblemWithRevision, manifest: ProblemManifest): Future[Problem] = ???
+  override def setProblem(manifest: SimpleProblemManifest): Future[Problem] = {
+    val request = RequestBuilder()
+      .url(new URIBuilder(baseUrl+"problem/set/")
+        .addParameter("id", manifest.id)
+        .addParameter("revision", manifest.revision.toString).build().toASCIIString).buildPost(Buf.Utf8(Json.toJson(manifest).toString()))
+    client(request).flatMap { r =>
+      r.status match {
+        case Status.Ok => Future.value(new SimpleProblem(baseUrl + "fs/", manifest, new SimpleProblemWithRevision(getSimpleUrlId(new URI(manifest.id)), manifest.revision)))
+        case _ => Future.exception(ProblemArchiveUploadException(manifest))
+      }
+    }
+  }
 
   override def getProblem(problem: ProblemWithRevision): Future[Option[Problem]] =
     receiveProblem(new URIBuilder(baseUrl+"problem/get/")

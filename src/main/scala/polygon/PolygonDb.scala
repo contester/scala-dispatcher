@@ -124,7 +124,7 @@ case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: 
       case None =>
         pdb.ensureProblemFile(p, getProblemFile(p.toId)).flatMap { _ =>
           inv.sanitize(p).flatMap { m =>
-            pdb.setProblem(p, m).map { pp =>
+            pdb.setProblem(m).map { pp =>
               pp
             }
           }

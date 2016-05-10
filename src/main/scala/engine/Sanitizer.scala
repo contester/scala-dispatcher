@@ -3,9 +3,10 @@ package org.stingray.contester.engine
 import org.stingray.contester.invokers._
 import grizzled.slf4j.Logging
 import com.twitter.util.Future
-import org.stingray.contester.problems.{ProblemManifest, ProblemWithRevision}
+import org.stingray.contester.problems.{ProblemManifest, ProblemWithRevision, SimpleProblemManifest}
 import org.stingray.contester.modules.SevenzipHandler
 import org.stingray.contester.ContesterImplicits._
+
 import scala.util.matching.Regex
 import org.stingray.contester.common.Module
 
@@ -97,7 +98,8 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemD
     findTester.join(findInteractorOption).flatMap {
       case (tester, interactor) =>
         statAndSave(sandbox, tester, interactor).map { answers =>
-          new ProblemManifest(problem.testCount, problem.timeLimitMicros, problem.memoryLimit, problem.stdio, tester.basename, answers, interactor.map(_.basename))
+          SimpleProblemManifest(problem.pid, problem.revision.toInt, problem.testCount, problem.timeLimitMicros,
+            problem.memoryLimit, problem.stdio, tester.basename, answers.toSet, interactor.map(_.basename))
         }
     }
 

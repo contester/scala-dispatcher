@@ -1,7 +1,7 @@
 package org.stingray.contester.engine
 
-import org.stingray.contester.invokers.{SchedulingKey, InvokerRegistry}
-import org.stingray.contester.problems.{ProblemManifest, Test}
+import org.stingray.contester.invokers.{InvokerRegistry, SchedulingKey}
+import org.stingray.contester.problems.{ProblemManifest, SimpleProblemManifest, Test}
 import org.stingray.contester.common._
 import com.twitter.util.Future
 import org.stingray.contester.modules.ScriptLanguage
@@ -17,7 +17,7 @@ class InvokerSimpleApi(val registry: InvokerRegistry, val objectCache: ObjectCac
              resultName: String): Future[CustomTestResult] =
     registry(m.moduleType, key, "custom")(CustomTester(_, m, input, resultName))
 
-  def sanitize(key: ProblemDescription): Future[ProblemManifest] =
+  def sanitize(key: ProblemDescription): Future[SimpleProblemManifest] =
     registry("zip", key, "sanitize")(Sanitizer(_, key, baseUrl))
 
   def maybeCompile(key: SchedulingKey, m: Module, stored: String): Future[(CompileResult, Option[Module])] = {

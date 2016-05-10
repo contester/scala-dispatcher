@@ -19,7 +19,7 @@ trait ProblemServerInterface {
 }
 
 trait ProblemDb extends ProblemServerInterface {
-  def setProblem(problem: ProblemWithRevision, manifest: ProblemManifest): Future[Problem]
+  def setProblem(manifest: SimpleProblemManifest): Future[Problem]
   def getProblem(problem: ProblemWithRevision): Future[Option[Problem]]
 }
 

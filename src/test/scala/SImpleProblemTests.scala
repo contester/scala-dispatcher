@@ -1,6 +1,7 @@
 package org.stingray.contester.problems
 
 import org.scalatest.{FlatSpec, Matchers}
+import play.api.libs.json.Json
 
 class SimpleProblemTests extends FlatSpec with Matchers {
   "Json" should "decode" in {
@@ -34,5 +35,16 @@ class SimpleProblemTests extends FlatSpec with Matchers {
     SimpleProblemDb.parseSimpleProblemManifest(source0) shouldBe Some(SimpleProblemManifest(
       "direct://school.sgu.ru/moodle/1", 2, 20, 1000000, 16777216, false, "tester.exe",
       Set.empty, None))
+  }
+
+  it should "double decode" in {
+    val source0 =
+      """[{
+        |"id":"direct://school.sgu.ru/moodle/1",
+        |"revision":2,
+        |"testCount":20,"timeLimitMicros":1000000,
+        |"memoryLimit":16777216,"testerName":"tester.exe"}]""".stripMargin
+
+    SimpleProblemDb.parseSimpleProblemManifest(Json.toJson(SimpleProblemDb.parseSimpleProblemManifest(source0).get).toString()).get
   }
 }
