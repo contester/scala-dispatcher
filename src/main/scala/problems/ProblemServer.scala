@@ -6,6 +6,7 @@ import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, RequestBuilder, Response, Status}
 import com.twitter.io.Buf
 import com.twitter.util.Future
+import grizzled.slf4j.Logging
 import org.apache.http.client.utils.URIBuilder
 import org.stingray.contester.invokers.Sandbox
 import org.stingray.contester.utils.CachedConnectionHttpService
@@ -89,12 +90,15 @@ object SimpleProblemManifest {
     readsSimpleProblemManifestBuilder.apply(SimpleProblemManifest.apply _)
 }
 
-object SimpleProblemDb {
+object SimpleProblemDb extends Logging {
   def parseSimpleProblemManifest(what: String): Option[SimpleProblemManifest] = {
+    if (what.isEmpty)
+      None
+    else
     Json.parse(what).validate[Seq[SimpleProblemManifest]] match {
       case s: JsSuccess[Seq[SimpleProblemManifest]] => Some(s.get.head)
       case x =>
-        println(x)
+        error(s"parsing $x")
         None
     }
   }

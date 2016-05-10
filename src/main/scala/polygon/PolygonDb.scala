@@ -108,7 +108,8 @@ case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: 
     trace(s"getContest: $contest")
     contestClient.refresh(resolve(contest)).flatMap { cdesc =>
       Future.collect(cdesc.problems.mapValues(PolygonProblemShort).mapValues(problemClient.refresh)).map { pmap =>
-        pmap.mapValues(sanitize1)
+        trace(s"pmap: $pmap")
+        pmap.mapValues(sanitize1).foreach(x => x._2.onFailure(error(s"$x", _)))
         ContestWithProblems(cdesc, pmap)
       }
     }.onFailure(error(s"getContest: $contest", _))
@@ -131,8 +132,10 @@ case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: 
     }
   }
 
-  def sanitize1(p: PolygonProblem) =
+  def sanitize1(p: PolygonProblem) = {
+    trace(s"sanitize1: $p")
     serialSanitizer(p, () => maybeSanitize(p))
+  }
 
   override def getProblem(contest: PolygonContestId, problem: String): Future[Option[Problem]] =
     contestClient(resolve(contest)).flatMap { cdesc =>

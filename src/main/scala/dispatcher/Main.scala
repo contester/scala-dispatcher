@@ -31,13 +31,14 @@ object DispatcherServer extends App {
 
   private val invoker = new InvokerRegistry("contester")
 
-  val invokerApi = new InvokerSimpleApi(invoker, objectCache)
-  val tester = new SolutionTester(invokerApi)
-
   val simpleDb =
     if (config.hasPath("simpledb")) {
       Some(SimpleProblemDb(config.getString("simpledb")))
     } else None
+
+  val invokerApi = new InvokerSimpleApi(invoker, objectCache, simpleDb.get.baseUrl)
+  val tester = new SolutionTester(invokerApi)
+
 
   val ioGroup = new NioEventLoopGroup()
 

@@ -18,8 +18,8 @@ object CachedConnectionHttpService extends Function[HttpHost, Service[Request, R
     import com.twitter.conversions.time._
     private def common(key: HttpHost) =
       Http.client.withSessionPool.maxSize(1)
-        .withTransport.connectTimeout(5 seconds)
-        .withRequestTimeout(5 seconds)
+        .withTransport.connectTimeout(30 seconds)
+        .withRequestTimeout(30 seconds)
         .withMaxResponseSize(maxResponseSize)
 
     private[this] def hostString(key: HttpHost) =

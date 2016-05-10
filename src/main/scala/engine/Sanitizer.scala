@@ -23,7 +23,7 @@ trait ProblemDescription extends ProblemWithRevision with EarliestTimeKey {
   def memoryLimit: Long
 }
 
-class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemDescription) extends Logging {
+class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemDescription, baseUrl: String) extends Logging {
   private[this] val testerRe = new Regex("^check\\.(\\S+)$")
 
   private[this] def detectGenerator =
@@ -74,7 +74,7 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemD
       val shrunkFileList = filesToStore.map(x => problemFiles(x.name)).toSeq
       sandbox.getGridfs(shrunkFileList).map { putResult =>
         val resultSet = putResult.map(x => problemFiles(x.name)).map(_._2).toSet
-        val missing = ((((1 to problem.testCount).map(problem.inputName)) ++ List(problem.checkerName)).toSet -- resultSet)
+        val missing = ((((1 to problem.testCount).map(x => "filer:" + baseUrl + "fs/" + problem.inputName(x))) ++ List("filer:" + baseUrl + "fs/" + problem.checkerName)).toSet -- resultSet)
         if (missing.nonEmpty) {
           throw new PdbStoreException(missing.head)
 	}
@@ -85,11 +85,11 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemD
 
   private[this] def problemFileList(tester: InvokerRemoteFile, interactor: Option[InvokerRemoteFile]): Iterable[(RemoteFileName, String, Option[String])] =
     tests.flatMap { i =>
-      (testBase / "%02d".format(i), problem.inputName(i), None) ::
-        (testBase / "%02d.a".format(i), problem.answerName(i), None) ::
+      (testBase / "%02d".format(i), "filer:" + baseUrl + "fs/" + problem.inputName(i), None) ::
+        (testBase / "%02d.a".format(i), "filer:" + baseUrl + "fs/" + problem.answerName(i), None) ::
       Nil
-    } ++ interactor.map(intFile => (intFile, problem.interactorName, Some(Module.extractType(intFile.name)))) :+
-      (tester, problem.checkerName, Some(Module.extractType(tester.name)))
+    } ++ interactor.map(intFile => (intFile, "filer:" + baseUrl + "fs/" + problem.interactorName, Some(Module.extractType(intFile.name)))) :+
+      (tester, "filer:" + baseUrl + "fs/" + problem.checkerName, Some(Module.extractType(tester.name)))
 
 
 
@@ -118,10 +118,10 @@ object Sanitizer extends Logging {
       .map(_.find(_.isDir).getOrElse(throw new UnpackError))
 
   // No need to get problem file; it will be already there - or we fail after putGridfs
-  private[this] def sanitize(sandbox: Sandbox, problem: ProblemDescription, p7z: String) = {
-    sandbox.putGridfs(problem.archiveName, zipName)
+  private[this] def sanitize(sandbox: Sandbox, problem: ProblemDescription, p7z: String, baseUrl: String) = {
+    sandbox.putGridfs("filer:" + baseUrl + "fs/" + problem.archiveName, zipName)
       .flatMap(_ => unpack(sandbox, problem, p7z))
-      .flatMap(d => new ProblemSanitizer(sandbox, d, problem).sanitizeAndStore)
+      .flatMap(d => new ProblemSanitizer(sandbox, d, problem, baseUrl).sanitizeAndStore)
   }
 
   /**
@@ -131,7 +131,7 @@ object Sanitizer extends Logging {
    * @param problem Problem to sanitize. Problem archive already needs to be loaded into gridfs.
    * @return
    */
-  def apply(instance: InvokerInstance, problem: ProblemDescription) =
-    sanitize(instance.unrestricted, problem, instance.factory("zip").asInstanceOf[SevenzipHandler].p7z)
+  def apply(instance: InvokerInstance, problem: ProblemDescription, baseUrl: String) =
+    sanitize(instance.unrestricted, problem, instance.factory("zip").asInstanceOf[SevenzipHandler].p7z, baseUrl)
 }
 
