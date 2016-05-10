@@ -9,6 +9,7 @@ import com.twitter.finagle.redis.Client
 import com.twitter.finagle.redis.util.StringToChannelBuffer
 import com.twitter.io.{Buf, BufInputStream, Charsets}
 import com.twitter.util.{Duration, Future, Promise}
+import grizzled.slf4j.Logging
 import org.apache.http.client.utils.URIBuilder
 import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.problems.{Problem, SanitizeDb, SimpleProblemDb}
@@ -23,7 +24,7 @@ case class PolygonContest(uri: URI) extends AnyVal {
 case class PolygonProblemShort(uri: URI) extends AnyVal {
   def redisKey = s"polygonProblem/$uri"
   def fullUri: URI = {
-    new URIBuilder(uri.resolve("problem.xml")).build()
+    new URIBuilder(s"${uri.toASCIIString}/problem.xml").build()
   }
 }
 
@@ -33,7 +34,7 @@ case class PolygonProblemID(uri: URI, revision: Long) {
   }
 
   def fullUri: URI = {
-    new URIBuilder(uri.resolve("problem.xml")).addParameter("revision", revision.toString).build()
+    new URIBuilder(s"${uri.toASCIIString}/problem.xml").addParameter("revision", revision.toString).build()
   }
 
   def redisKey = s"polygonProblem/${fullUri}"
@@ -92,37 +93,53 @@ case class ProblemClient1(service: Service[URI, Option[PolygonResponse]], store:
 
 case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: Client,
                          polygonMap: Map[String, PolygonConfig], pdb: SanitizeDb, inv: InvokerSimpleApi)
-  extends PolygonContestClient with PolygonProblemClient {
+  extends PolygonContestClient with PolygonProblemClient with Logging {
 
   private[this] val contestClient = ContestClient1(service, store)
   private[this] val problemClient = ProblemClient1(service, store)
 
-  private[this] def resolve(contest: PolygonContestId) =
-    polygonMap(contest.polygon).contest(contest.contestId)
+  private[this] def resolve(contest: PolygonContestId) = {
+    var r = polygonMap(contest.polygon).contest(contest.contestId)
+    trace(s"resolve($contest) = $r")
+    r
+  }
 
-  override def getContest(contest: PolygonContestId): Future[ContestWithProblems] =
+  override def getContest(contest: PolygonContestId): Future[ContestWithProblems] = {
+    trace(s"getContest: $contest")
     contestClient.refresh(resolve(contest)).flatMap { cdesc =>
       Future.collect(cdesc.problems.mapValues(PolygonProblemShort).mapValues(problemClient.refresh)).map { pmap =>
+        pmap.mapValues(sanitize1)
         ContestWithProblems(cdesc, pmap)
       }
+    }.onFailure(error(s"getContest: $contest", _))
+  }
+
+  val serialSanitizer = new SerialHash[PolygonProblem, Problem]
+
+  def maybeSanitize(p: PolygonProblem): Future[Problem] = {
+    trace(s"maybeSanitize called: $p")
+    pdb.getProblem(p).flatMap {
+      case Some(x) => Future.value(x)
+      case None =>
+        pdb.ensureProblemFile(p, getProblemFile(p.toId)).flatMap { _ =>
+          inv.sanitize(p).flatMap { m =>
+            pdb.setProblem(p, m).map { pp =>
+              pp
+            }
+          }
+        }
     }
+  }
+
+  def sanitize1(p: PolygonProblem) =
+    serialSanitizer(p, () => maybeSanitize(p))
 
   override def getProblem(contest: PolygonContestId, problem: String): Future[Option[Problem]] =
     contestClient(resolve(contest)).flatMap { cdesc =>
       Fu.liftOption(cdesc.problems.get(problem).map(PolygonProblemShort).map(problemClient)).flatMap {
         case None => Future.None
         case Some(p) =>
-          pdb.getProblem(p).flatMap {
-            case Some(x) => Future.value(Some(x))
-            case None =>
-              pdb.ensureProblemFile(p, getProblemFile(p.toId)).flatMap { _ =>
-                inv.sanitize(p).flatMap { m =>
-                  pdb.setProblem(p, m).map { pp =>
-                    Some(pp)
-                  }
-                }
-              }
-          }
+          sanitize1(p).map(Some(_))
       }
     }
 

@@ -12,6 +12,7 @@ import org.apache.http.client.utils.{URIBuilder, URLEncodedUtils}
 import org.apache.http.message.BasicNameValuePair
 import org.stingray.contester.engine.ProblemDescription
 import org.stingray.contester.problems.ProblemWithRevision
+import org.stingray.contester.utils.RequestWithURI
 
 import scala.xml.Elem
 
@@ -68,32 +69,23 @@ object PolygonFilter {
   }
 }
 
-case class PolygonFilter(matcher: URI => Option[PolygonConfig]) extends Filter[URI, Option[PolygonResponse], Request, Response] {
+case class PolygonFilter(matcher: URI => Option[PolygonConfig]) extends Filter[URI, Option[PolygonResponse], RequestWithURI, Response] {
   import PolygonFilter._
 
-  override def apply(request: URI, service: Service[Request, Response]): Future[Option[PolygonResponse]] =
+  override def apply(request: URI, service: Service[RequestWithURI, Response]): Future[Option[PolygonResponse]] =
     matcher(request) match {
       case None => Future.None
       case Some(polygon) =>
-        service(buildRequest(request, polygon.authInfo)).map { resp =>
+        service(RequestWithURI(buildRequest(request, polygon.authInfo), request)).map { resp =>
           Some(PolygonResponse(polygon, resp))
         }
     }
 }
 
-/*
-object PolygonClient extends Logging {
-  def asFile(x: Response) =
-    x.content
-
-  def asByteArray(buffer: Buf) = {
-    Buf.ByteArray.Owned.extract(Buf.ByteArray.coerce(buffer))
-  }
+case class ContestDescription(names: Map[String, String], problems: Map[String, URI]) {
+  def getName(language: String) =
+    names.getOrElse(language, names.getOrElse("english", names.headOption.map(_._2).getOrElse("")))
 }
-*/
-
-// parsed contest xml
-case class ContestDescription(names: Map[String, String], problems: Map[String, URI])
 
 object ContestDescription {
   def parse(source: Elem): ContestDescription = {
@@ -126,6 +118,13 @@ case class PolygonProblem(uri: URI, revision: Long, names: Map[String, String],
   override def stdio: Boolean = tags("stdio")
 
   def toId = PolygonProblemID(uri, revision)
+
+  def defaultTitle =
+    names.get("english").orElse(names.get("russian")).getOrElse("Unnamed problem")
+
+  def getTitle(language: String) =
+    names.get(language).getOrElse(defaultTitle)
+
 }
 
 object PolygonProblem {

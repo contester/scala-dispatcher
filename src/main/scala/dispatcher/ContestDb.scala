@@ -37,7 +37,7 @@ class DbDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient,
   val evaldispatcher = new CustomTestDispatcher(db, invoker, store, rabbitMq)
 
   implicit val actorSystem = ActorSystem("such-system")
-  //val pscanner = actorSystem.actorOf(ContestTableScanner.props(pdata, dbnext, contestResolver))
+  val pscanner = actorSystem.actorOf(Props(classOf[ContestTableScanner], db, pdb))
 
   import com.spingo.op_rabbit.PlayJsonSupport._
 

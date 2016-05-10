@@ -2,7 +2,8 @@ package org.stingray.contester.dispatcher
 
 import java.net.InetSocketAddress
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Props}
+import com.spingo.op_rabbit.{ConnectionParams, RabbitControl}
 import com.twitter.finagle.redis.Client
 import com.typesafe.config.ConfigFactory
 import controllers.Assets
@@ -54,11 +55,21 @@ object DispatcherServer extends App {
 
   val polygons = Polygons.fromConfig(config.getConfig("polygons").root())
 
- // val polygonClient = PolygonClient(Client(config.getString("redis")), PolygonFilter(AuthPolygonMatcher(polygons.values).apply) andThen CachedHttpService)
+ val polygonClient = PolygonClient(
+   PolygonFilter(AuthPolygonMatcher(polygons.values).apply) andThen CachedHttpService,
+   Client(config.getString("redis")), polygons, simpleDb.get, invokerApi)
 
   import slick.driver.MySQLDriver.api._
 
   import scala.collection.JavaConversions._
+
+  for (name <- config.getStringList("dispatcher.standard"); if config.hasPath(name + ".dbnext")) yield {
+    val db = Database.forConfig(s"${name}.dbnext")
+    val ts = TestingStore(simpleDb.get.baseUrl, name)
+    val rabbitMq = actorSystem.actorOf(Props(classOf[RabbitControl], ConnectionParams.fromConfig(config.getConfig(s"$name.op-rabbit"))))
+    new DbDispatcher(db, polygonClient,tester,ts,rabbitMq)
+  }
+
 /*
   val dispatchers = if (config.hasPath("dispatcher.standard")) {
     val polygonBase = config.getConfig("polygons")
