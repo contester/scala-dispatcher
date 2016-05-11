@@ -1,10 +1,10 @@
 package org.stingray.contester.engine
 
-import org.stingray.contester.invokers.{InvokerRegistry, SchedulingKey}
-import org.stingray.contester.problems.{ProblemManifest, SimpleProblemManifest, Test}
-import org.stingray.contester.common._
 import com.twitter.util.Future
+import org.stingray.contester.common._
+import org.stingray.contester.invokers.{InvokerRegistry, SchedulingKey}
 import org.stingray.contester.modules.ScriptLanguage
+import org.stingray.contester.problems.{SimpleProblemManifest, Test}
 
 class InvokerSimpleApi(val registry: InvokerRegistry, val objectCache: ObjectCache, val baseUrl: String) {
   def compile(key: SchedulingKey, m: Module, stored: String): Future[(CompileResult, Option[Module])] =

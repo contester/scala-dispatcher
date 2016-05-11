@@ -192,9 +192,9 @@ class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) e
     }
   }
 
-  override def getProblem(problem: ProblemWithRevision): Future[Option[Problem]] =
+  override def getProblem(problem: ProblemHandleWithRevision): Future[Option[Problem]] =
     receiveProblem(new URIBuilder(baseUrl+"problem/get/")
-      .addParameter("id", problem.pid)
+      .addParameter("id", problem.handle)
       .addParameter("revision", problem.revision.toString)
       .build().toASCIIString)
 

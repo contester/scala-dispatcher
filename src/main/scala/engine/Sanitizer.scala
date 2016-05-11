@@ -1,14 +1,14 @@
 package org.stingray.contester.engine
 
-import org.stingray.contester.invokers._
-import grizzled.slf4j.Logging
 import com.twitter.util.Future
-import org.stingray.contester.problems.{ProblemManifest, ProblemWithRevision, SimpleProblemManifest}
-import org.stingray.contester.modules.SevenzipHandler
+import grizzled.slf4j.Logging
 import org.stingray.contester.ContesterImplicits._
+import org.stingray.contester.common.Module
+import org.stingray.contester.invokers._
+import org.stingray.contester.modules.SevenzipHandler
+import org.stingray.contester.problems.{ProblemWithRevision, SimpleProblemManifest}
 
 import scala.util.matching.Regex
-import org.stingray.contester.common.Module
 
 class TesterNotFoundException extends scala.Throwable
 class PdbStoreException(path: String) extends scala.Throwable(path)

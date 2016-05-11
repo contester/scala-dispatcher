@@ -11,7 +11,7 @@ import com.typesafe.config.{ConfigObject, ConfigValueType}
 import org.apache.http.client.utils.{URIBuilder, URLEncodedUtils}
 import org.apache.http.message.BasicNameValuePair
 import org.stingray.contester.engine.ProblemDescription
-import org.stingray.contester.problems.ProblemWithRevision
+import org.stingray.contester.problems.{ProblemHandleWithRevision, ProblemWithRevision}
 import org.stingray.contester.utils.RequestWithURI
 
 import scala.xml.Elem
@@ -105,12 +105,9 @@ private object PolygonProblemUtils {
 }
 
 case class PolygonProblem(uri: URI, revision: Long, names: Map[String, String],
-                          timeLimitMicros: Long, memoryLimit: Long, testCount: Int, tags: Set[String]) extends ProblemDescription {
-  /**
-    * Defines problem ID in pdb/gridfs. Needs to be storage-compatible.
-    *
-    * @return Problem ID in pdb/gridfs.
-    */
+                          timeLimitMicros: Long, memoryLimit: Long, testCount: Int, tags: Set[String]) extends ProblemDescription with ProblemHandleWithRevision {
+  override def handle: String = uri.toASCIIString
+
   override def pid: String = PolygonProblemUtils.getPdbPath(uri)
 
   override def interactive: Boolean = tags("interactive")
@@ -143,72 +140,3 @@ object PolygonProblem {
     )
   }
 }
-
-/*
-class PolygonProblem0(val source: Elem, val externalUrl: Option[URL]) extends ProblemDescription {
-  override def toString = "PolygonProblem(%s, %d)".format(url, revision)
-
-  // If I override it with val, it breaks override - shows up as null in some parts of ProblemID
-  def pid = PolygonProblemUtils.getPdbPath(url)
-  val handle = new PolygonProblemHandle(url, Some(revision))
-
-  override def equals(obj: Any): Boolean =
-    obj match {
-      case other: PolygonProblem =>
-        source.equals(other.source) && externalUrl == other.externalUrl
-      case _ => super.equals(obj)
-    }
-
-  lazy val internalUrl =
-    new URL((source \ "@url").text)
-
-  lazy val url = externalUrl.getOrElse(internalUrl)
-
-  def timeLimitMicros: Long = timeLimit * 1000
-
-  lazy val titles =
-    (source \ "statements" \ "statement").map(entry => ((entry \ "@language").text.toLowerCase, (entry \ "@title").text)).toMap
-
-  lazy val names =
-    (source \ "names" \ "name").map(entry => ((entry \ "@language").text.toLowerCase, (entry \ "@value").text)).toMap
-
-  def getName(language: String): Option[String] =
-    names.get(language).orElse(titles.get(language).flatMap(x => if (x.isEmpty) None else Some(x)))
-
-  lazy val defaultTitle =
-    getName("english").orElse(getName("russian")).getOrElse("Unnamed problem")
-
-  def getTitle(language: String) =
-    getName(language).getOrElse(defaultTitle)
-
-  lazy val revision =
-    (source \ "@revision").text.toInt
-
-  lazy val mainTestSet =
-    (source \ "judging" \ "testset").filter(node => (node \ "@name").text == "tests")
-
-  lazy val testCount =
-    (mainTestSet \ "test-count").text.toInt
-
-  lazy val timeLimit =
-    (mainTestSet \ "time-limit").text.toInt
-
-  lazy val memoryLimit =
-    (mainTestSet \ "memory-limit").text.toLong
-
-  lazy val inputFile =
-    (source \ "judging" \ "@input-file").text
-
-  lazy val outputFile =
-    (source \ "judging" \ "@output-file").text
-
-  lazy val stdio =
-    inputFile == "" && outputFile == ""
-
-  lazy val tags =
-    (source \ "tags" \ "tag").map(entry => (entry \ "@value").text).toSet
-
-  lazy val interactive = tags.contains("interactive")
-  lazy val semi = tags.contains("semi-interactive-16")
-}
-*/

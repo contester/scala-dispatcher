@@ -25,6 +25,11 @@ trait Problem {
   def toSeq = tests.map(x => x -> getTest(x))
 }
 
+trait ProblemHandleWithRevision {
+  def handle: String
+  def revision: Long
+}
+
 /**
  * Identifier for a problem already in gridfs.
  * Has helper methods for all gridfs file names.
