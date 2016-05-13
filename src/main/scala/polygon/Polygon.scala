@@ -8,10 +8,10 @@ import com.twitter.finagle.{Filter, Service}
 import com.twitter.io.Buf
 import com.twitter.util.Future
 import com.typesafe.config.{ConfigObject, ConfigValueType}
-import org.apache.http.client.utils.{URIBuilder, URLEncodedUtils}
+import org.apache.http.client.utils.URLEncodedUtils
 import org.apache.http.message.BasicNameValuePair
 import org.stingray.contester.engine.ProblemDescription
-import org.stingray.contester.problems.{ProblemHandleWithRevision, ProblemWithRevision}
+import org.stingray.contester.problems.ProblemHandleWithRevision
 import org.stingray.contester.utils.RequestWithURI
 
 import scala.xml.Elem
@@ -96,19 +96,10 @@ object ContestDescription {
   }
 }
 
-private object PolygonProblemUtils {
-  def getPathPart(url: URI) =
-    url.getPath.stripPrefix("/").stripSuffix("/")
-
-  def getPdbPath(url: URI): String =
-    ("polygon" :: url.getScheme :: url.getHost :: (if (url.getPort != -1) url.getPort.toString :: getPathPart(url) :: Nil else getPathPart(url) :: Nil)).mkString("/")
-}
-
 case class PolygonProblem(uri: URI, revision: Long, names: Map[String, String],
-                          timeLimitMicros: Long, memoryLimit: Long, testCount: Int, tags: Set[String]) extends ProblemDescription with ProblemHandleWithRevision {
+                          timeLimitMicros: Long, memoryLimit: Long, testCount: Int, tags: Set[String]) extends
+  ProblemDescription with ProblemHandleWithRevision {
   override def handle: String = uri.toASCIIString
-
-  override def pid: String = PolygonProblemUtils.getPdbPath(uri)
 
   override def interactive: Boolean = tags("interactive")
 

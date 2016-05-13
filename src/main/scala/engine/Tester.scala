@@ -112,12 +112,10 @@ object Tester extends Logging {
       .flatMap {
       case (solutionResult, optHash) =>
         optHash.map { outputHash =>
-          test.key.flatMap { testKey =>
             prepareAndRunTester(instance.restricted, instance.factory, test)
                 .map { testerResult =>
               (solutionResult, Some(testerResult))
             }
-          }
         }.getOrElse(Future.value(solutionResult, None))
     }
 }

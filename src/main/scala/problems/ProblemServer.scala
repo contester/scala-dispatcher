@@ -18,29 +18,26 @@ case class SimpleProblemDbException(reason: String) extends Throwable(reason)
 class SimpleProblemTest(problem: SimpleProblem, val testId: Int) extends Test with TestLimits {
   override def getLimits(moduleType: String): TestLimits = this
 
-  override def key: Future[Option[String]] =
-    Future.value(Some(problem.id.testPrefix(testId)))
-
   private[this] def putAsset(sandbox: Sandbox, what: String, where: String) =
-    sandbox.putGridfs("filer:" + problem.baseUrl + what, where).map { r =>
+    sandbox.putGridfs(what, where).map { r =>
       if (r.isEmpty) throw new TestAssetNotFoundException(what)
     }
 
   def prepareInput(sandbox: Sandbox): Future[Unit] =
-    putAsset(sandbox, problem.id.inputName(testId), "input.txt")
+    putAsset(sandbox, problem.assets.inputName(testId), "input.txt")
 
   def prepareTester(sandbox: Sandbox): Future[Unit] =
     if (problem.m.answers(testId))
-      putAsset(sandbox, problem.id.answerName(testId), "answer.txt")
+      putAsset(sandbox, problem.assets.answerName(testId), "answer.txt")
     else Future.Done
 
   def prepareTesterBinary(sandbox: Sandbox): Future[String] =
-    putAsset(sandbox, problem.id.checkerName, problem.m.testerName).map(_ => problem.m.testerName)
+    putAsset(sandbox, problem.assets.checkerName, problem.m.testerName).map(_ => problem.m.testerName)
 
   def prepareInteractorBinary(sandbox: Sandbox): Future[String] =
     problem.m.interactorName.map { i =>
-      putAsset(sandbox, problem.id.interactorName, i).map(_ => i)
-    }.getOrElse(Future.exception(new TestAssetNotFoundException(problem.id.interactorName)))
+      putAsset(sandbox, problem.assets.interactorName, i).map(_ => i)
+    }.getOrElse(Future.exception(new TestAssetNotFoundException(problem.assets.interactorName)))
 
   override def interactive: Boolean = problem.m.interactorName.isDefined
 
@@ -51,23 +48,13 @@ class SimpleProblemTest(problem: SimpleProblem, val testId: Int) extends Test wi
   override def timeLimitMicros: Long = problem.m.timeLimitMicros
 }
 
-case class SimpleProblemManifest(id: String, revision: Int, testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
-                                 stdio: Boolean, testerName: String, answers: Set[Int], interactorName: Option[String])
+case class SimpleProblemManifest(id: String, revision: Long, testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
+                                 stdio: Boolean, testerName: String, answers: Set[Int], interactorName: Option[String]) extends ProblemHandleWithRevision {
+  def handle = id
+}
 
-class SimpleProblem(val baseUrl: String, val m: SimpleProblemManifest, val id: ProblemWithRevision) extends Problem {
-  /**
-    * Override this method to provide sequence of tests.
-    *
-    * @return Sequence of tests.
-    */
+case class SimpleProblem(val m: SimpleProblemManifest, val assets: ProblemAssetInterface) extends Problem {
   override protected def tests: Seq[Int] = 1 to m.testCount
-
-  /**
-    * Override this method to provide tests themselves.
-    *
-    * @param key Test ID.
-    * @return Test.
-    */
   override def getTest(key: Int): Test = new SimpleProblemTest(this, key)
 }
 
@@ -76,7 +63,7 @@ object SimpleProblemManifest {
   import play.api.libs.functional.syntax._
   val readsSimpleProblemManifestBuilder = (
     (JsPath \ "id").read[String] and
-      (JsPath \ "revision").read[Int] and
+      (JsPath \ "revision").read[Long] and
       (JsPath \ "testCount").read[Int] and
       (JsPath \ "timeLimitMicros").read[Long] and
       (JsPath \ "memoryLimit").read[Long] and
@@ -137,8 +124,7 @@ class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) e
       r.status match {
         case Status.Ok =>
           Future.value(parseSimpleProblemManifest(r.contentString).map { found =>
-            val pid = new SimpleProblemWithRevision(getSimpleUrlId(new URI(found.id)), found.revision)
-            new SimpleProblem(baseUrl + "fs/", found, pid)
+            SimpleProblem(found, StandardProblemAssetInterface(baseUrl, ProblemURI.getStoragePrefix(found)))
           })
         case Status.NotFound =>
           Future.None
@@ -147,20 +133,14 @@ class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) e
     }
   }
 
-  private def getPathPart(url: URI) =
-    url.getPath.stripPrefix("/").stripSuffix("/")
-
-  private def getSimpleUrlId(url: URI) =
-    (url.getScheme :: url.getHost :: (if (url.getPort != -1) url.getPort.toString :: getPathPart(url) :: Nil else getPathPart(url) :: Nil)).mkString("/")
-
   override def getMostRecentProblem(problem: ProblemHandle): Future[Option[Problem]] = {
     receiveProblem(new URIBuilder(baseUrl+"problem/get/")
       .addParameter("id", problem.handle)
       .build().toASCIIString)
   }
 
-  private def checkProblemArchive(problem: ProblemWithRevision) = {
-    val request = RequestBuilder().url(baseUrl + "fs/" + problem.archiveName).buildHead()
+  private def checkProblemArchive(problemArchiveName: String) = {
+    val request = RequestBuilder().url(baseUrl + "fs/" + problemArchiveName).buildHead()
     client(request).map { r =>
       r.status match {
         case Status.Ok => true
@@ -169,8 +149,8 @@ class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) e
     }
   }
 
-  private def uploadProblemArchive(problem: ProblemWithRevision, is: Buf) = {
-    val request = RequestBuilder().url(baseUrl + "fs/" + problem.archiveName).buildPut(is)
+  private def uploadProblemArchive(problemArchiveName: String, is: Buf) = {
+    val request = RequestBuilder().url(baseUrl + "fs/" + problemArchiveName).buildPut(is)
     client(request).flatMap { r =>
       r.status match {
         case Status.Ok => Future.Done
@@ -186,7 +166,8 @@ class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) e
         .addParameter("revision", manifest.revision.toString).build().toASCIIString).buildPost(Buf.Utf8(Json.toJson(manifest).toString()))
     client(request).flatMap { r =>
       r.status match {
-        case Status.Ok => Future.value(new SimpleProblem(baseUrl + "fs/", manifest, new SimpleProblemWithRevision(getSimpleUrlId(new URI(manifest.id)), manifest.revision)))
+        case Status.Ok => Future.value(SimpleProblem(manifest,
+          StandardProblemAssetInterface(baseUrl, ProblemURI.getStoragePrefix(manifest))))
         case _ => Future.exception(ProblemArchiveUploadException(manifest))
       }
     }
@@ -198,11 +179,11 @@ class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) e
       .addParameter("revision", problem.revision.toString)
       .build().toASCIIString)
 
-  override def ensureProblemFile(problem: ProblemWithRevision, getFn: => Future[Buf]): Future[Unit] =
-    checkProblemArchive(problem).flatMap {
+  override def ensureProblemFile(problemArchiveName: String, getFn: => Future[Buf]): Future[Unit] =
+    checkProblemArchive(problemArchiveName).flatMap {
       case true => Future.Done
       case false => getFn.flatMap { is =>
-        uploadProblemArchive(problem, is)
+        uploadProblemArchive(problemArchiveName, is)
       }
     }
 }

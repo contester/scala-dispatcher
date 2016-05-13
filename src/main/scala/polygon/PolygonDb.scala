@@ -12,7 +12,7 @@ import com.twitter.util.{Duration, Future, Promise}
 import grizzled.slf4j.Logging
 import org.apache.http.client.utils.URIBuilder
 import org.stingray.contester.engine.InvokerSimpleApi
-import org.stingray.contester.problems.{Problem, SanitizeDb, SimpleProblemDb}
+import org.stingray.contester.problems._
 import org.stingray.contester.utils.{Fu, ScannerCache, SerialHash}
 
 import scala.xml.XML
@@ -122,8 +122,8 @@ case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: 
     pdb.getProblem(p).flatMap {
       case Some(x) => Future.value(x)
       case None =>
-        pdb.ensureProblemFile(p, getProblemFile(p.toId)).flatMap { _ =>
-          inv.sanitize(p).flatMap { m =>
+        pdb.ensureProblemFile(Assets.archiveName(ProblemURI.getStoragePrefix(p)), getProblemFile(p.toId)).flatMap { _ =>
+          inv.sanitize(p, StandardProblemAssetInterface(pdb.baseUrl, ProblemURI.getStoragePrefix(p))).flatMap { m =>
             pdb.setProblem(m).map { pp =>
               pp
             }

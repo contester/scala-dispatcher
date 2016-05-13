@@ -24,7 +24,8 @@ trait ProblemDb extends ProblemServerInterface {
 }
 
 trait ProblemFileStore {
-  def ensureProblemFile(problem: ProblemWithRevision, getFn: => Future[Buf]): Future[Unit]
+  def baseUrl: String
+  def ensureProblemFile(problemArchiveName: String, getFn: => Future[Buf]): Future[Unit]
 }
 
 trait SanitizeDb extends ProblemDb with ProblemFileStore

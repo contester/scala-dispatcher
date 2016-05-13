@@ -30,108 +30,33 @@ trait ProblemHandleWithRevision {
   def revision: Long
 }
 
-/**
- * Identifier for a problem already in gridfs.
- * Has helper methods for all gridfs file names.
- */
-trait ProblemWithRevision {
-  /**
-    * Defines problem ID in pdb/gridfs. Needs to be storage-compatible.
- *
-   * @return Problem ID in pdb/gridfs.
-   */
-  def pid: String
-
-  /**
-   * Revision of a problem.
- *
-   * @return Revision.
-   */
-  def revision: Long
-
-  /**
-   * Constructed ID for a problem. Used as part of paths and as _id in manifest collection.
-   */
-  final val pdbId = pid + "/" + revision.toString
-
-  override def toString = "ProblemID(%s, %d)".format(pid, revision)
-
-  override def hashCode() =
-    pid.hashCode() + revision.hashCode()
-
-  override def equals(obj: Any): Boolean = obj match {
-    case other: ProblemWithRevision => (pid == other.pid) && (revision == other.revision)
-    case _ => super.equals(obj)
-  }
-
-  /**
-   * Prefix in gridfs for all problem-related things.
- *
-   * @return Gridf-compatible prefix.
-   */
-  final def prefix = "problem/" +  pdbId
-
-  /**
-   * Shorthand for creating all other paths.
- *
-   * @param suffix
-   * @return
-   */
-  final private def dbName(suffix: String) =
-    prefix + "/" + suffix
-
-  /**
-   * Checker path.
- *
-   * @return
-   */
-  final def checkerName = dbName("checker")
-
-  /**
-   * Prefix for a given test id.
- *
-   * @param testId Test id.
-   * @return
-   */
-  final def testPrefix(testId: Int) = dbName("tests/" + testId + "/")
-
-  /**
-   * Input data path.
- *
-   * @param testId Test id.
-   * @return
-   */
-  final def inputName(testId: Int) = testPrefix(testId) + "input.txt"
-
-  /**
-   * Answer file path.
- *
-   * @param testId Test id.
-   * @return
-   */
-  final def answerName(testId: Int) = testPrefix(testId) + "answer.txt"
-
-  /**
-   * Archive path.
- *
-   * @return
-   */
-  final def archiveName = dbName("archive")
-
-  /**
-   * Interactor path.
- *
-   * @return
-   */
-  final def interactorName = dbName("interactor")
+trait ProblemAssetInterface {
+  def checkerName: String
+  def interactorName: String
+  def inputName(testId: Int): String
+  def answerName(testId: Int): String
 }
 
-/**
- * Simplest problem ID, just by pid/revision.
- *
- * @param pid      Problem pid.
- * @param revision Problem revision.
- */
-class SimpleProblemWithRevision(override val pid: String, override val revision: Long) extends ProblemWithRevision
+trait ProblemArchiveInterface {
+  def archiveName: String
+}
+
+object Assets {
+  def prefix(pdbId: String) = s"problem/$pdbId"
+  def dbName(pdbId:String, suffix: String) = s"${prefix(pdbId)}/$suffix"
+  def archiveName(pdbId: String) = dbName(pdbId, "archive")
+
+}
+
+case class StandardProblemAssetInterface(baseUrl: String, pdbId: String) extends ProblemAssetInterface with ProblemArchiveInterface {
+  private[this] def prefix = baseUrl + "fs/problem/" +  pdbId
+  private[this] def dbName(suffix: String) = prefix + "/" + suffix
+  final def checkerName = dbName("checker")
+  private[this] final def testPrefix(testId: Int) = dbName("tests/" + testId + "/")
+  final def inputName(testId: Int) = testPrefix(testId) + "input.txt"
+  final def answerName(testId: Int) = testPrefix(testId) + "answer.txt"
+  final def archiveName = dbName("archive")
+  final def interactorName = dbName("interactor")
+}
 
 case class ProblemHandle(handle: String) extends AnyVal

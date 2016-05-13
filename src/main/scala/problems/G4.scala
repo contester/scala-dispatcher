@@ -19,6 +19,4 @@ trait Test {
   def prepareInteractorBinary(sandbox: Sandbox): Future[String]
   def interactive: Boolean
   def stdio: Boolean
-
-  def key: Future[Option[String]]
 }
