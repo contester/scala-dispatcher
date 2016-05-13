@@ -8,7 +8,7 @@ import com.twitter.finagle.{Filter, Service}
 import com.twitter.io.Buf
 import com.twitter.util.Future
 import com.typesafe.config.{ConfigObject, ConfigValueType}
-import org.apache.http.client.utils.URLEncodedUtils
+import org.apache.http.client.utils.{URIBuilder, URLEncodedUtils}
 import org.apache.http.message.BasicNameValuePair
 import org.stingray.contester.engine.ProblemDescription
 import org.stingray.contester.problems.ProblemHandleWithRevision
@@ -88,10 +88,13 @@ case class ContestDescription(names: Map[String, String], problems: Map[String, 
 }
 
 object ContestDescription {
-  def parse(source: Elem): ContestDescription = {
+  private[this] def fixProblemURI(problemURI: URI, contestURI: URI): URI =
+    new URIBuilder(problemURI).setHost(contestURI.getHost).setScheme(contestURI.getScheme).setPort(contestURI.getPort).build()
+
+  def parse(source: Elem, contestURI: URI): ContestDescription = {
     val names = (source \ "names" \ "name").map(entry => ((entry \ "@language").text.toLowerCase, (entry \ "@value").text)).toMap
     val problems = (source \ "problems" \ "problem").map(entry =>
-      ((entry \ "@index").text.toUpperCase, (entry \ "@url").text)).toMap.mapValues(x => new URI(x))
+      ((entry \ "@index").text.toUpperCase, (entry \ "@url").text)).toMap.mapValues(x => fixProblemURI(new URI(x), contestURI))
     ContestDescription(names, problems)
   }
 }

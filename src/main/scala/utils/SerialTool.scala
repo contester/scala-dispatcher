@@ -47,7 +47,7 @@ class SerialHash[KeyType, ValueType] extends Function2[KeyType, Function0[Future
   * @tparam SomeType Type of data in the data source
   */
 abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyType, Future[ValueType]] {
-  def parse(what: SomeType): ValueType
+  def parse(key: KeyType, what: SomeType): ValueType
 
   /** Get data from L2, or return None if there's nothing.
     *
@@ -94,14 +94,14 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
 
   private[this] def farGetAndParse(key: KeyType) =
     farGet(key).map { x =>
-      val p = parse(x)
+      val p = parse(key, x)
       nearPut(key, x)
       p
     }
 
   private[this] def nearGetAndParse(key: KeyType): Future[ValueType] =
     nearGet(key).flatMap {
-      case Some(v) => Future.const(Try(parse(v)))
+      case Some(v) => Future.const(Try(parse(key, v)))
       case None => refresh0(key)
     }
 
@@ -129,34 +129,11 @@ trait ValueCache[KeyType, ValueType] {
 }
 
 object ScannerCache {
-  def apply[A, B, C](parseFunc: C => B, nearGetFunc: A => Future[Option[C]], nearPutFunc: (A, C) => Future[Unit],
+  def apply[A, B, C](parseFunc: (A, C) => B, nearGetFunc: A => Future[Option[C]], nearPutFunc: (A, C) => Future[Unit],
                      farGetFunc: A => Future[C]): ScannerCache[A, B, C] = new ScannerCache[A, B, C] {
-    override def parse(what: C): B = parseFunc(what)
+    override def parse(key: A, what: C): B = parseFunc(key, what)
     override def farGet(key: A): Future[C] = farGetFunc(key)
     override def nearGet(key: A): Future[Option[C]] = nearGetFunc(key)
     override def nearPut(key: A, value: C): Future[Unit] = nearPutFunc(key, value)
   }
 }
-
-/*
-
-ScannerCache3
-
-get():
-1. inmemory cache hit -> return
-   miss ->
-     singleflight from here
-     redis cache hit -> return, fill inmemory cache
-     miss ->
-       polygon get success -> return, fill redis cache
-       miss (error) -> return error
-
-refresh():
-  polygon get success -> update redis cache, return
-  failure -> return old result
-
-Contest: Updating, must refresh
-Problem (url only): Updating, must refresh, store revision, store full id
-Problem (full id): Immutable except NotFound
-
- */

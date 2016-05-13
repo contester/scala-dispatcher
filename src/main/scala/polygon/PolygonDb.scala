@@ -50,18 +50,17 @@ trait PolygonProblemClient {
   def getProblem(contest: PolygonContestId, problem: String): Future[Option[Problem]]
 }
 
-case class PolygonProblemNotFoundException(problem: PolygonProblemShort) extends Throwable
-case class PolygonContestNotFoundException(contest: PolygonContest) extends Throwable
-case class PolygonProblemFileNotFoundException(problem: PolygonProblemID) extends Throwable
+case class PolygonProblemNotFoundException(problem: PolygonProblemShort) extends Throwable(problem.toString)
+case class PolygonContestNotFoundException(contest: PolygonContest) extends Throwable(contest.toString)
+case class PolygonProblemFileNotFoundException(problem: PolygonProblemID) extends Throwable(problem.toString)
 
 case class ContestClient1(service: Service[URI, Option[PolygonResponse]], store: Client)
   extends ScannerCache[PolygonContest, ContestDescription, String]{
-  def parse(content: String) =
-    ContestDescription.parse(XML.loadString(content))
+  def parse(key: PolygonContest, content: String) =
+    ContestDescription.parse(XML.loadString(content), key.uri)
 
   def nearGet(contest: PolygonContest): Future[Option[String]] =
     store.get(StringToChannelBuffer(contest.redisKey)).map(_.map(_.toString(Charsets.Utf8)))
-
 
   override def nearPut(key: PolygonContest, value: String): Future[Unit] =
     store.set(StringToChannelBuffer(key.redisKey), StringToChannelBuffer(value))
@@ -75,7 +74,7 @@ case class ContestClient1(service: Service[URI, Option[PolygonResponse]], store:
 
 case class ProblemClient1(service: Service[URI, Option[PolygonResponse]], store: Client)
   extends ScannerCache[PolygonProblemShort, PolygonProblem, String] {
-  def parse(content: String) =
+  def parse(key: PolygonProblemShort, content: String) =
     PolygonProblem.parse(XML.loadString(content))
 
   override def nearGet(key: PolygonProblemShort): Future[Option[String]] =
