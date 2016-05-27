@@ -43,7 +43,7 @@ val opRabbitVersion = "1.3.0"
 
 val finagleVersion = "6.35.0"
 
-val nettyVersion = "4.1.0.CR7"
+val nettyVersion = "4.1.0.Final"
 
 val playVersion = "2.4.6"
 
@@ -65,9 +65,9 @@ libraryDependencies ++= Seq(
   "com.github.nscala-time" %% "nscala-time" % "2.12.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.2",
   "commons-io" % "commons-io" % "2.5",
-  "com.rabbitmq" % "amqp-client" % "3.6.1",
-  "mysql" % "mysql-connector-java" % "5.1.38",
-  "org.clapper" %% "avsl" % "1.0.7",
+  "com.rabbitmq" % "amqp-client" % "3.6.2",
+  "mysql" % "mysql-connector-java" % "5.1.39",
+  "org.clapper" %% "avsl" % "1.0.8",
   "com.typesafe.slick" %% "slick" % "3.1.1",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,
