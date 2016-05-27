@@ -10,8 +10,8 @@
         <option name="jdk" value="1.8" />
         <option name="modules">
           <set>
-            <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/project" />
+            <option value="$USER_HOME$/dev/contester/2012/scala-dispatcher" />
+            <option value="$USER_HOME$/dev/contester/2012/scala-dispatcher/project" />
           </set>
         </option>
         <option name="resolveSbtClassifiers" value="true" />

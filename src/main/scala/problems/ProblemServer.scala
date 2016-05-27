@@ -115,12 +115,13 @@ object SimpleProblemDb extends Logging {
 
 case class ProblemArchiveUploadException(x: AnyRef) extends Throwable
 
-class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) extends ProblemServerInterface with SanitizeDb {
+class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) extends ProblemServerInterface with SanitizeDb with Logging {
   import SimpleProblemDb._
 
   private def receiveProblem(url: String): Future[Option[Problem]] = {
     val request = RequestBuilder().url(url).buildGet()
     client(request).flatMap { r =>
+      trace(s"receiveProblem($url): $r")
       r.status match {
         case Status.Ok =>
           Future.value(parseSimpleProblemManifest(r.contentString).map { found =>
@@ -173,11 +174,13 @@ class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) e
     }
   }
 
-  override def getProblem(problem: ProblemHandleWithRevision): Future[Option[Problem]] =
-    receiveProblem(new URIBuilder(baseUrl+"problem/get/")
+  override def getProblem(problem: ProblemHandleWithRevision): Future[Option[Problem]] = {
+    trace(s"Getting problem: $problem")
+    receiveProblem(new URIBuilder(baseUrl + "problem/get/")
       .addParameter("id", problem.handle)
       .addParameter("revision", problem.revision.toString)
       .build().toASCIIString)
+  }
 
   override def ensureProblemFile(problemArchiveName: String, getFn: => Future[Buf]): Future[Unit] =
     checkProblemArchive(problemArchiveName).flatMap {

@@ -11,7 +11,7 @@ object LocalEnvironmentTools {
   val tempVars = "TEMP" :: "TMP" :: "TMPDIR" :: Nil
 
   def sanitizeLocalEnv(env: LocalEnvironment, extraVars: Set[String] = Set()) =
-    env.withEmpty(true).withVariable(env.variable.filter(x => win32ReservedVars(x.name) || extraVars(x.name)))
+    env.withEmpty(true).withVariable(env.variable.filter(x => win32ReservedVars(x.name.toLowerCase) || extraVars(x.name.toLowerCase)))
 
   def setEnvVars(env: LocalEnvironment, vars: Map[String, String]): LocalEnvironment = {
     val newVars = env.variable.filterNot(v => vars.contains(v.name)) ++ vars.map(x => LocalEnvironment.Variable(x._1, Some(x._2)))
