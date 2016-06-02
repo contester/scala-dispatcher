@@ -94,8 +94,9 @@ object Tester extends Logging {
                                      cache: ObjectCache): Future[(RunResult, Option[String])] =
     test.prepareInput(sandbox)
       .flatMap { _ =>
+        trace(s"stdio:${test.stdio}")
       executeSolution(sandbox, factory(module.moduleType).asInstanceOf[BinaryHandler],
-        module, test.getLimits(module.moduleType), test.stdio) }
+        module, test.getLimits(module.moduleType), true) }
       .flatMap { solutionResult =>
     { if (solutionResult.success) {
           storeFile(sandbox, resultName, sandbox.sandboxId / "output.txt")

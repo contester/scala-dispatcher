@@ -66,7 +66,7 @@ object DispatcherServer extends App {
   val dispatchers =
   for (name <- config.getStringList("dispatcher.standard"); if config.hasPath(name + ".dbnext")) yield {
     val db = Database.forConfig(s"${name}.dbnext")
-    val ts = TestingStore(simpleDb.get.baseUrl, name)
+    val ts = TestingStore("filer:" + simpleDb.get.baseUrl + "fs/", name)
     val rabbitMq = actorSystem.actorOf(Props(classOf[RabbitControl], ConnectionParams.fromConfig(config.getConfig(s"$name.op-rabbit"))))
     new DbDispatcher(db, polygonClient,tester,ts,rabbitMq)
   }
@@ -75,7 +75,7 @@ object DispatcherServer extends App {
   if (config.hasPath("dispatcher.moodles")) {
     for (name <- config.getStringList("dispatcher.moodles"); if config.hasPath(name + ".dbnext")) yield {
         val db = Database.forConfig(s"${name}.dbnext")
-        val ts = TestingStore(simpleDb.get.baseUrl, "school.sgu.ru/moodle")
+        val ts = TestingStore("filer:"+simpleDb.get.baseUrl + "fs/", "school.sgu.ru/moodle")
         val dispatcher = new MoodleDispatcher(db, simpleDb.get, tester, ts)
         Logger.info(s"starting actor for ${name}")
         actorSystem.actorOf(MoodleTableScanner.props(db, dispatcher))

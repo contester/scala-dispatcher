@@ -16,8 +16,10 @@ object Compiler extends Logging {
     }
 
   private def storeCompiledModule(sandbox: Sandbox, stored: String, sourceHash: String,
-                                  module: CompiledModule): Future[Option[Module]] =
+                                  module: CompiledModule): Future[Option[Module]] = {
+    trace(s"storeCompiledModule: $stored")
     SandboxUtil.putModule(sandbox, stored, sandbox.sandboxId / module.filename, module.moduleType)
+  }
 
   def apply(instance: InvokerInstance, module: Module, stored: String): Future[(CompileResult, Option[Module])] =
     justCompile(instance.unrestricted, instance.factory(module.moduleType).asInstanceOf[SourceHandler], module)

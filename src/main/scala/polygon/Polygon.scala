@@ -127,7 +127,7 @@ object PolygonProblem {
       new URI((source \ "@url").text),
       (source \ "@revision").text.toInt,
       (source \ "names" \ "name").map(entry => ((entry \ "@language").text.toLowerCase, (entry \ "@value").text)).toMap,
-      (mainTestSet \ "time-limit").text.toInt,
+      (mainTestSet \ "time-limit").text.toLong * 1000,
       (mainTestSet \ "memory-limit").text.toLong,
       (mainTestSet \ "test-count").text.toInt,
       (source \ "tags" \ "tag").map(entry => (entry \ "@value").text).toSet
