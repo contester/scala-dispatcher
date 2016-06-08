@@ -47,8 +47,10 @@ trait PolygonContestClient {
 }
 
 trait PolygonProblemClient {
-  def getProblem(contest: PolygonContestId, problem: String): Future[Option[Problem]]
+  def getProblem(contest: PolygonContestId, problem: String): Future[Option[ProblemWithURI]]
 }
+
+case class ProblemWithURI(uri: String, problem: Problem)
 
 case class PolygonProblemNotFoundException(problem: PolygonProblemShort) extends Throwable(problem.toString)
 case class PolygonContestNotFoundException(contest: PolygonContest) extends Throwable(contest.toString)
@@ -132,16 +134,15 @@ case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: 
   }
 
   def sanitize1(p: PolygonProblem) = {
-    trace(s"sanitize1: $p")
     serialSanitizer(p, () => maybeSanitize(p))
   }
 
-  override def getProblem(contest: PolygonContestId, problem: String): Future[Option[Problem]] =
+  override def getProblem(contest: PolygonContestId, problem: String): Future[Option[ProblemWithURI]] =
     contestClient(resolve(contest)).flatMap { cdesc =>
       Fu.liftOption(cdesc.problems.get(problem).map(PolygonProblemShort).map(problemClient)).flatMap {
         case None => Future.None
         case Some(p) =>
-          sanitize1(p).map(Some(_))
+          sanitize1(p).map(x => Some(ProblemWithURI(p.uri.toASCIIString + s"?revision=${p.revision}", x)))
       }
     }
 

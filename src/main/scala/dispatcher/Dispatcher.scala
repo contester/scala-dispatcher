@@ -110,9 +110,9 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
   def run(m: SubmitObject): Future[Unit] =
     pdb.getProblem(m.polygonId, m.problemId).flatMap {
       case Some(problem) =>
-        reporter.allocateAndRegister(m, "").flatMap { testingId =>
+        reporter.allocateAndRegister(m, problem.uri).flatMap { testingId =>
           val progress = new DBSingleResultReporter(db, m, testingId)
-          inv(m, m.sourceModule, problem, progress, m.schoolMode,
+          inv(m, m.sourceModule, problem.problem, progress, m.schoolMode,
             store.submit(m.id, testingId),
             Map.empty
           ).flatMap { testingResult =>
