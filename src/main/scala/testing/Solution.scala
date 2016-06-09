@@ -3,9 +3,10 @@ package org.stingray.contester.testing
 import org.stingray.contester.problems.{Problem, Test}
 import org.stingray.contester.common._
 import com.twitter.util.Future
-import org.stingray.contester.engine.InvokerSimpleApi
+import org.stingray.contester.engine.{InvokerSimpleApi, TestOptions}
 import grizzled.slf4j.Logging
 import org.stingray.contester.invokers.SchedulingKey
+
 import scala.Some
 
 object Solution {
@@ -19,14 +20,14 @@ import org.stingray.contester.utils.Fu._
 
 class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
   def apply(submit: SchedulingKey, sourceModule: Module, problem: Problem, progress: SingleProgress,
-      schoolMode: Boolean, store: TestingResultStore, state: Map[Int, Result]): Future[SolutionTestingResult] = {
+      schoolMode: Boolean, store: TestingResultStore, state: Map[Int, Result], stdio: Boolean): Future[SolutionTestingResult] = {
     invoker.maybeCompile(submit, sourceModule,
       store.compiledModule)
       .flatMap { compiled =>
           progress.compile(compiled._1).flatMap { _ =>
             compiled._2.map { binary =>
               new BinarySolution(invoker, store, submit, problem,
-                binary, progress, schoolMode, state).run
+                binary, progress, schoolMode, state, stdio).run
             }.getOrElse(Future.value(Nil)).map(x => SolutionTestingResult(compiled._1, x.map(v => v._2)))
           }
     }
@@ -45,13 +46,13 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
 
 class BinarySolution(invoker: InvokerSimpleApi, store: TestOutputStore,
     submit: SchedulingKey, problem: Problem,
-    binary: Module, reporter: SingleProgress, schoolMode: Boolean, state: Map[Int, Result]) extends Logging with TestingStrategy {
+    binary: Module, reporter: SingleProgress, schoolMode: Boolean, state: Map[Int, Result], stdio: Boolean) extends Logging with TestingStrategy {
   private def proceed(r: Solution.NumberedTestResult): Boolean =
     r._2.success || (schoolMode && r._1 != 1)
 
   def test(test: Solution.NumberedTest): Future[Solution.EvaluatedTestResult] = {
     state.get(test._1).map(r => Future.value((r.success, (test._1, r)))).getOrElse {
-      invoker.test(submit, binary, test._2, store.testOutput(test._1))
+      invoker.test(submit, binary, test._2, store.testOutput(test._1), TestOptions(stdio))
         .map(x => test._1 -> x)
         .flatMap { result =>
         reporter.test(result._1, result._2)

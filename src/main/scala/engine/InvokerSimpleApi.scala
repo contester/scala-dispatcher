@@ -7,12 +7,12 @@ import org.stingray.contester.invokers.{InvokerRegistry, SchedulingKey}
 import org.stingray.contester.modules.ScriptLanguage
 import org.stingray.contester.problems.{SimpleProblemManifest, Test}
 
-class InvokerSimpleApi(val registry: InvokerRegistry, val objectCache: ObjectCache) {
-  def compile(key: SchedulingKey, m: Module, stored: String): Future[(CompileResult, Option[Module])] =
+class InvokerSimpleApi(val registry: InvokerRegistry) {
+  private def compile(key: SchedulingKey, m: Module, stored: String): Future[(CompileResult, Option[Module])] =
     registry(m.moduleType, key, "compile")(Compiler(_, m, stored))
 
-  def test(key: SchedulingKey, m: Module, t: Test, stored: String): Future[TestResult] =
-    registry(m.moduleType, key, t)(Tester(_, m, t, stored, objectCache))
+  def test(key: SchedulingKey, m: Module, t: Test, stored: String, testOptions: TestOptions): Future[TestResult] =
+    registry(m.moduleType, key, t)(Tester(_, m, t, stored, testOptions))
 
   def custom(key: SchedulingKey, m: Module, input: Array[Byte],
              resultName: String): Future[CustomTestResult] =
@@ -27,5 +27,4 @@ class InvokerSimpleApi(val registry: InvokerRegistry, val objectCache: ObjectCac
     else
       compile(key, m, stored)
   }
-
 }

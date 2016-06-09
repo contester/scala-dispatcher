@@ -12,6 +12,8 @@ import org.stingray.contester.proto.{LocalExecutionParameters, LocalExecutionRes
 import org.stingray.contester.rpc4.RemoteError
 import org.stingray.contester.utils.SandboxUtil
 
+case class TestOptions(stdio: Boolean = false)
+
 object Tester extends Logging {
   private def asRunResult(x: (LocalExecutionParameters, LocalExecutionResult), isJava: Boolean) =
     if (isJava)
@@ -69,12 +71,11 @@ object Tester extends Logging {
     sandbox.invoker.api.stat(Seq(storeWhat), true)
       .map(_.headOption).flatMap(_.map(_ => SandboxUtil.copyFromSandbox(sandbox, storeAs, storeWhat, None)).getOrElse(Future.None))
 
-  def apply(instance: InvokerInstance, module: Module, test: Test,
-            resultName: String, objectCache: ObjectCache): Future[TestResult] =
+  def apply(instance: InvokerInstance, module: Module, test: Test, resultName: String, testOptions: TestOptions): Future[TestResult] =
     (if (test.interactive)
       testInteractive(instance, module, test)
     else
-      testOld(instance, module, test, resultName, objectCache)).map(x => new TestResult(x._1, x._2))
+      testOld(instance, module, test, resultName, testOptions)).map(x => new TestResult(x._1, x._2))
 
   /*
     We can cache the entire result on (module, testKey) here
@@ -90,13 +91,11 @@ object Tester extends Logging {
     }
 
   private def executeAndStoreSuccess(sandbox: Sandbox, factory: (String) => ModuleHandler,
-                                     test: Test, module: Module, resultName: String,
-                                     cache: ObjectCache): Future[(RunResult, Option[String])] =
+                                     test: Test, module: Module, resultName: String, stdio: Boolean): Future[(RunResult, Option[String])] =
     test.prepareInput(sandbox)
       .flatMap { _ =>
-        trace(s"stdio:${test.stdio}")
       executeSolution(sandbox, factory(module.moduleType).asInstanceOf[BinaryHandler],
-        module, test.getLimits(module.moduleType), true) }
+        module, test.getLimits(module.moduleType), stdio = stdio) }
       .flatMap { solutionResult =>
     { if (solutionResult.success) {
           storeFile(sandbox, resultName, sandbox.sandboxId / "output.txt")
@@ -108,8 +107,8 @@ object Tester extends Logging {
   // TODO: restore caching of test results. Use ScalaCache and better keys (not just outputHash)
 
   private def testOld(instance: InvokerInstance, module: Module, test: Test,
-                      resultName: String, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] =
-    executeAndStoreSuccess(instance.restricted, instance.factory, test, module, resultName, objectCache)
+                      resultName: String, testOptions: TestOptions): Future[(RunResult, Option[TesterRunResult])] =
+    executeAndStoreSuccess(instance.restricted, instance.factory, test, module, resultName, testOptions.stdio)
       .flatMap {
       case (solutionResult, optHash) =>
         optHash.map { outputHash =>

@@ -112,7 +112,7 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
     pdb.getMostRecentProblem(ProblemHandle(s"direct://school.sgu.ru/moodle/${item.problemId}")).flatMap { problem =>
       MoodleResultReporter.start(db, item).flatMap { reporter =>
         inv(item, item.sourceModule, problem.get, reporter, true,
-          store.submit(item.id, reporter.testingId), Map.empty).flatMap(reporter.finish)
+          store.submit(item.id, reporter.testingId), Map.empty, false).flatMap(reporter.finish)
       }
     }
   }

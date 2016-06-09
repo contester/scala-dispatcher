@@ -114,7 +114,7 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
           val progress = new DBSingleResultReporter(db, m, testingId)
           inv(m, m.sourceModule, problem.problem, progress, m.schoolMode,
             store.submit(m.id, testingId),
-            Map.empty
+            Map.empty, true
           ).flatMap { testingResult =>
             rabbitMq ! Message.exchange(calculateTestingResult(m, testingId, testingResult), exchange = "contester.submitdone")
             progress.finish(testingResult, m.id, testingId)

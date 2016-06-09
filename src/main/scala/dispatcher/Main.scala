@@ -36,7 +36,7 @@ object DispatcherServer extends App {
       Some(SimpleProblemDb(config.getString("simpledb")))
     } else None
 
-  val invokerApi = new InvokerSimpleApi(invoker, objectCache)
+  val invokerApi = new InvokerSimpleApi(invoker)
   val tester = new SolutionTester(invokerApi)
 
   val ioGroup = new NioEventLoopGroup()
