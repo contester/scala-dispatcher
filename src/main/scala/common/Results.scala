@@ -207,11 +207,6 @@ object ScriptingLanguageResult extends CompileResult {
   override def toString: String = super.toString + " (script)"
 }
 
-object TestResult {
-  def apply(solution: RunResult, tester: Option[TesterRunResult]) =
-    new TestResult(solution, tester)
-}
-
 object StatusCode {
   val CompilationSuccessful = 1
   val CompilationFailed = 2
@@ -246,7 +241,7 @@ class RestoredResult(val status: Int) extends Result {
   def success: Boolean = status == 10
 }
 
-class TestResult(val solution: RunResult, val tester: Option[TesterRunResult]) extends Result {
+case class TestResult(solution: RunResult, tester: Option[TesterRunResult]) extends Result {
   lazy val solutionStatus: Option[StatusCodes] =
     if (!solution.success)
       Some(solution.status)
