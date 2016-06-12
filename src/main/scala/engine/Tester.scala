@@ -52,7 +52,7 @@ object Tester extends Logging {
       }
     }
 
-  private def testInteractive(instance: InvokerInstance, module: Module, test: Test): Future[(RunResult, Option[TesterRunResult])] = {
+  private def testInteractive(instance: InvokerInstance, module: Module, test: Test): Future[TestResult] = {
     val moduleHandler = instance.factory(module.moduleType).asInstanceOf[BinaryHandler]
     module.putToSandbox(instance.restricted, moduleHandler.solutionName).flatMap { _ =>
       runInteractive(instance, moduleHandler, module.moduleType, test)}.flatMap { runResult =>
@@ -60,10 +60,10 @@ object Tester extends Logging {
         test.prepareTesterBinary(instance.unrestricted).flatMap { testerName =>
           executeTester(instance.unrestricted, instance.factory(FilenameUtils.getExtension(testerName)).asInstanceOf[BinaryHandler], testerName)
             .map { testerResult =>
-            (runResult, Some(testerResult))
+            TestResult(runResult, Some(testerResult))
           }
         }
-      } else Future.value((runResult, None))
+      } else Future.value(TestResult(runResult, None))
     }
   }
 
@@ -72,10 +72,10 @@ object Tester extends Logging {
       .map(_.headOption).flatMap(_.map(_ => SandboxUtil.copyFromSandbox(sandbox, storeAs, storeWhat, None)).getOrElse(Future.None))
 
   def apply(instance: InvokerInstance, module: Module, test: Test, resultName: String, testOptions: TestOptions): Future[TestResult] =
-    (if (test.interactive)
+    if (test.interactive)
       testInteractive(instance, module, test)
     else
-      testOld(instance, module, test, resultName, testOptions)).map(x => new TestResult(x._1, x._2))
+      testOld(instance, module, test, resultName, testOptions)
 
   /*
     We can cache the entire result on (module, testKey) here
@@ -107,16 +107,16 @@ object Tester extends Logging {
   // TODO: restore caching of test results. Use ScalaCache and better keys (not just outputHash)
 
   private def testOld(instance: InvokerInstance, module: Module, test: Test,
-                      resultName: String, testOptions: TestOptions): Future[(RunResult, Option[TesterRunResult])] =
+                      resultName: String, testOptions: TestOptions): Future[TestResult] =
     executeAndStoreSuccess(instance.restricted, instance.factory, test, module, resultName, testOptions.stdio)
       .flatMap {
       case (solutionResult, optHash) =>
         optHash.map { outputHash =>
             prepareAndRunTester(instance.restricted, instance.factory, test)
                 .map { testerResult =>
-              (solutionResult, Some(testerResult))
+              TestResult(solutionResult, Some(testerResult))
             }
-        }.getOrElse(Future.value(solutionResult, None))
+        }.getOrElse(Future.value(TestResult(solutionResult, None)))
     }
 }
 

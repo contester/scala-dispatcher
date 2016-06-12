@@ -76,7 +76,7 @@ class JavaRunResult(v: LocalExecution) extends SingleRunResult(v) {
     }
 }
 
-class TesterRunResult(v: LocalExecution) extends SingleRunResult(v) {
+case class TesterRunResult(v: LocalExecution) extends SingleRunResult(v) {
   override def status =
     super.status match {
       case StatusCodes.ACCEPTED => StatusCodes.ACCEPTED
@@ -103,8 +103,8 @@ object JavaRunResult {
 }
 
 object TesterRunResult {
-  def apply(params: LocalExecutionParameters, result: LocalExecutionResult) =
-    new TesterRunResult(SingleRunResult.combine(params, result))
+  def apply(params: LocalExecutionParameters, result: LocalExecutionResult): TesterRunResult =
+    TesterRunResult(SingleRunResult.combine(params, result))
 }
 
 class InteractiveRunResult(first: SingleRunResult, second: SingleRunResult) extends RunResult {
