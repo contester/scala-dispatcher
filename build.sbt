@@ -43,7 +43,7 @@ val opRabbitVersion = "1.3.0"
 
 val finagleVersion = "6.35.0"
 
-val nettyVersion = "4.1.0.Final"
+val nettyVersion = "4.1.1.Final"
 
 val playVersion = "2.4.6"
 
@@ -67,7 +67,7 @@ libraryDependencies ++= Seq(
   "commons-io" % "commons-io" % "2.5",
   "com.rabbitmq" % "amqp-client" % "3.6.2",
   "mysql" % "mysql-connector-java" % "5.1.39",
-  "org.clapper" %% "avsl" % "1.0.8",
+  "org.clapper" %% "avsl" % "1.0.10",
   "com.typesafe.slick" %% "slick" % "3.1.1",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,

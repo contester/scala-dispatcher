@@ -1,14 +1,12 @@
 package org.stingray.contester.polygon
 
-import java.io.InputStream
 import java.net.URI
-import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 
 import com.twitter.finagle.Service
 import com.twitter.finagle.redis.Client
-import com.twitter.finagle.redis.util.StringToChannelBuffer
-import com.twitter.io.{Buf, BufInputStream, Charsets}
-import com.twitter.util.{Duration, Future, Promise}
+import com.twitter.finagle.redis.util.{BufToString, StringToBuf}
+import com.twitter.io.Buf
+import com.twitter.util.Future
 import grizzled.slf4j.Logging
 import org.apache.http.client.utils.URIBuilder
 import org.stingray.contester.engine.InvokerSimpleApi
@@ -62,10 +60,10 @@ case class ContestClient1(service: Service[URI, Option[PolygonResponse]], store:
     ContestDescription.parse(XML.loadString(content), key.uri)
 
   def nearGet(contest: PolygonContest): Future[Option[String]] =
-    store.get(StringToChannelBuffer(contest.redisKey)).map(_.map(_.toString(Charsets.Utf8)))
+    store.get(StringToBuf(contest.redisKey)).map(_.map(BufToString(_)))
 
   override def nearPut(key: PolygonContest, value: String): Future[Unit] =
-    store.set(StringToChannelBuffer(key.redisKey), StringToChannelBuffer(value))
+    store.set(StringToBuf(key.redisKey), StringToBuf(value))
 
   def farGet(contest: PolygonContest): Future[String] =
     service(contest.uri).map {
@@ -80,7 +78,7 @@ case class ProblemClient1(service: Service[URI, Option[PolygonResponse]], store:
     PolygonProblem.parse(XML.loadString(content))
 
   override def nearGet(key: PolygonProblemShort): Future[Option[String]] =
-    store.get(StringToChannelBuffer(key.redisKey)).map(_.map(_.toString(Charsets.Utf8)))
+    store.get(StringToBuf(key.redisKey)).map(_.map(BufToString(_)))
 
   override def farGet(key: PolygonProblemShort): Future[String] =
     service(key.fullUri).map {
@@ -89,7 +87,7 @@ case class ProblemClient1(service: Service[URI, Option[PolygonResponse]], store:
     }
 
   override def nearPut(key: PolygonProblemShort, value: String): Future[Unit] =
-    store.set(StringToChannelBuffer(key.redisKey), StringToChannelBuffer(value))
+    store.set(StringToBuf(key.redisKey), StringToBuf(value))
 }
 
 case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: Client,
