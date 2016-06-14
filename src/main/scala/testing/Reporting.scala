@@ -1,14 +1,17 @@
 package org.stingray.contester.testing
 
-import org.stingray.contester.common.{Result, TestResult, CompileResult}
+import org.stingray.contester.common.{CompileResult, Result, TestResult}
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.DateTime
 import org.stingray.contester.dispatcher.SubmitObject
 import java.io.File
+
+import com.twitter.io.Charsets
 import org.apache.commons.io.FileUtils
 import org.stingray.contester.engine.CustomTestResult
 import slick.driver.MySQLDriver.api._
 import slick.jdbc.JdbcBackend
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.stingray.contester.utils.Dbutil._
 
@@ -156,8 +159,8 @@ class RawLogResultReporter(base: File, val submit: SubmitObject) extends SingleP
     Future {
       import collection.JavaConversions._
       val ts = CombinedResultReporter.ts
-      FileUtils.writeStringToFile(terse, ts + " " + short + "\n", true)
-      FileUtils.writeStringToFile(detailed, ts + " " + short + "\n", true)
+      FileUtils.writeStringToFile(terse, ts + " " + short + "\n", Charsets.Utf8, true)
+      FileUtils.writeStringToFile(detailed, ts + " " + short + "\n", Charsets.Utf8, true)
       pb.foreach(p => FileUtils.writeLines(detailed, p.toString.lines.map(ts + "     " + _).toIterable, true))
     }
 
