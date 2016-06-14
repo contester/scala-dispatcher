@@ -21,21 +21,25 @@ trait ModuleType[A <: ModuleHandler] {
   def apply(invoker: InvokerAPI): Future[A]
 }
 
-class CompiledModule(val filename: String, val moduleType: String)
+case class CompiledModuleHandle(filename: String, moduleType: String)
+
+case class CompileResultAndModule(result: CompileResult, module: Option[CompiledModuleHandle])
 
 trait SourceHandler extends ModuleHandler {
   /**
    * Source name for the module. Used to put it there.
+ *
    * @return Source name, with extension.
    */
   def sourceName: String
 
   /**
    * Compile module which is already in the sandbox.
+ *
    * @param sandbox Sandbox to use for compilation.
    * @return Result and file name, if any.
    */
-  def compile(sandbox: Sandbox): Future[(CompileResult, Option[CompiledModule])]
+  def compile(sandbox: Sandbox): Future[CompileResultAndModule]
 }
 
 trait BinaryHandler extends ModuleHandler {
@@ -69,9 +73,9 @@ object SourceHandler {
       }
     }
 
-  def makeCompileResultAndModule(steps: Seq[StepResult], success: Boolean, resultName: String, resultType: String) =
-    (new RealCompileResult(steps, success),
-      if (success) Some(new CompiledModule(resultName, resultType)) else None)
+  def makeCompileResultAndModule(steps: Seq[StepResult], success: Boolean, resultName: String, resultType: String): CompileResultAndModule =
+    CompileResultAndModule(new RealCompileResult(steps, success),
+      if (success) Some(CompiledModuleHandle(resultName, resultType)) else None)
 }
 
 trait SimpleCompileHandler extends SourceHandler {
@@ -80,7 +84,7 @@ trait SimpleCompileHandler extends SourceHandler {
   def binary: String
   def binaryExt: String
 
-  def compile(sandbox: Sandbox): Future[(CompileResult, Option[CompiledModule])] = {
+  def compile(sandbox: Sandbox): Future[CompileResultAndModule] = {
     SourceHandler.stepAndCheck("Compilation", sandbox, compiler, flags, binary).map {
       case (stepResult, success) =>
         SourceHandler.makeCompileResultAndModule(Seq(stepResult), success, binary, binaryExt)

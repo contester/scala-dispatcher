@@ -1,7 +1,7 @@
 package org.stingray.contester.engine
 
 import org.stingray.contester.invokers.{InvokerInstance, Sandbox}
-import org.stingray.contester.modules.{CompiledModule, SourceHandler}
+import org.stingray.contester.modules.{CompileResultAndModule, CompiledModuleHandle, SourceHandler}
 import com.twitter.util.Future
 import org.stingray.contester.common._
 import grizzled.slf4j.Logging
@@ -16,7 +16,7 @@ object Compiler extends Logging {
     }
 
   private def storeCompiledModule(sandbox: Sandbox, stored: String, sourceHash: String,
-                                  module: CompiledModule): Future[Option[Module]] = {
+                                  module: CompiledModuleHandle): Future[Option[Module]] = {
     trace(s"storeCompiledModule: $stored")
     SandboxUtil.putModule(sandbox, stored, sandbox.sandboxId / module.filename, module.moduleType)
   }
@@ -24,7 +24,7 @@ object Compiler extends Logging {
   def apply(instance: InvokerInstance, module: Module, stored: String): Future[(CompileResult, Option[Module])] =
     justCompile(instance.unrestricted, instance.factory(module.moduleType).asInstanceOf[SourceHandler], module)
       .flatMap {
-      case (compileResult, compiledModuleOption) =>
+      case CompileResultAndModule(compileResult, compiledModuleOption) =>
         compiledModuleOption.map(storeCompiledModule(instance.unrestricted, stored, module.moduleHash, _))
             .getOrElse(Future.None)
             .map(compileResult -> _)

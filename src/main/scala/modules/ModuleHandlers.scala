@@ -2,10 +2,11 @@ package org.stingray.contester.modules
 
 import com.twitter.util.Future
 import java.util.zip.ZipInputStream
+
 import org.stingray.contester.ContesterImplicits._
-import org.stingray.contester.common.Blobs
+import org.stingray.contester.common.{Blobs, RealCompileResult}
 import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
-import org.stingray.contester.invokers.{RemoteFileName, Sandbox, InvokerAPI}
+import org.stingray.contester.invokers.{InvokerAPI, RemoteFileName, Sandbox}
 import org.stingray.contester.problems.TestLimits
 import org.stingray.contester.proto.LocalExecutionParameters
 
@@ -294,7 +295,7 @@ class JavaSourceHandler(val javac: String, val jar: String, linux: Boolean) exte
     }).unit
   }
 
-  def compile(sandbox: Sandbox) =
+  def compile(sandbox: Sandbox): Future[CompileResultAndModule] =
     SourceHandler.stepAndCheck("Compilation", sandbox, javac, javacFlags, "Solution.class")
       .flatMap {
       case (compileStepResult, success) =>
