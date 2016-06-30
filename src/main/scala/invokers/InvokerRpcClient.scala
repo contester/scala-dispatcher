@@ -33,7 +33,7 @@ class InvokerRpcClient(val client: RpcClient) {
       FileStats)
   }.map(_.entries)
 
-  def identify(contesterId: String, mHost: String) =
+  def identify(contesterId: String) =
     client.call("Contester.Identify",
       IdentifyRequest(contesterId = Some(contesterId)),
       IdentifyResponse)

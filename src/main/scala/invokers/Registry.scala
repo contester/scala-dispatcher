@@ -7,40 +7,40 @@ import com.twitter.util.Future
 import org.stingray.contester.modules.ModuleFactory
 import java.util.concurrent.ConcurrentHashMap
 
-class InvokerRegistry(val contesterId: String) extends Registry with RequestStore[String, SchedulingKey, InvokerInstance] with Logging {
+class InvokerRegistry(contesterId: String) extends Registry with RequestStore[String, SchedulingKey, InvokerInstance] with Logging {
   private[this] val channelMap = {
     import scala.collection.JavaConverters._
     new ConcurrentHashMap[RpcClient, Invoker]().asScala
   }
 
   def register(client: RpcClient): Unit = {
-    trace("Registering client: %s".format(client))
+    trace(s"Registering client: ${client}")
     val invokerClient = new InvokerRpcClient(client)
-    invokerClient.identify(contesterId, "")
-      .map(new InvokerAPI(_, invokerClient))
-      .flatMap { api =>
-        trace("whee" -> api)
-      ModuleFactory(api).onFailure(error("whee", _)).map { factory =>
-        trace("blah" -> factory)
+    invokerClient.identify(contesterId)
+      .flatMap { clientId =>
+        trace(s"Client ID: $clientId")
+      val api = new InvokerAPI(clientId, invokerClient)
+      ModuleFactory(api)
+        .onFailure(error("Module factory error", _))
+        .map { factory =>
         new Invoker(api, factory)
       }
     }.map { invoker =>
-      trace(client -> invoker)
+      trace(s"Built invoker $invoker for client $client")
       channelMap.put(client, invoker)
       addInvokers(invoker.instances)
-    }.onFailure(error("wat", _))
+    }.onFailure(error("Register error", _))
   }
 
   def unregister(client: RpcClient): Unit = {
-    synchronized {
       channelMap.remove(client)
-    }.foreach { inv =>
-        info("Lost channel: " + inv.api.name)
+    .foreach { inv =>
+        info(s"Lost channel: ${inv.api.name}")
         removeInvokers(inv.instances)
       }
     }
 
-  def stillAlive(invoker: InvokerInstance) =
+  def stillAlive(invoker: InvokerInstance): Boolean =
     channelMap.contains(invoker.invoker.api.client.client)
 
   def apply[T](m: String, key: SchedulingKey, extra: AnyRef)(f: InvokerInstance => Future[T]): Future[T] =
