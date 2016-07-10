@@ -41,11 +41,11 @@ resolvers ++= Seq(
 
 val opRabbitVersion = "1.3.0"
 
-val finagleVersion = "6.35.0"
+val finagleVersion = "6.36.0"
 
-val nettyVersion = "4.1.1.Final"
+val nettyVersion = "4.1.2.Final"
 
-val playVersion = "2.4.6"
+val playVersion = "2.4.8"
 
 libraryDependencies ++= Seq(
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
@@ -66,7 +66,7 @@ libraryDependencies ++= Seq(
   "org.apache.httpcomponents" % "httpclient" % "4.5.2",
   "commons-io" % "commons-io" % "2.5",
   "com.rabbitmq" % "amqp-client" % "3.6.2",
-  "mysql" % "mysql-connector-java" % "5.1.39",
+  "mysql" % "mysql-connector-java" % "6.0.3",
   "org.clapper" %% "avsl" % "1.0.10",
   "com.typesafe.slick" %% "slick" % "3.1.1",
   "com.typesafe.play" %% "play" % playVersion,
