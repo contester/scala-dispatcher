@@ -25,6 +25,8 @@ scalacOptions ++= Seq("-unchecked", "-deprecation", "-optimise", "-explaintypes"
 
 // javacOptions in Compile ++= Seq("-source", "1.6",  "-target", "1.7")
 
+updateOptions := updateOptions.value.withCachedResolution(true)
+
 version in PB.protobufConfig := "3.0.0"
 
 resolvers ++= Seq(
