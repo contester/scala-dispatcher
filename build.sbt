@@ -27,7 +27,7 @@ scalacOptions ++= Seq("-unchecked", "-deprecation", "-optimise", "-explaintypes"
 
 // javacOptions in Compile ++= Seq("-source", "1.6",  "-target", "1.7")
 
-version in PB.protobufConfig := "2.6.1"
+version in PB.protobufConfig := "3.0.0"
 
 resolvers ++= Seq(
     "twitter.com" at "http://maven.twttr.com/",
@@ -43,7 +43,7 @@ val opRabbitVersion = "1.3.0"
 
 val finagleVersion = "6.36.0"
 
-val nettyVersion = "4.1.2.Final"
+val nettyVersion = "4.1.4.Final"
 
 val playVersion = "2.4.8"
 
@@ -59,15 +59,15 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finagle-http" % finagleVersion,
   "com.twitter" %% "finagle-memcached" % finagleVersion,
   "com.twitter" %% "finagle-redis" % finagleVersion,
-  "com.twitter" %% "util-core" % "6.34.0",
+  "com.twitter" %% "util-core" % "6.35.0",
   "com.twitter" %% "bijection-util" % "0.9.2",
-  "org.clapper" %% "grizzled-slf4j" % "1.0.4",
+  "org.clapper" %% "grizzled-slf4j" % "1.1.0",
   "com.github.nscala-time" %% "nscala-time" % "2.12.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.2",
   "commons-io" % "commons-io" % "2.5",
-  "com.rabbitmq" % "amqp-client" % "3.6.2",
+  "com.rabbitmq" % "amqp-client" % "3.6.5",
   "mysql" % "mysql-connector-java" % "6.0.3",
-  "org.clapper" %% "avsl" % "1.0.10",
+  "org.clapper" %% "avsl" % "1.0.11",
   "com.typesafe.slick" %% "slick" % "3.1.1",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,
