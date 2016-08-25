@@ -4,8 +4,6 @@ PB.protobufSettings
 
 PB.flatPackage in PB.protobufConfig := true
 
-net.virtualvoid.sbt.graph.Plugin.graphSettings
-
 enablePlugins(JavaAppPackaging)
 
 enablePlugins(SbtTwirl)
