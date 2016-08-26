@@ -73,7 +73,8 @@ object Tester extends Logging {
     sandbox.invoker.api.stat(Seq(storeWhat), true)
       .map(_.headOption).flatMap(_.map(_ => store.copyFromSandbox(sandbox, storeAs.toGridfsPath, storeWhat, None)).getOrElse(Future.None))
 
-  def apply(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: HasGridfsPath, objectCache: ObjectCache): Future[TestResult] =
+  def apply(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore,
+            resultName: HasGridfsPath, objectCache: ObjectCache): Future[TestResult] =
     (if (test.interactive)
       testInteractive(instance, module, test)
     else
@@ -110,8 +111,10 @@ object Tester extends Logging {
         }}.map((solutionResult, _))
     }
 
+  // TODO: restore caching of test results. Use ScalaCache and better keys (not just outputHash)
 
-  private def testOld(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore, resultName: HasGridfsPath, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] =
+  private def testOld(instance: InvokerInstance, module: Module, test: Test, store: GridfsObjectStore,
+                      resultName: HasGridfsPath, objectCache: ObjectCache): Future[(RunResult, Option[TesterRunResult])] =
     executeAndStoreSuccess(instance.restricted, instance.factory, test, module, store, resultName, objectCache)
       .flatMap {
       case (solutionResult, optHash) =>
