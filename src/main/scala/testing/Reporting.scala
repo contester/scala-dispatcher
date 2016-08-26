@@ -64,7 +64,7 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
     client.run(sqlu"""Insert into Results (UID, Submit, Result, Test, Timex, Memory, Info, TesterOutput,
         TesterError, TesterExitCode) values ($testingId, ${submit.id}, ${result.status.value}, $testId,
         ${result.solution.time / 1000}, ${result.solution.memory}, ${result.solution.returnCode},
-        ${result.getTesterOutput}, ${new String(result.getTesterError, "windows-1251")},
+        ${new String(result.getTesterOutput, "cp1251")}, ${new String(result.getTesterError, "windows-1251")},
         ${result.getTesterReturnCode})""").map(_ => ())
 
   private def finishTesting(testingId: Int) =

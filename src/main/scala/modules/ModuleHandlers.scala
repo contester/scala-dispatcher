@@ -81,7 +81,7 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
       (x: String) => Seq(new VisualStudioSourceHandler(cmd, x), new VisualCSharpSourceHandler(cmd, x)))
 
   private def java: Future[Seq[ModuleHandler]] =
-    add((api.disks / "Programs" / "Java-7-32" / "bin" / "java.exe") ++ (api.programFiles / "Java" / "jdk*" / "bin" / "java.exe"), (x: String) => new JavaBinaryHandler(x, false)) +
+    add((api.disks / "Programs" / "jdk*" / "bin" / "java.exe") ++ (api.programFiles / "Java" / "jdk*" / "bin" / "java.exe"), (x: String) => new JavaBinaryHandler(x, false)) +
     add((api.disks / "Programs" / "Java-7-32" / "bin" / "javac.exe") ++ (api.programFiles / "Java" / "jdk*" / "bin" / "javac.exe"),
       (javac: String) =>
         add(api.programFiles / "Java" / "jdk*" / "bin" / "jar.exe", (x: String) => new JavaSourceHandler(javac, x, false)))
@@ -175,7 +175,7 @@ class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean,
   private val linuxPrefix = if (linux) "linux-" else ""
   val ext = if (cplusplus) "cc" else "c"
   val moduleTypes = linuxPrefix + (if (cplusplus) (if (c11) "cc11" else "g++") else "gcc") :: Nil
-  val commonFlags =  "-static" :: "-fno-optimize-sibling-calls" :: "-fno-strict-aliasing" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
+  val commonFlags =  "-static" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
      "-O2" :: "-o" :: "Solution." + binaryExt :: "Solution." + ext :: Nil
   val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=67108864" :: commonFlags)
   val pflags01: Seq[String] = if (c11) "-std=c++11" :: Nil else Nil
@@ -196,8 +196,8 @@ class FPCSourceHandler(val compiler: String, linux: Boolean) extends SimpleCompi
   private val linuxPrefix = if (linux) "linux-" else ""
   val binaryExt = if (linux) "linux-bin" else "exe"
   def moduleTypes = (linuxPrefix + "pp") :: Nil
-  def flags: ExecutionArguments = "-dONLINE_JUDGE" :: "-Cs67108864" :: "-Mdelphi" :: "-O2" :: "-XS" :: "Solution.pp" :: "-oSolution.exe" :: Nil
-  def sourceName = "Solution.pp"
+  def flags: ExecutionArguments = "-O2" :: "-dONLINE_JUDGE" :: "-Cs67107839" :: "-XS" :: "Solution.pas" :: "-oSolution.exe" :: Nil
+  def sourceName = "Solution.pas"
   def binary = "Solution.exe"
 }
 
