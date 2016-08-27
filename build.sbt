@@ -66,7 +66,7 @@ libraryDependencies ++= Seq(
   "org.apache.httpcomponents" % "httpclient" % "4.5.2",
   "commons-io" % "commons-io" % "2.5",
   "com.rabbitmq" % "amqp-client" % "3.6.5",
-  "mysql" % "mysql-connector-java" % "6.0.3",
+  "org.mariadb.jdbc" % "mariadb-java-client" % "1.4.6",
   "org.clapper" %% "avsl" % "1.0.11",
   "com.typesafe.slick" %% "slick" % "3.1.1",
   "com.typesafe.play" %% "play" % playVersion,
