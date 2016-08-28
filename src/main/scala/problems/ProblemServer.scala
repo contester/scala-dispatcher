@@ -121,13 +121,13 @@ class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) e
   private def receiveProblem(url: String): Future[Option[Problem]] = {
     val request = RequestBuilder().url(url).buildGet()
     client(request).flatMap { r =>
-      trace(s"receiveProblem($url): $r")
       r.status match {
         case Status.Ok =>
           Future.value(parseSimpleProblemManifest(r.contentString).map { found =>
             SimpleProblem(found, StandardProblemAssetInterface(baseUrl, ProblemURI.getStoragePrefix(found)))
           })
         case Status.NotFound =>
+          trace(s"Not found: $url")
           Future.None
         case _ => Future.exception(SimpleProblemDbException(r.status.reason))
       }
