@@ -178,7 +178,7 @@ class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean,
   val commonFlags =  "-static" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
      "-O2" :: "-o" :: "Solution." + binaryExt :: "Solution." + ext :: Nil
   val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=67108864" :: commonFlags)
-  val pflags01: Seq[String] = if (c11) "-std=c++11" :: Nil else Nil
+  val pflags01: Seq[String] = if (c11) "-std=c++14" :: Nil else Nil
   val flags: ExecutionArguments = if (cplusplus) ("-x" :: "c++" :: platformFlags) ++ pflags01 else platformFlags
   val sourceName = "Solution." + ext
   val binary = "Solution." + binaryExt
