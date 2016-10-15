@@ -116,8 +116,11 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
             store.submit(m.id, testingId),
             Map.empty, true
           ).flatMap { testingResult =>
-            rabbitMq ! Message.exchange(calculateTestingResult(m, testingId, testingResult), exchange = "contester.submitdone")
-            progress.finish(testingResult, m.id, testingId)
+            val f = progress.finish(testingResult, m.id, testingId)
+            f.onComplete { _ =>
+              rabbitMq ! Message.exchange(calculateTestingResult(m, testingId, testingResult), exchange = "contester.submitdone")
+            }
+            f
           }
         }
       case None => Future.exception(ProblemNotFoundError)
