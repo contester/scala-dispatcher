@@ -78,6 +78,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
         db.run(sqlu"""replace Problems (Contest, ID, Tests, Name, Rating) values (${row.id}, ${problemId},
           ${polygonProblem.testCount}, ${polygonProblem.getTitle(row.Language)}, 30)""").unit
         case (((problemId, polygonProblem), None)) =>
+          info(s"adding problem $problemId := $polygonProblem")
         db.run(sqlu"""replace Problems (Contest, ID, Tests, Name, Rating) values (${row.id}, ${problemId},
           ${polygonProblem.testCount}, ${polygonProblem.getTitle(row.Language)}, 30)""").unit
       }
