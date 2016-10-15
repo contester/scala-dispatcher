@@ -101,7 +101,8 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
       getNewContestMap.foreach { newMap =>
         trace(s"Contest rescan done, $newMap")
         self ! ContestMap(newMap)
-        updateContests(newMap).onComplete { _ =>
+        updateContests(newMap).onComplete { r =>
+          trace("updateContests result: $r")
           trace("Scheduling next rescan")
           context.system.scheduler.scheduleOnce(60 seconds, self, Rescan)
         }
