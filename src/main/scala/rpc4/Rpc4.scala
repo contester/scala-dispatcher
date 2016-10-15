@@ -162,7 +162,6 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
   }
 
   def messageReceived(header: Header, payload: Option[ByteBuf]) = {
-    trace(s"msgs: ${requests.size}")
     requests.remove(header.getSequence.toInt) match {
       case None =>
         trace(s"Sequence id mismatch: ${header}")
@@ -189,7 +188,6 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
 
   private def parseHeader(msg: ByteBuf): Header = {
     val t = parseWith(msg, Header.parseFrom)
-    trace(s"h: ${t}")
     t
   }
 //    try {
