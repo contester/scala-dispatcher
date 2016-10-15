@@ -174,7 +174,7 @@ class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean,
   val binaryExt = if (linux) "linux-bin" else "exe"
   private val linuxPrefix = if (linux) "linux-" else ""
   val ext = if (cplusplus) "cc" else "c"
-  val moduleTypes = linuxPrefix + (if (cplusplus) (if (c11) "cc11" else "g++") else "gcc") :: Nil
+  val moduleTypes = linuxPrefix + (if (cplusplus) (if (c11) "cc14" else "g++") else "gcc") :: Nil
   val commonFlags =  "-static" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
      "-O2" :: "-o" :: "Solution." + binaryExt :: "Solution." + ext :: Nil
   val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=67108864" :: commonFlags)
