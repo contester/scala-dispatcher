@@ -75,7 +75,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
       val updates = contest.problems.map(x => x -> problemMap.get(x._1)).collect {
         case ((problemId, polygonProblem), Some(problemRow))
           if (problemRow.name != polygonProblem.getTitle(row.Language) || problemRow.tests != polygonProblem.testCount) =>
-          info(s"$problemRow | $polygonProblem.getTitle(row.Language) | polygonProblem.testCount")
+          info(s"$problemRow | ${polygonProblem.getTitle(row.Language)} | ${polygonProblem.testCount}")
           info(s"replacing problem $problemId := $polygonProblem")
         db.run(sqlu"""replace Problems (Contest, ID, Tests, Name, Rating) values (${row.id}, ${problemId},
           ${polygonProblem.testCount}, ${polygonProblem.getTitle(row.Language)}, 30)""").unit
