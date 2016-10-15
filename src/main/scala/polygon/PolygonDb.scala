@@ -138,6 +138,7 @@ case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: 
       Fu.liftOption(cdesc.problems.get(problem).map(PolygonProblemShort).map(problemClient)).flatMap {
         case None => Future.None
         case Some(p) =>
+          trace(s"${p.uri.toASCIIString} - ${p.revision}")
           sanitize1(p).map(x => Some(ProblemWithURI(p.uri.toASCIIString + s"?revision=${p.revision}", x)))
       }
     }
