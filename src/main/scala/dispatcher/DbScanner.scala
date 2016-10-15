@@ -67,7 +67,6 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
 
     getProblemsFromDb.flatMap { problems =>
       val problemMap = problems.map(x => x.id.toUpperCase -> x).toMap
-      info(s"loaded old problems: $problemMap")
 
       val deletes = (problemMap.keySet -- contest.problems.keySet).map { problemId =>
         db.run(sqlu"delete from Problems where Contest = ${row.id} and ID = $problemId").unit
@@ -76,6 +75,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
       val updates = contest.problems.map(x => x -> problemMap.get(x._1)).collect {
         case ((problemId, polygonProblem), Some(problemRow))
           if (problemRow.name != polygonProblem.getTitle(row.Language) || problemRow.tests != polygonProblem.testCount) =>
+          info(s"replacing problem $problemId := $polygonProblem")
         db.run(sqlu"""replace Problems (Contest, ID, Tests, Name, Rating) values (${row.id}, ${problemId},
           ${polygonProblem.testCount}, ${polygonProblem.getTitle(row.Language)}, 30)""").unit
         case (((problemId, polygonProblem), None)) =>
@@ -101,11 +101,12 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
       getNewContestMap.foreach { newMap =>
         trace(s"Contest rescan done, $newMap")
         self ! ContestMap(newMap)
-        updateContests(newMap).onComplete { r =>
-          trace("updateContests result: $r")
+        val f = updateContests(newMap)
+          f.onComplete { r =>
           trace("Scheduling next rescan")
           context.system.scheduler.scheduleOnce(60 seconds, self, Rescan)
         }
+        f.onFailure(e => error("rescan failed", e))
       }
   }
 
