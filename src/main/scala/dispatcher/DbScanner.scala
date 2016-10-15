@@ -66,7 +66,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
     val nameChange = maybeUpdateContestName(row.id, row.name, contest.contest.getName(row.Language))
 
     getProblemsFromDb.flatMap { problems =>
-      val problemMap = problems.map(x => x.id.toUpperCase -> x).toMap
+      val problemMap = problems.filter(_.contest == row.id).map(x => x.id.toUpperCase -> x).toMap
 
       val deletes = (problemMap.keySet -- contest.problems.keySet).map { problemId =>
         db.run(sqlu"delete from Problems where Contest = ${row.id} and ID = $problemId").unit
