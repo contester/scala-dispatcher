@@ -67,6 +67,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
 
     getProblemsFromDb.flatMap { problems =>
       val problemMap = problems.map(x => x.id.toUpperCase -> x).toMap
+      info(s"loaded old problems: $problemMap")
 
       val deletes = (problemMap.keySet -- contest.problems.keySet).map { problemId =>
         db.run(sqlu"delete from Problems where Contest = ${row.id} and ID = $problemId").unit
