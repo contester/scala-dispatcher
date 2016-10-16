@@ -18,7 +18,7 @@ case class SimpleProblemDbException(reason: String) extends Throwable(reason)
 class SimpleProblemTest(problem: SimpleProblem, val testId: Int) extends Test with TestLimits {
   override def getLimits(moduleType: String): TestLimits = this
 
-  override def toString: String = s"${problem.m.handle}/$testId"
+  override def toString: String = s"${problem.m.handle}/${problem.m.revision}-$testId"
 
   private[this] def putAsset(sandbox: Sandbox, what: String, where: String) =
     sandbox.putGridfs(what, where).map { r =>
