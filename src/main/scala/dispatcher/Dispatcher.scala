@@ -1,5 +1,6 @@
 package org.stingray.contester.dispatcher
 
+import java.io.File
 import java.sql.{ResultSet, Timestamp}
 
 import akka.actor.ActorRef
@@ -37,7 +38,7 @@ case class FinishedTesting(submit: SubmitObject, testingId: Int, compiled: Boole
 case object ProblemNotFoundError extends Throwable
 
 class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, inv: SolutionTester,
-                       store: TestingStore, rabbitMq: ActorRef) extends Logging {
+                       store: TestingStore, rabbitMq: ActorRef, reportbase: String) extends Logging {
   import slick.driver.MySQLDriver.api._
   import org.stingray.contester.utils.Dbutil._
 
@@ -110,12 +111,15 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
   def run(m: SubmitObject): Future[Unit] =
     pdb.getProblem(m.polygonId, m.problemId).flatMap {
       case Some(problem) =>
-        reporter.allocateAndRegister(m, problem.uri).flatMap { testingId =>
+        CombinedResultReporter.allocate(reporter, new File(reportbase), m, problem.uri).flatMap {
+          case (testingId, raw) =>
           val progress = new DBSingleResultReporter(db, m, testingId)
-          inv(m, m.sourceModule, problem.problem, progress, m.schoolMode,
+            val cprogress = new CombinedSingleProgress(progress, raw)
+          inv(m, m.sourceModule, problem.problem, cprogress, m.schoolMode,
             store.submit(m.id, testingId),
             Map.empty, true
           ).flatMap { testingResult =>
+            raw.finish(testingResult)
             val f = progress.finish(testingResult, m.id, testingId)
             f.onComplete { _ =>
               rabbitMq ! Message.exchange(calculateTestingResult(m, testingId, testingResult), exchange = "contester.submitdone")

@@ -47,6 +47,12 @@ object CombinedResultReporter {
       case (keys, values) =>
         ("(%s) values (%s)".format(keys.mkString(", "), keys.map(_ => "?").mkString(", ")), values.toSeq)
     }
+
+  def allocate(db: DBReporter, prefix: File, submit: SubmitObject, problemUri: String): Future[(Int, RawLogResultReporter)] =
+    db.allocateAndRegister(submit, problemUri).zip {
+      val r = RawLogResultReporter(prefix, submit)
+      r.start
+    }
 }
 
 class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: SubmitObject, val testingId: Int) extends SingleProgress {
@@ -151,7 +157,7 @@ class DBReporter(val client: JdbcBackend#DatabaseDef) {
     }.getOrElse(Future.successful(None)))
 }
 
-class RawLogResultReporter(base: File, val submit: SubmitObject) extends SingleProgress {
+case class RawLogResultReporter(base: File, val submit: SubmitObject) extends SingleProgress {
   lazy val terse = new File(base, submit.id.toString)
   lazy val detailed = new File(base, submit.id.toString + ".proto")
 
