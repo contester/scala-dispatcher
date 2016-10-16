@@ -304,12 +304,12 @@ object JavaUtils {
 class JavaSourceHandler(val javac: String, val jar: String, linux: Boolean) extends SimpleCompileHandler {
   private val linuxPrefix = if (linux) "linux-" else ""
   val binaryExt = if (linux) "linux-jar" else "jar"
-  val flags: ExecutionArguments = "Solution.java"
+  val flags: ExecutionArguments = "/S /C javac-ext.cmd Solution.java"
   val jarFlags = "cmf" :: "manifest.mf" :: "Solution.jar" :: Nil
   val moduleTypes = (linuxPrefix + "java") :: Nil
   val sourceName = "Solution.java"
   val binary = "Solution.jar"
-  val compiler = "javac-ext.cmd"
+  val compiler = "cmd.exe"
 
   def unpackAddon(sandbox: Sandbox) =
     JavaUtils.resourcesToSandbox(sandbox, "javac-ext.cmd").unit
