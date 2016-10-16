@@ -47,6 +47,8 @@ trait BinaryHandler extends ModuleHandler {
 
   def getTesterParameters(sandbox: Sandbox, name: String, arguments: List[String]): Future[LocalExecutionParameters]
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits): Future[LocalExecutionParameters]
+
+  def prepare(sandbox: Sandbox): Future[Unit] = Future.Done
 }
 
 class SevenzipHandler(val p7z: String) extends ModuleHandler {

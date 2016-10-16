@@ -26,6 +26,7 @@ object Tester extends Logging {
 
   def executeSolution(sandbox: Sandbox, handler: BinaryHandler, module: Module, testLimits: TestLimits, stdio: Boolean) =
     module.putToSandbox(sandbox, handler.solutionName)
+        .flatMap(_ => handler.prepare(sandbox))
       .flatMap(_ => handler.getSolutionParameters(sandbox, handler.solutionName, testLimits))
       .map(_.emulateStdioIf(stdio, sandbox))
       .flatMap(sandbox.executeWithParams(_).handle {
@@ -43,7 +44,12 @@ object Tester extends Logging {
     test.prepareInteractorBinary(instance.unrestricted).flatMap { interactorName =>
       val testerHandler = instance.factory(FilenameUtils.getExtension(interactorName)).asInstanceOf[BinaryHandler]
       test.prepareInput(instance.unrestricted).flatMap(_ => test.prepareTester(instance.unrestricted))
-        .flatMap(_ => handler.getSolutionParameters(instance.restricted, handler.solutionName, test.getLimits(moduleType)).join(testerHandler.getTesterParameters(instance.unrestricted, interactorName, "input.txt" :: "output.txt" :: "answer.txt" :: Nil).map(_.setTester)))
+          .flatMap(_ => handler.prepare(instance.restricted))
+        .flatMap { _ =>
+          handler.getSolutionParameters(instance.restricted, handler.solutionName, test.getLimits(moduleType))
+            .join(testerHandler.getTesterParameters(instance.unrestricted, interactorName,
+              "input.txt" :: "output.txt" :: "answer.txt" :: Nil).map(_.setTester))
+        }
         .flatMap {
         case (secondp, firstp) => instance.invoker.api.executeConnected(firstp, secondp)
           .map {

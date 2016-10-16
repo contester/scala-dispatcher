@@ -3,6 +3,7 @@ package org.stingray.contester.modules
 import com.twitter.util.Future
 import java.util.zip.ZipInputStream
 
+import org.apache.commons.io.IOUtils
 import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.common.{Blobs, RealCompileResult}
 import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
@@ -258,6 +259,10 @@ class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler 
   val solutionName = "Solution.jar"
   val moduleTypes = (linuxPrefix + "jar") :: Nil
 
+
+  override def prepare(sandbox: Sandbox): Future[Unit] =
+    JavaUtils.resourcesToSandbox(sandbox, "contesteragent.jar", "java.policy").unit
+
   def getTesterParameters(sandbox: Sandbox, name: String, arguments: List[String]) =
     sandbox.getExecutionParameters(
       java, "-XX:-UsePerfData" :: "-Xmx256M" :: "-DONLINE_JUDGE=true" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
@@ -271,51 +276,47 @@ class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler 
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     sandbox.getExecutionParameters(
-      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss64M" :: "-DONLINE_JUDGE=true" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
+      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss64M" :: "-DONLINE_JUDGE=true" ::
+        "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
+        "-Djava.security.manager"::"-Djava.security.policy=java.policy"::"-javaagent:contesteragent.jar" ::
         "-jar" :: "Solution.jar" :: Nil))
       .map(_.setTimeLimitMicros(test.timeLimitMicros).setSolution)
 }
 
-class JavaSourceHandler(val javac: String, val jar: String, linux: Boolean) extends SourceHandler {
+object JavaUtils {
+  private def readResource(s: String): Future[Array[Byte]] =
+    Future {
+      val addon = this.getClass.getResourceAsStream(s)
+      try {
+        IOUtils.toByteArray(addon)
+      } finally {
+        addon.close()
+      }
+    }
+
+  private def resourceToSandbox(sandbox: Sandbox, name: String) =
+    readResource("/" + name).flatMap(buffer => sandbox.put(Blobs.storeBinary(buffer), name))
+
+  def resourcesToSandbox(sandbox: Sandbox, names: String*) =
+    Future.collect(names.map(resourceToSandbox(sandbox, _)))
+}
+
+class JavaSourceHandler(val javac: String, val jar: String, linux: Boolean) extends SimpleCompileHandler {
   private val linuxPrefix = if (linux) "linux-" else ""
   val binaryExt = if (linux) "linux-jar" else "jar"
-  val javacFlags = "Solution.java" :: Nil
+  val flags: ExecutionArguments = "Solution.java"
   val jarFlags = "cmf" :: "manifest.mf" :: "Solution.jar" :: Nil
   val moduleTypes = (linuxPrefix + "java") :: Nil
   val sourceName = "Solution.java"
+  val binary = "Solution.jar"
+  val compiler = "javac-ext.cmd"
 
-  def unpackAddon(sandbox: Sandbox) = {
-    val addon = new ZipInputStream(this.getClass.getResourceAsStream("/JavaRunner.zip"))
-    Future.collect(Stream.continually(addon.getNextEntry)
-      .takeWhile(_ != null)
-      .filter(!_.isDirectory).map { entry =>
-      val buffer = new Array[Byte](entry.getSize.toInt)
-      addon.read(buffer)
-      sandbox.put(Blobs.storeBinary(buffer), entry.getName)
-    }).unit
-  }
+  def unpackAddon(sandbox: Sandbox) =
+    JavaUtils.resourcesToSandbox(sandbox, "javac-ext.cmd").unit
 
-  def compile(sandbox: Sandbox): Future[CompileResultAndModule] =
-    SourceHandler.stepAndCheck("Compilation", sandbox, javac, javacFlags, "Solution.class")
-      .flatMap {
-      case (compileStepResult, success) =>
-        if (compileStepResult.success && success) {
-          unpackAddon(sandbox).flatMap { _ =>
-            if (linux) {
-              sandbox.glob("*.class", false).map(_.isFile.map(_.basename))
-            } else Future.value("*.class" :: Nil)
-          }.flatMap { classlist =>
-            SourceHandler.stepAndCheck("JAR Creation", sandbox, jar, jarFlags ++ classlist, "Solution.jar")
-              .map {
-              case (jarResult, locsuccess) =>
-                Seq(compileStepResult, jarResult) -> locsuccess
-            }
-          }
-        } else
-          Future.value(Seq(compileStepResult), false)
-    }.map {
-      case (steps, success) =>
-        SourceHandler.makeCompileResultAndModule(steps, success, "Solution.jar", binaryExt)
+  override def compile(sandbox: Sandbox): Future[CompileResultAndModule] =
+    unpackAddon(sandbox).flatMap { _ =>
+      super.compile(sandbox)
     }
 }
 
