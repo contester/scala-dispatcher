@@ -10,8 +10,7 @@ if errorlevel 1 (
         exit 1
     )
 ) else (
-    type compilation.log | head -n 1 > compilation-first-line.log
-    set /P compilationFirstLine=< compilation-first-line.log
+    set /P compilationFirstLine=<compilation.log
     echo !compilationFirstLine!
     for %%A in (!compilationFirstLine!) do set fileName=%%A
     echo !fileName!
