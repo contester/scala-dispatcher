@@ -17,8 +17,8 @@ object Compiler extends Logging {
 
   private def storeCompiledModule(sandbox: Sandbox, stored: String, sourceHash: String,
                                   module: CompiledModuleHandle): Future[Option[Module]] = {
-    trace(s"storeCompiledModule: $stored")
     SandboxUtil.putModule(sandbox, stored, sandbox.sandboxId / module.filename, module.moduleType)
+      .onFailure(error(s"storeCompiledModule($stored)", _))
   }
 
   def apply(instance: InvokerInstance, module: Module, stored: String): Future[(CompileResult, Option[Module])] =
