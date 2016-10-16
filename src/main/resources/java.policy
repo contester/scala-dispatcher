@@ -1,0 +1,7 @@
+grant {
+    permission java.io.FilePermission "./*", "read,write";
+    permission java.lang.RuntimePermission "setDefaultUncaughtExceptionHandler";
+    permission java.util.PropertyPermission "user.language","write";
+    permission java.util.PropertyPermission "ONLINE_JUDGE", "read";
+    permission java.util.PropertyPermission "checker-type", "read";
+};
