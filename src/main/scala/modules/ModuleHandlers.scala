@@ -70,7 +70,7 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     add(api.disks / "WINDOWS" / "System32" / "cmd.exe", visualStudio(_)) +
     add((api.disks / "Python35" / "Python.exe") ++ (api.disks / "Python34" / "Python.exe") ++ (api.disks / "Programs" / "Python-3" / "Python.exe"), new PythonModuleHandler("py3", _)) +
     add((api.disks / "Python27" / "Python.exe") ++ (api.disks / "Programs" / "Python-2" / "Python.exe"), new PythonModuleHandler("py2", _)) +
-    java + p7z + new Win32BinaryHandler
+    add(api.disks / "WINDOWS" / "System32" / "cmd.exe", java(_)) + p7z + new Win32BinaryHandler
 
   private def win16Compilers(cmd: String): Future[Seq[ModuleHandler]] =
     add(api.disks / "Compiler" / "BP" / "Bin" / "bpc.exe", (x: String) => new BPCSourceHandler(cmd, x)) +
@@ -81,11 +81,11 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     add(api.programFiles / "Microsoft Visual Studio*" / "Common7" / "Tools" / "vsvars32.bat",
       (x: String) => Seq(new VisualStudioSourceHandler(cmd, x), new VisualCSharpSourceHandler(cmd, x)))
 
-  private def java: Future[Seq[ModuleHandler]] =
+  private def java(cmd: String): Future[Seq[ModuleHandler]] =
     add((api.disks / "Programs" / "jdk*" / "bin" / "java.exe") ++ (api.programFiles / "Java" / "jdk*" / "bin" / "java.exe"), (x: String) => new JavaBinaryHandler(x, false)) +
     add((api.disks / "Programs" / "Java-7-32" / "bin" / "javac.exe") ++ (api.programFiles / "Java" / "jdk*" / "bin" / "javac.exe"),
       (javac: String) =>
-        add(api.programFiles / "Java" / "jdk*" / "bin" / "jar.exe", (x: String) => new JavaSourceHandler(javac, x, false)))
+        add(api.programFiles / "Java" / "jdk*" / "bin" / "jar.exe", (x: String) => new JavaSourceHandler(cmd, javac, false)))
 
   private def p7z: Future[Seq[ModuleHandler]] =
     add(api.programFiles / "7-Zip" / "7z.exe", new SevenzipHandler(_))
@@ -301,18 +301,17 @@ object JavaUtils {
     Future.collect(names.map(resourceToSandbox(sandbox, _)))
 }
 
-class JavaSourceHandler(val javac: String, val jar: String, linux: Boolean) extends SimpleCompileHandler {
+class JavaSourceHandler(val compiler: String, val javac: String, linux: Boolean) extends SimpleCompileHandler {
   private val linuxPrefix = if (linux) "linux-" else ""
   val binaryExt = if (linux) "linux-jar" else "jar"
-  val flags: ExecutionArguments = "/S /C javac-ext.cmd Solution.java"
+  val flags: ExecutionArguments = "/S /C javac-ext.bat Solution.java"
   val jarFlags = "cmf" :: "manifest.mf" :: "Solution.jar" :: Nil
   val moduleTypes = (linuxPrefix + "java") :: Nil
   val sourceName = "Solution.java"
   val binary = "Solution.jar"
-  val compiler = "cmd.exe"
 
   def unpackAddon(sandbox: Sandbox) =
-    JavaUtils.resourcesToSandbox(sandbox, "javac-ext.cmd").unit
+    JavaUtils.resourcesToSandbox(sandbox, "javac-ext.bat").unit
 
   override def compile(sandbox: Sandbox): Future[CompileResultAndModule] =
     unpackAddon(sandbox).flatMap { _ =>
