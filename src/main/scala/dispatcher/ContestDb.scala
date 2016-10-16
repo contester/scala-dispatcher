@@ -32,8 +32,9 @@ object SubmitMessage {
 class DbDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient,
                    invoker: SolutionTester,
                    store: TestingStore,
-                   rabbitMq: ActorRef) extends Logging {
-  val dispatcher = new SubmitDispatcher(db, pdb, invoker, store, rabbitMq)
+                   rabbitMq: ActorRef,
+                   reportbase: String) extends Logging {
+  val dispatcher = new SubmitDispatcher(db, pdb, invoker, store, rabbitMq, reportbase)
   val evaldispatcher = new CustomTestDispatcher(db, invoker, store, rabbitMq)
 
   implicit val actorSystem = ActorSystem("such-system")

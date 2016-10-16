@@ -54,6 +54,7 @@ object DispatcherServer extends App {
   Logger.info("Initializing dispatchers")
 
   val polygons = Polygons.fromConfig(config.getConfig("polygons").root())
+  val reportbase = config.getString("reporting.base")
 
  val polygonClient = PolygonClient(
    PolygonFilter(AuthPolygonMatcher(polygons.values).apply) andThen CachedHttpService,
@@ -68,7 +69,7 @@ object DispatcherServer extends App {
     val db = Database.forConfig(s"${name}.dbnext")
     val ts = TestingStore("filer:" + simpleDb.get.baseUrl + "fs/", name)
     val rabbitMq = actorSystem.actorOf(Props(classOf[RabbitControl], ConnectionParams.fromConfig(config.getConfig(s"$name.op-rabbit"))))
-    new DbDispatcher(db, polygonClient,tester,ts,rabbitMq)
+    new DbDispatcher(db, polygonClient,tester,ts,rabbitMq, reportbase)
   }
 
   val moodles =

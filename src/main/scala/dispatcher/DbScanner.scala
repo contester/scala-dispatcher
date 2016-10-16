@@ -66,7 +66,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
     val nameChange = maybeUpdateContestName(row.id, row.name, contest.contest.getName(row.Language))
 
     getProblemsFromDb.flatMap { problems =>
-      val problemMap = problems.map(x => x.id.toUpperCase -> x).toMap
+      val problemMap = problems.filter(_.contest == row.id).map(x => x.id.toUpperCase -> x).toMap
 
       val deletes = (problemMap.keySet -- contest.problems.keySet).map { problemId =>
         db.run(sqlu"delete from Problems where Contest = ${row.id} and ID = $problemId").unit
@@ -75,9 +75,12 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
       val updates = contest.problems.map(x => x -> problemMap.get(x._1)).collect {
         case ((problemId, polygonProblem), Some(problemRow))
           if (problemRow.name != polygonProblem.getTitle(row.Language) || problemRow.tests != polygonProblem.testCount) =>
+          info(s"$problemRow | ${polygonProblem.getTitle(row.Language)} | ${polygonProblem.testCount}")
+          info(s"replacing problem $problemId := $polygonProblem")
         db.run(sqlu"""replace Problems (Contest, ID, Tests, Name, Rating) values (${row.id}, ${problemId},
           ${polygonProblem.testCount}, ${polygonProblem.getTitle(row.Language)}, 30)""").unit
         case (((problemId, polygonProblem), None)) =>
+          info(s"adding problem $problemId := $polygonProblem")
         db.run(sqlu"""replace Problems (Contest, ID, Tests, Name, Rating) values (${row.id}, ${problemId},
           ${polygonProblem.testCount}, ${polygonProblem.getTitle(row.Language)}, 30)""").unit
       }
@@ -99,10 +102,12 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
       getNewContestMap.foreach { newMap =>
         trace(s"Contest rescan done, $newMap")
         self ! ContestMap(newMap)
-        updateContests(newMap).onComplete { _ =>
+        val f = updateContests(newMap)
+          f.onComplete { r =>
           trace("Scheduling next rescan")
           context.system.scheduler.scheduleOnce(60 seconds, self, Rescan)
         }
+        f.onFailure(e => error("rescan failed", e))
       }
   }
 

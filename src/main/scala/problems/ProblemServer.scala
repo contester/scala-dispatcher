@@ -127,9 +127,11 @@ class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) e
             SimpleProblem(found, StandardProblemAssetInterface(baseUrl, ProblemURI.getStoragePrefix(found)))
           })
         case Status.NotFound =>
-          trace(s"Not found: $url")
+          trace(s"problem not found: $url")
           Future.None
-        case _ => Future.exception(SimpleProblemDbException(r.status.reason))
+        case _ =>
+          error(s"receiveProblem($url): $r")
+          Future.exception(SimpleProblemDbException(r.status.reason))
       }
     }
   }

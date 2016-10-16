@@ -39,7 +39,9 @@ object CachedConnectionHttpService extends Function[HttpHost, Service[Request, R
       val s2 = if (key.getSchemeName == "https")
         settings.withTransport.tls(SSLContext.getDefault()).withTls(key.getHostName)
       else settings
-      s2.newService(hostString(key))
+      val stringKey = hostString(key)
+      trace(s"opening new connection to $stringKey")
+      s2.newService(stringKey)
     }
   }
 
@@ -58,7 +60,6 @@ case class RequestWithURI(req: Request, uri: URI)
 
 object CachedHttpService extends Service[RequestWithURI, Response] with Logging {
   override def apply(request: RequestWithURI): Future[Response] = {
-    trace(s"apply($request)")
     CachedConnectionHttpService(request.uri)(request.req).onFailure(error(s"apply($request)", _))
   }
 }
