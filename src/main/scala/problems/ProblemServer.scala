@@ -15,8 +15,14 @@ import play.api.libs.json._
 
 case class SimpleProblemDbException(reason: String) extends Throwable(reason)
 
-class SimpleProblemTest(problem: SimpleProblem, val testId: Int) extends Test with TestLimits {
-  override def getLimits(moduleType: String): TestLimits = this
+case class FixedTestLimits(memoryLimit: Long, timeLimitMicros: Long) extends TestLimits
+
+class SimpleProblemTest(problem: SimpleProblem, val testId: Int) extends Test {
+  override def getLimits(moduleType: String): TestLimits =
+    if (moduleType == "jar" && problem.m.id == "https://polygon.codeforces.com/p/mmirzayanov/number-of-digits")
+      defaultLimits.copy(timeLimitMicros = defaultLimits.timeLimitMicros*2)
+    else
+      defaultLimits
 
   override def toString: String = s"${problem.m.handle}/${problem.m.revision}-$testId"
 
@@ -45,9 +51,7 @@ class SimpleProblemTest(problem: SimpleProblem, val testId: Int) extends Test wi
 
   override def stdio: Boolean = problem.m.stdio
 
-  override def memoryLimit: Long = problem.m.memoryLimit
-
-  override def timeLimitMicros: Long = problem.m.timeLimitMicros
+  private val defaultLimits = FixedTestLimits(problem.m.memoryLimit, problem.m.timeLimitMicros)
 }
 
 case class SimpleProblemManifest(id: String, revision: Long, testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
