@@ -1,3 +1,4 @@
+@echo off
 Setlocal EnableDelayedExpansion
 
 javac "%~1" 2> compilation.log
@@ -7,6 +8,7 @@ set className=%~n1
 if errorlevel 1 (
     javac "%~1" 2> compilation.log
     if errorlevel 1 (
+        type compilation.log
         exit 1
     )
 ) else (
@@ -17,6 +19,7 @@ if errorlevel 1 (
     copy %1 !fileName!
     javac !fileName! 2> compilation.log
     if errorlevel 1 (
+        type compilation.log
         exit 1
     )
     for %%i in (!fileName!) do set className=%%~ni
