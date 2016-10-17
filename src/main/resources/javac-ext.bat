@@ -1,9 +1,9 @@
 @echo off
 Setlocal EnableDelayedExpansion
 
-javac "%~1" 1>nul 2> compilation.log
-find "is public, should be declared in a file named" compilation.log
 set className=%~n1
+javac "%~1" 1>nul 2> compilation.log
+find "is public, should be declared in a file named" compilation.log 1>nul 2>nul
 
 if errorlevel 1 (
     javac "%~1" 1>nul 2> compilation.log
