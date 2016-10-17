@@ -142,7 +142,7 @@ class Win16BinaryHandler extends BinaryHandler {
 }
 
 class Win32BinaryHandler extends BinaryHandler {
-  val moduleTypes = "exe" :: "delphibin" ::  Nil
+  val moduleTypes = "exe" :: "delphibin" ::  "csexe" :: Nil
   val binaryExt = "exe"
   val solutionName = "Solution.exe"
 
@@ -231,7 +231,7 @@ class VisualCSharpSourceHandler(val compiler: String, vcvars: String) extends Si
   val sourceName = "Solution.cs"
   val binary = "Solution.exe"
   val moduleTypes = "cs" :: Nil
-  val binaryExt = "exe"
+  val binaryExt = "csexe"
 }
 
 class BPCSourceHandler(val compiler: String, bpc: String) extends SimpleCompileHandler {
