@@ -34,13 +34,15 @@ class DbDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient,
                    store: TestingStore,
                    rabbitMq: ActorRef,
                    reportbase: String) extends Logging {
-  val dispatcher = new SubmitDispatcher(db, pdb, invoker, store, rabbitMq, reportbase)
-  val evaldispatcher = new CustomTestDispatcher(db, invoker, store, rabbitMq)
+  private val dispatcher = new SubmitDispatcher(db, pdb, invoker, store, rabbitMq, reportbase)
+  private val evaldispatcher = new CustomTestDispatcher(db, invoker, store, rabbitMq)
 
   implicit val actorSystem = ActorSystem("such-system")
-  val pscanner = actorSystem.actorOf(Props(classOf[ContestTableScanner], db, pdb))
+  private val pscanner = actorSystem.actorOf(Props(classOf[ContestTableScanner], db, pdb))
 
   import com.spingo.op_rabbit.PlayJsonSupport._
+
+  implicit private val recoveryStrategy = RecoveryStrategy.none
 
   val evalSub = Subscription.run(rabbitMq) {
     import Directives._

@@ -1,18 +1,16 @@
 package org.stingray.contester.rpc4
 
 import java.nio.ByteOrder
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicReference}
 
 import com.trueaccord.scalapb.{GeneratedMessage, GeneratedMessageCompanion, Message}
-import com.twitter.io.Charsets
 import com.twitter.util.{Future, Promise}
 import grizzled.slf4j.Logging
 import io.netty.buffer._
 import io.netty.channel._
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder
-import io.netty.handler.logging.LoggingHandler
-import io.netty.util.ReferenceCountUtil
 import org.stingray.contester.rpc4.proto.Header
 
 /** Connected server registry. Will be called for connected and disconnected channels.
@@ -144,7 +142,7 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
         try {
           rt.header.getMessageType match {
             case Header.MessageType.ERROR =>
-              Future.exception(new RemoteError(rt.payload.map(_.toString(Charsets.Utf8)).getOrElse("Unknown")))
+              Future.exception(new RemoteError(rt.payload.map(_.toString(StandardCharsets.UTF_8)).getOrElse("Unknown")))
             case Header.MessageType.RESPONSE =>
               Future.value(deserializer.flatMap { d =>
                 rt.payload.map(p => parseWith(p,d.parseFrom))

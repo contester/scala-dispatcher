@@ -36,13 +36,13 @@ resolvers ++= Seq(
     "stingr.net" at "http://stingr.net/maven"
 )
 
-val opRabbitVersion = "1.3.0"
+val opRabbitVersion = "1.6.0"
 
-val finagleVersion = "6.36.0"
+val finagleVersion = "6.41.0"
 
-val nettyVersion = "4.1.4.Final"
+val nettyVersion = "4.1.7.Final"
 
-val playVersion = "2.4.8"
+val playVersion = "2.4.10"
 
 libraryDependencies ++= Seq(
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
@@ -56,18 +56,18 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finagle-http" % finagleVersion,
   "com.twitter" %% "finagle-memcached" % finagleVersion,
   "com.twitter" %% "finagle-redis" % finagleVersion,
-  "com.twitter" %% "util-core" % "6.35.0",
-  "com.twitter" %% "bijection-util" % "0.9.2",
-  "org.clapper" %% "grizzled-slf4j" % "1.1.0",
-  "com.github.nscala-time" %% "nscala-time" % "2.12.0",
-  "org.apache.httpcomponents" % "httpclient" % "4.5.2",
+  "com.twitter" %% "util-core" % "6.40.0",
+  "com.twitter" %% "bijection-util" % "0.9.5",
+  "org.clapper" %% "grizzled-slf4j" % "1.3.0",
+  "com.github.nscala-time" %% "nscala-time" % "2.16.0",
+  "org.apache.httpcomponents" % "httpclient" % "4.5.3",
   "commons-io" % "commons-io" % "2.5",
-  "com.rabbitmq" % "amqp-client" % "3.6.5",
-  "org.mariadb.jdbc" % "mariadb-java-client" % "1.4.6",
-  "org.clapper" %% "avsl" % "1.0.11",
+  "com.rabbitmq" % "amqp-client" % "4.0.2",
+  "org.mariadb.jdbc" % "mariadb-java-client" % "1.5.7",
+  "org.clapper" %% "avsl" % "1.0.13",
   "com.typesafe.slick" %% "slick" % "3.1.1",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,
-  "com.typesafe" % "config" % "1.3.0",
+  "com.typesafe" % "config" % "1.3.1",
   "org.scalatest" %% "scalatest" % "2.2.6" % "test"
 ).map(_.exclude("org.slf4j", "slf4j-jdk14")).map(_.exclude("org.slf4j", "slf4j-log4j12"))

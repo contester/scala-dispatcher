@@ -5,8 +5,8 @@ import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.DateTime
 import org.stingray.contester.dispatcher.SubmitObject
 import java.io.File
+import java.nio.charset.StandardCharsets
 
-import com.twitter.io.Charsets
 import org.apache.commons.io.FileUtils
 import org.stingray.contester.engine.CustomTestResult
 import slick.driver.MySQLDriver.api._
@@ -165,8 +165,8 @@ case class RawLogResultReporter(base: File, val submit: SubmitObject) extends Si
     Future {
       import collection.JavaConversions._
       val ts = CombinedResultReporter.ts
-      FileUtils.writeStringToFile(terse, ts + " " + short + "\n", Charsets.Utf8, true)
-      FileUtils.writeStringToFile(detailed, ts + " " + short + "\n", Charsets.Utf8, true)
+      FileUtils.writeStringToFile(terse, ts + " " + short + "\n", StandardCharsets.UTF_8, true)
+      FileUtils.writeStringToFile(detailed, ts + " " + short + "\n", StandardCharsets.UTF_8, true)
       pb.foreach(p => FileUtils.writeLines(detailed, p.toString.lines.map(ts + "     " + _).toIterable, true))
     }
 
