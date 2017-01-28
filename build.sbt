@@ -1,12 +1,11 @@
-import com.trueaccord.scalapb.{ScalaPbPlugin => PB}
-
-PB.protobufSettings
-
-PB.flatPackage in PB.protobufConfig := true
 
 enablePlugins(JavaAppPackaging)
 
 enablePlugins(SbtTwirl)
+
+PB.targets in Compile := Seq(
+  scalapb.gen(flatPackage=true) -> (sourceManaged in Compile).value
+)
 
 name := "dispatcher"
 
@@ -26,8 +25,6 @@ scalacOptions ++= Seq("-unchecked", "-deprecation", "-optimise", "-explaintypes"
 // javacOptions in Compile ++= Seq("-source", "1.6",  "-target", "1.7")
 
 updateOptions := updateOptions.value.withCachedResolution(true)
-
-version in PB.protobufConfig := "3.0.0"
 
 resolvers ++= Seq(
     "twitter.com" at "http://maven.twttr.com/",
