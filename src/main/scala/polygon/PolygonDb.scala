@@ -98,7 +98,7 @@ case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: 
   private[this] val problemClient = ProblemClient1(service, store)
 
   private[this] def resolve(contest: PolygonContestId) = {
-    var r = polygonMap(contest.polygon).contest(contest.contestId)
+    val r = polygonMap(contest.polygon).contest(contest.contestId)
     trace(s"resolve($contest) = $r")
     r
   }

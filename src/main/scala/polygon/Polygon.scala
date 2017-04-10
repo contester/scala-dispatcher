@@ -114,7 +114,7 @@ case class PolygonProblem(uri: URI, revision: Long, names: Map[String, String],
     names.get("english").orElse(names.get("russian")).getOrElse("Unnamed problem")
 
   def getTitle(language: String) =
-    names.get(language).getOrElse(defaultTitle)
+    names.getOrElse(language, defaultTitle)
 
 }
 

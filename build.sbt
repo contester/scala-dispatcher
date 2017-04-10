@@ -4,8 +4,10 @@ enablePlugins(JavaAppPackaging)
 enablePlugins(SbtTwirl)
 
 PB.targets in Compile := Seq(
-  scalapb.gen(flatPackage=true) -> (sourceManaged in Compile).value
+  scalapb.gen(flatPackage=true, grpc=false) -> (sourceManaged in Compile).value
 )
+
+PB.runProtoc := (args => Process("/Users/stingray/bin/protoc", args)!)
 
 name := "dispatcher"
 
@@ -68,7 +70,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick" % "3.2.0",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,
-  "com.typesafe.play" %% "twirl-api" % "1.3.0",
   "com.typesafe" % "config" % "1.3.1",
-  "org.scalatest" %% "scalatest" % "2.2.6" % "test"
+  "com.trueaccord.scalapb" %% "scalapb-runtime" % com.trueaccord.scalapb.compiler.Version.scalapbVersion % "protobuf",
+  "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 ).map(_.exclude("org.slf4j", "slf4j-jdk14")).map(_.exclude("org.slf4j", "slf4j-log4j12"))
