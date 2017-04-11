@@ -12,8 +12,6 @@ import com.twitter.util.{Future, Promise, Try}
   * @tparam ValueType Type of the value
   */
 class SerialHash[KeyType, ValueType] extends ((KeyType, () => Future[ValueType]) => Future[ValueType]) {
-  /** Map with outstanding requests. Synchronized.
-    */
   private val data = {
     import scala.collection.JavaConverters._
     (new ConcurrentHashMap[KeyType, Future[ValueType]]()).asScala
