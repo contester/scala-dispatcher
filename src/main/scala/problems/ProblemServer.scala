@@ -73,9 +73,9 @@ object SimpleProblemManifest {
       (JsPath \ "testCount").read[Int] and
       (JsPath \ "timeLimitMicros").read[Long] and
       (JsPath \ "memoryLimit").read[Long] and
-      (JsPath \ "stdio").readNullable[Boolean].map(_.getOrElse(false)) and
-      (JsPath \ "testerName").readNullable[String].map(_.getOrElse("tester.exe")) and
-      (JsPath \ "answers").readNullable[List[Int]].map(_.getOrElse(Nil).toSet) and
+      (JsPath \ "stdio").readWithDefault[Boolean](false) and
+      (JsPath \ "testerName").readWithDefault[String]("tester.exe") and
+      (JsPath \ "answers").readWithDefault[List[Int]](Nil).map(_.toSet) and
       (JsPath \ "interactorName").readNullable[String]
     )
 

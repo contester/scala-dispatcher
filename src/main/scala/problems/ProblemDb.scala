@@ -3,9 +3,6 @@ package org.stingray.contester.problems
 import com.twitter.io.Buf
 import com.twitter.util.Future
 
-case class ProblemManifest(testCount: Int, timeLimitMicros: Long, memoryLimit: Long,
-                           stdio: Boolean, testerName: String, answers: Iterable[Int], interactorName: Option[String])
-
 trait ProblemServerInterface {
   def getMostRecentProblem(problem: ProblemHandle): Future[Option[Problem]]
 }
