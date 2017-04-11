@@ -11,7 +11,7 @@ import com.twitter.util.{Future, Promise, Try}
   * @tparam KeyType Type of the key
   * @tparam ValueType Type of the value
   */
-class SerialHash[KeyType, ValueType] extends Function2[KeyType, Function0[Future[ValueType]], Future[ValueType]] {
+class SerialHash[KeyType, ValueType] extends ((KeyType, () => Future[ValueType]) => Future[ValueType]) {
   /** Map with outstanding requests. Synchronized.
     */
   private val data = {
