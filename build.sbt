@@ -4,7 +4,7 @@ enablePlugins(JavaAppPackaging)
 enablePlugins(SbtTwirl)
 
 PB.targets in Compile := Seq(
-  scalapb.gen(flatPackage=true, grpc=false) -> (sourceManaged in Compile).value
+  scalapb.gen(flatPackage=true, grpc=false, javaConversions=false) -> (sourceManaged in Compile).value
 )
 
 PB.runProtoc := (args => Process("/Users/stingray/bin/protoc", args)!)
