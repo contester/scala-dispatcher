@@ -48,8 +48,8 @@ object Assets {
 
 }
 
-case class StandardProblemAssetInterface(baseUrl: String, pdbId: String) extends ProblemAssetInterface with ProblemArchiveInterface {
-  private[this] def prefix = "filer:" + baseUrl + "fs/problem/" +  pdbId
+case class StandardProblemAssetInterface(baseUrl: String, pdbId: StoragePrefix) extends ProblemAssetInterface with ProblemArchiveInterface {
+  private[this] def prefix = "filer:" + baseUrl + "fs/problem/" +  pdbId.self
   private[this] def dbName(suffix: String) = prefix + "/" + suffix
   final def checkerName = dbName("checker")
   private[this] final def testPrefix(testId: Int) = dbName("tests/" + testId + "/")

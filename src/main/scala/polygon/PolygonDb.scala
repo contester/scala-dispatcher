@@ -119,7 +119,7 @@ case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: 
     pdb.getProblem(p).flatMap {
       case Some(x) => Future.value(x)
       case None =>
-        pdb.ensureProblemFile(Assets.archiveName(ProblemURI.getStoragePrefix(p)), getProblemFile(p.toId)).flatMap { _ =>
+        pdb.ensureProblemFile(ProblemURI.getStoragePrefix(p).archiveName, getProblemFile(p.toId)).flatMap { _ =>
           inv.sanitize(p, StandardProblemAssetInterface(pdb.baseUrl, ProblemURI.getStoragePrefix(p))).flatMap { m =>
             pdb.setProblem(m).map { pp =>
               pp
