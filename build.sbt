@@ -7,7 +7,7 @@ PB.targets in Compile := Seq(
   scalapb.gen(flatPackage=true, grpc=false, javaConversions=false) -> (sourceManaged in Compile).value
 )
 
-PB.runProtoc := (args => Process("/Users/stingray/bin/protoc", args)!)
+PB.runProtoc := (args => Process("protoc", args)!)
 
 name := "dispatcher"
 
