@@ -41,13 +41,6 @@ trait ProblemArchiveInterface {
   def archiveName: String
 }
 
-object Assets {
-  def prefix(pdbId: String) = s"problem/$pdbId"
-  def dbName(pdbId:String, suffix: String) = s"${prefix(pdbId)}/$suffix"
-  def archiveName(pdbId: String) = dbName(pdbId, "archive")
-
-}
-
 case class StandardProblemAssetInterface(baseUrl: String, pdbId: StoragePrefix) extends ProblemAssetInterface with ProblemArchiveInterface {
   private[this] def prefix = "filer:" + baseUrl + "fs/problem/" +  pdbId.self
   private[this] def dbName(suffix: String) = prefix + "/" + suffix
