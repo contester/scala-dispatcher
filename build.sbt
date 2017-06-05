@@ -14,7 +14,7 @@ name := "dispatcher"
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m",
   "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
-scalaVersion := "2.11.9"
+scalaVersion := "2.11.11"
 
 version := "0.1"
 
@@ -40,11 +40,11 @@ resolvers ++= Seq(
 
 val opRabbitVersion = "2.0.0-rc1"
 
-val finagleVersion = "6.43.0"
+val finagleVersion = "6.44.0"
 
-val nettyVersion = "4.1.9.Final"
+val nettyVersion = "4.1.11.Final"
 
-val playVersion = "2.5.13"
+val playVersion = "2.5.15"
 
 libraryDependencies ++= Seq(
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
@@ -58,19 +58,19 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finagle-http" % finagleVersion,
   "com.twitter" %% "finagle-memcached" % finagleVersion,
   "com.twitter" %% "finagle-redis" % finagleVersion,
-  "com.twitter" %% "util-core" % "6.42.0",
+  "com.twitter" %% "util-core" % "6.43.0",
   "com.twitter" %% "bijection-util" % "0.9.5",
-  "org.clapper" %% "grizzled-slf4j" % "1.3.0",
+  "org.clapper" %% "grizzled-slf4j" % "1.3.1",
   "com.github.nscala-time" %% "nscala-time" % "2.16.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.3",
   "commons-io" % "commons-io" % "2.5",
   "com.rabbitmq" % "amqp-client" % "4.1.0",
-  "org.mariadb.jdbc" % "mariadb-java-client" % "1.5.8",
+  "org.mariadb.jdbc" % "mariadb-java-client" % "1.6.1",
   "org.clapper" %% "avsl" % "1.0.13",
   "com.typesafe.slick" %% "slick" % "3.2.0",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,
   "com.typesafe" % "config" % "1.3.1",
   "com.trueaccord.scalapb" %% "scalapb-runtime" % com.trueaccord.scalapb.compiler.Version.scalapbVersion % "protobuf",
-  "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+  "org.scalatest" %% "scalatest" % "3.0.3" % "test"
 ).map(_.exclude("org.slf4j", "slf4j-jdk14")).map(_.exclude("org.slf4j", "slf4j-log4j12"))
