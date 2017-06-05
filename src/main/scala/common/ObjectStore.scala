@@ -23,10 +23,10 @@ class InstanceSubmitTestingHandle(submit: String, testingId: Int) extends Testin
 }
 
 object InstanceSubmitTestingHandle {
-  def submit(baseUrl: Option[String], handle: String, submitId: Int) =
-    s"${baseUrl.getOrElse("")}submit/${handle}/${submitId}"
+  def submit(baseUrl: String, handle: String, submitId: Int) =
+    s"${baseUrl}submit/${handle}/${submitId}"
 
-  def apply(baseUrl: Option[String], handle: String, submitId: Int, testingId: Int) =
+  def apply(baseUrl: String, handle: String, submitId: Int, testingId: Int) =
     new InstanceSubmitTestingHandle(submit(baseUrl, handle, submitId), testingId)
 }
 
@@ -36,16 +36,16 @@ class CustomTestingHandle(testing: String) extends SingleTestStore {
 }
 
 object CustomTestingHandle {
-  def apply(baseUrl: Option[String], handle: String, testingId: Int): CustomTestingHandle =
-    new CustomTestingHandle(s"${baseUrl.getOrElse("")}eval/${handle}/${testingId}")
+  def apply(baseUrl: String, handle: String, testingId: Int): CustomTestingHandle =
+    new CustomTestingHandle(s"${baseUrl}eval/${handle}/${testingId}")
 }
 
 case class TestingStore(baseUrl: String, handle: String) {
   def submit(submitId: Int, testingId: Int) =
-    InstanceSubmitTestingHandle(Some(baseUrl), handle, submitId, testingId)
+    InstanceSubmitTestingHandle(baseUrl, handle, submitId, testingId)
 
   def custom(testingId: Int) =
-    CustomTestingHandle(Some(baseUrl), handle, testingId)
+    CustomTestingHandle(baseUrl, handle, testingId)
 }
 
 trait Module {
