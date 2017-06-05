@@ -15,7 +15,7 @@ import java.io.File
 import org.stingray.contester.common.TestingStore
 
 import scala.concurrent.{Future => ScalaFuture}
-import org.stingray.contester.testing.SolutionTester
+import org.stingray.contester.testing.{CustomTester, SolutionTester}
 import org.stingray.contester.polygon.{PolygonProblem, PolygonProblemClient}
 
 case class ServerSideEvalID(id: Int)
@@ -31,11 +31,12 @@ object SubmitMessage {
 
 class DbDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient,
                    invoker: SolutionTester,
+                  custom: CustomTester,
                    store: TestingStore,
                    rabbitMq: ActorRef,
                    reportbase: String) extends Logging {
   private val dispatcher = new SubmitDispatcher(db, pdb, invoker, store, rabbitMq, reportbase)
-  private val evaldispatcher = new CustomTestDispatcher(db, invoker, store, rabbitMq)
+  private val evaldispatcher = new CustomTestDispatcher(db, custom, store, rabbitMq)
 
   implicit val actorSystem = ActorSystem("such-system")
   private val pscanner = actorSystem.actorOf(Props(classOf[ContestTableScanner], db, pdb))

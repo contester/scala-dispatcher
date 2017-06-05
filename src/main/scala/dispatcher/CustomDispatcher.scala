@@ -6,9 +6,10 @@ import akka.actor.ActorRef
 import com.spingo.op_rabbit.Message
 import org.stingray.contester.common._
 import org.stingray.contester.invokers.TimeKey
-import org.stingray.contester.testing.{CustomTestingResult, SolutionTester}
+import org.stingray.contester.testing.{CustomTester, CustomTestingResult, SolutionTester}
 import play.api.libs.json.Json
 import slick.jdbc.{GetResult, JdbcBackend}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -33,7 +34,7 @@ object CustomTestResult {
   implicit val formatCustomTestResult = Json.format[CustomTestResult]
 }
 
-class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester, store: TestingStore, rabbitMq: ActorRef) {
+class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: CustomTester, store: TestingStore, rabbitMq: ActorRef) {
   import slick.driver.MySQLDriver.api._
   import org.stingray.contester.utils.Dbutil._
   import org.stingray.contester.utils.Fu._
@@ -70,6 +71,6 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: SolutionTester,
 
 
   def run(item: CustomTestObject): Future[Unit] =
-    invoker.custom(item, item.sourceModule, item.input, store.custom(item.id))
+    invoker(item, item.sourceModule, item.input, store.custom(item.id))
       .flatMap(x => recordResult(item, x))
 }

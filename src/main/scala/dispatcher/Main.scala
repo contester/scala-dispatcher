@@ -18,7 +18,7 @@ import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.polygon._
 import org.stingray.contester.problems.SimpleProblemDb
 import org.stingray.contester.rpc4.ServerPipelineFactory
-import org.stingray.contester.testing.SolutionTester
+import org.stingray.contester.testing.{CustomTester, SolutionTester}
 import org.stingray.contester.utils.CachedHttpService
 import play.api.Logger
 
@@ -29,13 +29,14 @@ object DispatcherServer extends App {
 
   private val invoker = new InvokerRegistry("contester")
 
-  val simpleDb =
+  private val simpleDb =
     if (config.hasPath("simpledb")) {
       Some(SimpleProblemDb(config.getString("simpledb")))
     } else None
 
-  val invokerApi = new InvokerSimpleApi(invoker)
-  val tester = new SolutionTester(invokerApi)
+  private val invokerApi = new InvokerSimpleApi(invoker)
+  private val tester = new SolutionTester(invokerApi)
+  private val custom = new CustomTester(invokerApi)
 
   val ioGroup = new NioEventLoopGroup()
 
@@ -67,7 +68,7 @@ object DispatcherServer extends App {
     val db = Database.forConfig(s"${name}.dbnext")
     val ts = TestingStore("filer:" + simpleDb.get.baseUrl + "fs/", name)
     val rabbitMq = actorSystem.actorOf(Props(classOf[RabbitControl], ConnectionParams.fromConfig(config.getConfig(s"$name.op-rabbit"))))
-    new DbDispatcher(db, polygonClient,tester,ts,rabbitMq, reportbase)
+    new DbDispatcher(db, polygonClient, tester, custom, ts, rabbitMq, reportbase)
   }
 
   val moodles =

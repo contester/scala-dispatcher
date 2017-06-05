@@ -32,10 +32,11 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
           }
     }
   }
+}
 
-  // TODO: Move this to a different class
-  def custom(submit: SchedulingKey, sourceModule: Module, input: Array[Byte],
-      store: SingleTestStore): Future[CustomTestingResult] =
+class CustomTester(invoker: InvokerSimpleApi) extends Logging {
+  def apply(submit: SchedulingKey, sourceModule: Module, input: Array[Byte],
+             store: SingleTestStore): Future[CustomTestingResult] =
     invoker.maybeCompile(submit, sourceModule, store.compiledModule).flatMap {
       case (compileResult, binaryOption) =>
         binaryOption.map { binary =>
