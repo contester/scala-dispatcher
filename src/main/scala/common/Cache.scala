@@ -1,11 +1,10 @@
 package org.stingray.contester.common
 
-import com.twitter.io.Buf
-import com.twitter.util.{Future, Time}
-import com.twitter.finagle.memcached.Client
-import grizzled.slf4j.Logging
 import com.google.protobuf.Message
 import com.twitter.finagle.Memcached
+import com.twitter.io.Buf
+import com.twitter.util.{Future, Time}
+import grizzled.slf4j.Logging
 import org.stingray.contester.utils.ProtobufTools
 
 trait ObjectCache {
