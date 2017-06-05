@@ -27,8 +27,6 @@ object DispatcherServer extends App {
 
   private val config = ConfigFactory.load()
 
-  private val objectCache = new MemcachedObjectCache(config.getString("cache.host"))
-
   private val invoker = new InvokerRegistry("contester")
 
   val simpleDb =
