@@ -42,9 +42,9 @@ val opRabbitVersion = "2.0.0-rc1"
 
 val finagleVersion = "6.44.0"
 
-val nettyVersion = "4.1.11.Final"
+val nettyVersion = "4.1.12.Final"
 
-val playVersion = "2.5.15"
+val playVersion = "2.6.0-M2"
 
 libraryDependencies ++= Seq(
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
@@ -68,9 +68,11 @@ libraryDependencies ++= Seq(
   "org.mariadb.jdbc" % "mariadb-java-client" % "1.6.1",
   "org.clapper" %% "avsl" % "1.0.13",
   "com.typesafe.slick" %% "slick" % "3.2.0",
+  "com.typesafe.slick" %% "slick-hikaricp" % "3.2.0",
+  "com.zaxxer" % "HikariCP" % "2.4.5",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,
   "com.typesafe" % "config" % "1.3.1",
   "com.trueaccord.scalapb" %% "scalapb-runtime" % com.trueaccord.scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.scalatest" %% "scalatest" % "3.0.3" % "test"
-).map(_.exclude("org.slf4j", "slf4j-jdk14")).map(_.exclude("org.slf4j", "slf4j-log4j12"))
+).map(_.exclude("org.slf4j", "slf4j-jdk14")).map(_.exclude("org.slf4j", "slf4j-log4j12")).map(_.exclude("com.zaxxer", "HikariCP-java6"))
