@@ -6,6 +6,8 @@ case class StoragePrefix(val self: String) extends AnyVal {
   def prefix = s"problem/$self"
   def dbName(suffix: String) = s"$prefix/$suffix"
   def archiveName = dbName("archive")
+
+  override def toString: String = self.toString
 }
 
 object ProblemURI {
