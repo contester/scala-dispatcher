@@ -9,13 +9,13 @@ class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) {
   import collection.JavaConversions._
 
   val sandboxes = clientId.sandboxes.toIndexedSeq
-  val name = clientId.getInvokerId
+  val name = clientId.invokerId
 
   val cleanedLocalEnvironment = LocalEnvironmentTools.sanitizeLocalEnv(clientId.getEnvironment)
   val localEnvWithPath = LocalEnvironmentTools.sanitizeLocalEnv(clientId.getEnvironment, Set("path"))
 
-  val platform = clientId.getPlatform
-  val pathSeparator = clientId.getPathSeparator
+  val platform = clientId.platform
+  val pathSeparator = clientId.pathSeparator
 
   val disks = clientId.disks.map(file)
   val programFiles = clientId.programFiles.map(file)

@@ -23,6 +23,7 @@
       <excludeFolder url="file://$MODULE_DIR$/../../target/browse-dependency-graph" />
       <excludeFolder url="file://$MODULE_DIR$/../../target/protobuf_external" />
       <excludeFolder url="file://$MODULE_DIR$/../../target/resolution-cache" />
+      <excludeFolder url="file://$MODULE_DIR$/../../target/scala-2.11" />
       <excludeFolder url="file://$MODULE_DIR$/../../target/scala-2.12" />
       <excludeFolder url="file://$MODULE_DIR$/../../target/streams" />
       <excludeFolder url="file://$MODULE_DIR$/../../target/test-reports" />
@@ -31,6 +32,9 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="SBT: aopalliance:aopalliance:1.0:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.trueaccord.scalapb:scalapb-runtime_2.12:0.6.0-pre5:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.trueaccord.lenses:lenses_2.12:0.4.12:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.google.protobuf:protobuf-java:3.3.1:jar" level="project" />
     <orderEntry type="library" name="SBT: org.typelevel:macro-compat_2.12:1.1.1:jar" level="project" />
     <orderEntry type="library" scope="TEST" name="SBT: org.scalatest:scalatest_2.12:3.0.3:jar" level="project" />
     <orderEntry type="library" scope="TEST" name="SBT: org.scalactic:scalactic_2.12:3.0.3:jar" level="project" />
@@ -83,8 +87,6 @@
     <orderEntry type="library" name="SBT: com.twitter:finagle-base-http_2.12:6.44.0:jar" level="project" />
     <orderEntry type="library" name="SBT: com.twitter:bijection-util_2.12:0.9.5:jar" level="project" />
     <orderEntry type="library" name="SBT: com.twitter:bijection-core_2.12:0.9.5:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.trueaccord.scalapb:scalapb-runtime_2.12:0.6.0-pre4:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.trueaccord.lenses:lenses_2.12:0.4.11:jar" level="project" />
     <orderEntry type="library" name="SBT: com.spingo:op-rabbit-play-json_2.12:2.0.0-rc1:jar" level="project" />
     <orderEntry type="library" name="SBT: com.spingo:op-rabbit-core_2.12:2.0.0-rc1:jar" level="project" />
     <orderEntry type="library" name="SBT: com.newmotion:akka-rabbitmq_2.12:4.0.0:jar" level="project" />
@@ -173,10 +175,10 @@
     <orderEntry type="library" name="SBT: com.twitter.common.zookeeper:client:0.0.81:jar" level="project" />
     <orderEntry type="library" name="SBT: com.twitter.common.zookeeper:group:0.0.92:jar" level="project" />
     <orderEntry type="library" name="SBT: com.twitter.common.zookeeper:server-set:1.0.112:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.google.protobuf:protobuf-java:3.2.0:jar" level="project" />
     <orderEntry type="library" name="SBT: io.netty:netty-codec-http2:4.1.9.Final:jar" level="project" />
     <orderEntry type="library" name="SBT: io.netty:netty-codec-socks:4.1.9.Final:jar" level="project" />
     <orderEntry type="library" name="SBT: io.netty:netty-handler-proxy:4.1.9.Final:jar" level="project" />
     <orderEntry type="library" name="SBT: com.zaxxer:HikariCP:2.5.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.scala-lang.modules:scala-async_2.12:0.9.6:jar" level="project" />
   </component>
 </module>

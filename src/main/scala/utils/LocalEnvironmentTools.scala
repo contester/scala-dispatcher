@@ -14,7 +14,7 @@ object LocalEnvironmentTools {
     env.withEmpty(true).withVariable(env.variable.filter(x => win32ReservedVars(x.name.toLowerCase) || extraVars(x.name.toLowerCase)))
 
   def setEnvVars(env: LocalEnvironment, vars: Map[String, String]): LocalEnvironment = {
-    val newVars = env.variable.filterNot(v => vars.contains(v.name)) ++ vars.map(x => LocalEnvironment.Variable(x._1, Some(x._2)))
+    val newVars = env.variable.filterNot(v => vars.contains(v.name)) ++ vars.map(x => LocalEnvironment.Variable(x._1, x._2))
     env.withVariable(newVars)
   }
 

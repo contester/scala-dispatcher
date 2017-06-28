@@ -54,6 +54,7 @@ libraryDependencies ++= Seq(
   "io.netty" % "netty-codec-http" % nettyVersion,
   "io.netty" % "netty-codec" % nettyVersion,
   "io.netty" % "netty-handler" % nettyVersion,
+  "org.scala-lang.modules" %% "scala-async" % "0.9.6",
   "com.twitter" %% "finagle-core" % finagleVersion,
   "com.twitter" %% "finagle-http" % finagleVersion,
   "com.twitter" %% "finagle-memcached" % finagleVersion,
