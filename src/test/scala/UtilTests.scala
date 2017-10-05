@@ -2,6 +2,7 @@ package org.stingray.contester.utils
 
 import com.twitter.util.{Await, Future, Promise}
 import org.scalatest.{FlatSpec, Matchers}
+/*
 
 class SerialHashTests extends FlatSpec with Matchers {
   "HashQueue" should "return the same future for long-running request" in {
@@ -140,3 +141,4 @@ class ScannerCacheTests extends FlatSpec with Matchers {
   }
 
 }
+*/

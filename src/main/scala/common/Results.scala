@@ -176,8 +176,8 @@ trait CompileResult extends Result {
 }
 
 class RealCompileResult(val steps: Seq[StepResult], override val success: Boolean) extends CompileResult {
-  override val time = steps.map(_.time).sum
-  override val memory = steps.map(_.memory).sum
+  override val time = steps.map(_.time.toLong).sum
+  override val memory = steps.map(_.memory.toLong).sum
 
   def getStd(mapper: LocalExecutionResult => Blob) =
     steps.map(x => mapper(x.result))
