@@ -27,17 +27,17 @@ class SingleRunResult(val value: LocalExecution) extends RunResult {
   lazy val params = value.parameters
   lazy val result = value.getResult
 
-  lazy val returnCode = result.getReturnCode
+  lazy val returnCode = result.returnCode
 
   lazy val flags = result.getFlags
   lazy val isTimeLimitExceeded =
-    flags.getTimeLimitHit || flags.getTimeLimitHard || flags.getTimeLimitHitPost || flags.getInactive
+    flags.timeLimitHit || flags.timeLimitHard || flags.timeLimitHitPost || flags.inactive
 
   lazy val isRuntimeError =
     returnCode != 0
 
   lazy val isMemoryLimitExceeded =
-    flags.getMemoryLimitHit || flags.getMemoryLimitHitPost
+    flags.memoryLimitHit || flags.memoryLimitHitPost
 
   def status =
     if (isTimeLimitExceeded)
@@ -55,8 +55,8 @@ class SingleRunResult(val value: LocalExecution) extends RunResult {
   def stdErr =
     result.getStdErr
 
-  val time = result.getTime.getUserTimeMicros
-  val memory = result.getMemory
+  val time = result.getTime.userTimeMicros
+  val memory = result.memory
 
   // TODO: fix
   def toMap: Map[String, Any] = Map(
@@ -91,7 +91,7 @@ case class TesterRunResult(v: LocalExecution) extends SingleRunResult(v) {
 
 object SingleRunResult {
   def combine(params: LocalExecutionParameters, result: LocalExecutionResult) =
-    LocalExecution(parameters = params, result = Some(result))
+    LocalExecution(parameters = Some(params), result = Some(result))
 
   def apply(params: LocalExecutionParameters, result: LocalExecutionResult) =
     new SingleRunResult(combine(params, result))
@@ -176,8 +176,8 @@ trait CompileResult extends Result {
 }
 
 class RealCompileResult(val steps: Seq[StepResult], override val success: Boolean) extends CompileResult {
-  override val time = steps.map(_.time).sum
-  override val memory = steps.map(_.memory).sum
+  override val time = steps.map(_.time.toLong).sum
+  override val memory = steps.map(_.memory.toLong).sum
 
   def getStd(mapper: LocalExecutionResult => Blob) =
     steps.map(x => mapper(x.result))
@@ -250,7 +250,7 @@ case class TestResult(solution: RunResult, tester: Option[TesterRunResult]) exte
 
   lazy val testerStatus: StatusCodes =
     tester.map { test =>
-    val r = test.result.getReturnCode
+    val r = test.result.returnCode
     if (r == 0)
       StatusCodes.ACCEPTED
     else if (r == 1)
@@ -276,7 +276,7 @@ case class TestResult(solution: RunResult, tester: Option[TesterRunResult]) exte
     tester.map(x => Blobs.getBinary(x.stdErr)).getOrElse(Blobs.getBinary(solution.stdErr))
 
   def getTesterReturnCode =
-    tester.map(_.result.getReturnCode).getOrElse(0)
+    tester.map(_.result.returnCode).getOrElse(0)
 
   override def toString =
       "%s, time=%ss, memory=%s".format(StatusCode(status),

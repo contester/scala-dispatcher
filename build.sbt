@@ -7,16 +7,16 @@ PB.targets in Compile := Seq(
   scalapb.gen(flatPackage=true, grpc=false, javaConversions=false) -> (sourceManaged in Compile).value
 )
 
-PB.runProtoc := (args => Process("/Users/stingray/bin/protoc", args)!)
+// PB.runProtoc := (args => Process("/Users/stingray/bin/protoc", args)!)
 
 name := "dispatcher"
 
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m",
   "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
-scalaVersion := "2.11.9"
+scalaVersion := "2.11.11"
 
-version := "0.1"
+version := "0.2"
 
 organization := "org.stingray.contester"
 
@@ -38,13 +38,13 @@ resolvers ++= Seq(
     "stingr.net" at "http://stingr.net/maven"
 )
 
-val opRabbitVersion = "2.0.0-rc1"
+val opRabbitVersion = "2.0.0"
 
-val finagleVersion = "6.43.0"
+val finagleVersion = "6.45.0"
 
-val nettyVersion = "4.1.9.Final"
+val nettyVersion = "4.1.16.Final"
 
-val playVersion = "2.5.13"
+val playVersion = "2.5.17"
 
 libraryDependencies ++= Seq(
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
@@ -58,18 +58,19 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finagle-http" % finagleVersion,
   "com.twitter" %% "finagle-memcached" % finagleVersion,
   "com.twitter" %% "finagle-redis" % finagleVersion,
-  "com.twitter" %% "util-core" % "6.42.0",
-  "com.twitter" %% "bijection-util" % "0.9.5",
-  "org.clapper" %% "grizzled-slf4j" % "1.3.0",
+  "com.twitter" %% "util-core" % "6.45.0",
+  "com.twitter" %% "bijection-util" % "0.9.6",
+  "org.clapper" %% "grizzled-slf4j" % "1.3.1",
   "com.github.nscala-time" %% "nscala-time" % "2.16.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.3",
   "commons-io" % "commons-io" % "2.5",
-  "com.rabbitmq" % "amqp-client" % "4.1.0",
+  // "com.rabbitmq" % "amqp-client" % "4.1.0",
   "org.mariadb.jdbc" % "mariadb-java-client" % "1.5.8",
-  "org.clapper" %% "avsl" % "1.0.13",
-  "com.typesafe.slick" %% "slick" % "3.2.0",
+  "org.clapper" %% "avsl" % "1.0.15",
+  "com.typesafe.slick" %% "slick" % "3.2.1",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,
+  "com.google.protobuf" % "protobuf-java" % "3.4.0" % "protobuf",
   "com.typesafe" % "config" % "1.3.1",
   "com.trueaccord.scalapb" %% "scalapb-runtime" % com.trueaccord.scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test"

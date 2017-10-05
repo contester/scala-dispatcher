@@ -44,13 +44,13 @@ object RemoteFileName {
 }
 
 class InvokerRemoteFile(val invoker: InvokerAPI, st: FileStat)
-  extends RemoteFileName(RemoteFileName.parse(st.getName), Some(invoker.pathSeparator)) {
+  extends RemoteFileName(RemoteFileName.parse(st.name), Some(invoker.pathSeparator)) {
 
-  def isDir = st.getIsDirectory
+  def isDir = st.isDirectory
   def isFile = !isDir
-  def size = st.getSize
+  def size = st.size
 
-  def checksum = st.checksum.map(_.toLowerCase)
+  def checksum = if (st.checksum.isEmpty) None else Some(st.checksum.toLowerCase)
 }
 
 final class FileListOps(val repr: Iterable[RemoteFileName]) {

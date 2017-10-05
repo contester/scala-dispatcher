@@ -6,20 +6,20 @@ import org.stingray.contester.rpc4.RpcClient
 
 case class GridfsGetEntry(local: String, remote: String, moduleType: Option[String]) {
   def toCopyOperation =
-    CopyOperation(localFileName = Some(local), remoteLocation = Some(remote), upload = Some(true), moduleType=moduleType)
+    CopyOperation(localFileName = local, remoteLocation = remote, upload = true, moduleType=moduleType.getOrElse(""))
 }
 
 class InvokerRpcClient(val client: RpcClient) {
   def getBinaryType(pathname: String): Future[BinaryTypeResponse] =
     client.call("Contester.GetBinaryType",
-      BinaryTypeRequest(pathname = Some(pathname)),
+      BinaryTypeRequest(pathname = pathname),
       BinaryTypeResponse)
 
   def execute(params: LocalExecutionParameters): Future[LocalExecutionResult] =
     client.call("Contester.LocalExecute", params, LocalExecutionResult)
 
   def clear(sandbox: String) =
-    client.callNoResult("Contester.Clear", ClearSandboxRequest(sandbox = Some(sandbox)))
+    client.callNoResult("Contester.Clear", ClearSandboxRequest(sandbox = sandbox))
 
   def put(file: FileBlob): Future[FileStat] =
     client.call("Contester.Put", file, FileStat)
@@ -27,26 +27,28 @@ class InvokerRpcClient(val client: RpcClient) {
   def get(name: String) =
     client.call("Contester.Get", GetRequest(name), FileBlob)
 
+  private def optSandbox(sandboxId: Option[String]): String = sandboxId.getOrElse("")
+
   def fileStat(names: Iterable[String], expand: Boolean, sandboxId: Option[String], calculateChecksum: Boolean) = {
     client.call("Contester.Stat",
-      StatRequest(names.toSeq, sandboxId, expand=Some(expand), calculateChecksum=Some(calculateChecksum)),
+      StatRequest(names.toSeq, optSandbox(sandboxId), expand=expand, calculateChecksum=calculateChecksum),
       FileStats)
   }.map(_.entries)
 
   def identify(contesterId: String) =
     client.call("Contester.Identify",
-      IdentifyRequest(contesterId = Some(contesterId)),
+      IdentifyRequest(contesterId = contesterId),
       IdentifyResponse)
 
   def gridfsCopy(operations: Seq[CopyOperation], sandboxId: String): Future[Seq[FileStat]] =
     client.call[FileStats]("Contester.GridfsCopy",
-      CopyOperations(entries = operations, sandboxId = Some(sandboxId)),
+      CopyOperations(entries = operations, sandboxId = sandboxId),
       FileStats).map(_.entries)
 
   def gridfsPut(names: Seq[(String, String)], sandboxId: String) = {
     val operations = names.map {
       case (source, destination) =>
-        CopyOperation(localFileName = Some(destination), remoteLocation = Some(source), upload = Some(false))
+        CopyOperation(localFileName = destination, remoteLocation = source, upload = false)
     }
     gridfsCopy(operations, sandboxId)
   }

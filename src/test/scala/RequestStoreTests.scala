@@ -1,4 +1,5 @@
 package org.stingray.contester.invokers
+/*
 
 import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.matchers.ShouldMatchers
@@ -37,3 +38,4 @@ class RequestStoreTests extends FlatSpec with Matchers {
 
 }
 
+*/

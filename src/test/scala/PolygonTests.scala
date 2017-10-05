@@ -7,6 +7,7 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
 import scala.xml.XML
+/*
 
 class NamingTests extends FlatSpec with Matchers {
   "ProblemIds" should "match" in {
@@ -75,4 +76,4 @@ class ConfigTests extends FlatSpec with Matchers {
       "secret" -> PolygonConfig("secret", Seq(new URI("http://dsdd/")), PolygonAuthInfo2("u2", "p2"))
     )
   }
-}
+}*/

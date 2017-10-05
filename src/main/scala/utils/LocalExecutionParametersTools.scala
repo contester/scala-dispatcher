@@ -14,7 +14,7 @@ final class RichLocalExecutionParameters(val repr: LocalExecutionParameters) ext
       .withStdOut(repr.getStdOut.withMemory(true))
 
   def win16 =
-    repr.clearStdOut.clearStdErr.clearApplicationName
+    repr.clearStdOut.clearStdErr.withApplicationName("")
 
   def setCompiler =
     outputToMemory.withTimeLimitHardMicros(30 * 1000000).withJoinStdoutStderr(true)
