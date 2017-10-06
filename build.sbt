@@ -44,7 +44,7 @@ val finagleVersion = "6.45.0"
 
 val nettyVersion = "4.1.16.Final"
 
-val playVersion = "2.5.17"
+val playVersion = "2.6.6"
 
 libraryDependencies ++= Seq(
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
