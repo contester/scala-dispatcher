@@ -59,7 +59,7 @@ object DispatcherServer extends App {
    PolygonFilter(AuthPolygonMatcher(polygons.values).apply) andThen CachedHttpService,
    Client(config.getString("redis")), polygons, simpleDb.get, invokerApi)
 
-  import slick.driver.MySQLDriver.api._
+  import slick.jdbc.MySQLProfile.api._
 
   import scala.collection.JavaConversions._
 
