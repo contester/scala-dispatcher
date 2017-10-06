@@ -68,6 +68,7 @@ libraryDependencies ++= Seq(
   "org.mariadb.jdbc" % "mariadb-java-client" % "1.5.8",
   "org.clapper" %% "avsl" % "1.0.15",
   "com.typesafe.slick" %% "slick" % "3.2.1",
+  "com.typesafe.slick" %% "slick-hikaricp" % "3.2.1",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,
   "com.google.protobuf" % "protobuf-java" % "3.4.0" % "protobuf",
