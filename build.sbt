@@ -1,4 +1,3 @@
-
 enablePlugins(JavaAppPackaging)
 
 enablePlugins(SbtTwirl)

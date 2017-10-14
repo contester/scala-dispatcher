@@ -64,6 +64,7 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     add((api.disks / "mingw" / "bin" / "g++.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "g++.exe"), (x: String) => new GCCSourceHandler(x, true, false, false)) +
       add((api.disks / "mingw" / "bin" / "g++.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "g++.exe"), (x: String) => new GCCSourceHandler(x, true, false, true)) +
     add(api.programFiles / "Borland" / "Delphi7" / "bin" / "dcc32.exe", (x: String) => new DelphiSourceHandler(x)) +
+    add(api.programFiles / "Mono" / "bin" / "mono.exe", (x: String) => new MonoBinaryHandler(x)) +
     add((api.disks / "FPC" / "*" / "bin" / "i386-win32" / "fpc.exe") ++ (api.disks / "Programs" / "FP" / "bin" / "i386-win32" / "fpc.exe"), (x: String) => new FPCSourceHandler(x, false)) +
     add((api.programFiles / "PascalABC.NET" / "pabcnetcclear.exe") ++ (api.disks / "Programs" / "PascalABC.NET" / "pabcnetcclear.exe"), (x: String) => new PascalABCSourceHandler(x)) +
     add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
@@ -108,6 +109,23 @@ class PythonModuleHandler(ext: String, val python: String) extends BinaryHandler
   def moduleTypes: Iterable[String] = ext :: Nil
 }
 
+class MonoBinaryHandler(val monoPath: String) extends BinaryHandler {
+  def solutionName: String = "solution.exe"
+
+  def getTesterParameters(sandbox: Sandbox, name: String,
+                          arguments: List[String]): Future[LocalExecutionParameters] =
+    sandbox.getExecutionParameters(
+      monoPath,  (name :: Nil) ++ arguments)
+
+  def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits): Future[LocalExecutionParameters] =
+    sandbox.getExecutionParameters(
+      monoPath,   "solution.exe" :: Nil)
+      .map(_.setSolution.setMemoryLimit(test.memoryLimit)
+        .setTimeLimitMicros(test.timeLimitMicros))
+
+  def moduleTypes: Iterable[String] = "mono" :: "csexe" :: Nil
+}
+
 class LinuxBinaryHandler extends BinaryHandler {
   def moduleTypes = "linux-bin" :: Nil
   val binaryExt = "bin"
@@ -142,7 +160,7 @@ class Win16BinaryHandler extends BinaryHandler {
 }
 
 class Win32BinaryHandler extends BinaryHandler {
-  val moduleTypes = "exe" :: "delphibin" ::  "csexe" :: Nil
+  val moduleTypes = "exe" :: "delphibin" :: Nil
   val binaryExt = "exe"
   val solutionName = "Solution.exe"
 
@@ -203,7 +221,7 @@ class FPCSourceHandler(val compiler: String, linux: Boolean) extends SimpleCompi
 }
 
 class PascalABCSourceHandler(val compiler: String) extends SimpleCompileHandler {
-  val binaryExt = "exe"
+  val binaryExt = "mono"
   val moduleTypes = "pascalabc" :: Nil
   val sourceName = "Solution.pas"
   val binary = "Solution.exe"
