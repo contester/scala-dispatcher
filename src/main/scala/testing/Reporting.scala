@@ -163,22 +163,22 @@ case class RawLogResultReporter(base: File, val submit: SubmitObject) extends Si
 
   private def rawlog(short: String, pb: Option[String] = None) =
     Future {
-      import collection.JavaConversions._
+      import collection.JavaConverters._
       val ts = CombinedResultReporter.ts
       FileUtils.writeStringToFile(terse, ts + " " + short + "\n", StandardCharsets.UTF_8, true)
       FileUtils.writeStringToFile(detailed, ts + " " + short + "\n", StandardCharsets.UTF_8, true)
-      pb.foreach(p => FileUtils.writeLines(detailed, p.toString.lines.map(ts + "     " + _).toIterable, true))
+      pb.foreach(p => FileUtils.writeLines(detailed, p.toString.lines.map(ts + "     " + _).toList.asJava, true))
     }
 
   def compile(result: CompileResult): Future[Unit] =
-    rawlog("  " + result, Some(result.toMap.toString()))
+    rawlog(s"  $result", Some(result.toMap.toString()))
 
   def test(id: Int, result: TestResult): Future[Unit] =
-    rawlog("  Test " + id + ": " + result, Some(result.toMap.toString()))
+    rawlog(s"  Test $id: $result", Some(result.toMap.toString()))
 
   def finish(result: SolutionTestingResult): Future[Unit] =
-    rawlog("Finished testing " + submit)
+    rawlog(s"Finished testing $submit")
 
   def start =
-    rawlog("Started testing " + submit).map(_ => this)
+    rawlog(s"Started testing $submit").map(_ => this)
 }

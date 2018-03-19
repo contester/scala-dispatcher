@@ -5,13 +5,13 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicReference}
 
-import com.trueaccord.scalapb.{GeneratedMessage, GeneratedMessageCompanion, Message}
 import com.twitter.util.{Future, Promise}
 import grizzled.slf4j.Logging
 import io.netty.buffer._
 import io.netty.channel._
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder
 import org.stingray.contester.rpc4.proto.Header
+import scalapb.{GeneratedMessage, GeneratedMessageCompanion, Message}
 
 /** Connected server registry. Will be called for connected and disconnected channels.
   *
@@ -188,10 +188,6 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
     val t = parseWith(msg, Header.parseFrom)
     t
   }
-//    try {
-//    } finally {
-      //ReferenceCountUtil.release(msg)
-//    }
 
   override def channelRead0(ctx: ChannelHandlerContext, msg: ByteBuf): Unit = {
     storedHeader.getAndSet(None) match {
