@@ -39,7 +39,7 @@ resolvers ++= Seq(
 
 val opRabbitVersion = "2.1.0"
 
-val finagleVersion = "6.45.0"
+val finagleVersion = "18.5.0"
 
 val nettyVersion = "4.1.25.Final"
 

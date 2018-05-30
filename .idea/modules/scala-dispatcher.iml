@@ -31,8 +31,43 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="sbt: aopalliance:aopalliance:1.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: org.mariadb.jdbc:mariadb-java-client:2.2.4:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.mariadb.jdbc:mariadb-java-client:2.2.5:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.hdrhistogram:HdrHistogram:2.1.10:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.apache.thrift:libthrift:0.10.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: io.netty:netty-tcnative-boringssl-static:2.0.6.Final:jar" level="project" />
+    <orderEntry type="library" name="sbt: io.netty:netty-handler-proxy:4.1.16.Final:jar" level="project" />
+    <orderEntry type="library" name="sbt: io.netty:netty-codec-socks:4.1.16.Final:jar" level="project" />
+    <orderEntry type="library" name="sbt: io.netty:netty-codec-http2:4.1.16.Final:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-tunable_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-stats_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-security_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-registry_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-logging_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-lint_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-jvm_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-hashing_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-function_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-core_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-collection_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-codec_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-cache_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:util-app_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:scrooge-core_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-tunable_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-toggle_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-stats_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-serversets_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-redis_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-netty4_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-netty4-http_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-netty3_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-memcached_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-init_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-http_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-http2_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-http-cookie_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-core_2.12:18.5.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.twitter:finagle-base-http_2.12:18.5.0:jar" level="project" />
     <orderEntry type="library" name="sbt: io.netty:netty-handler:4.1.25.Final:jar" level="project" />
     <orderEntry type="library" name="sbt: io.netty:netty-codec-http:4.1.25.Final:jar" level="project" />
     <orderEntry type="library" name="sbt: io.netty:netty-codec:4.1.25.Final:jar" level="project" />
@@ -83,13 +118,9 @@
     <orderEntry type="library" name="sbt: log4j:log4j:1.2.16:jar" level="project" />
     <orderEntry type="library" name="sbt: joda-time:joda-time:2.9.9:jar" level="project" />
     <orderEntry type="library" name="sbt: javax.transaction:jta:1.1:jar" level="project" />
-    <orderEntry type="library" name="sbt: javax.servlet:servlet-api:2.5:jar" level="project" />
     <orderEntry type="library" name="sbt: javax.mail:mail:1.4.3:jar" level="project" />
     <orderEntry type="library" name="sbt: javax.inject:javax.inject:1:jar" level="project" />
     <orderEntry type="library" name="sbt: javax.activation:activation:1.1:jar" level="project" />
-    <orderEntry type="library" name="sbt: io.netty:netty-handler-proxy:4.1.10.Final:jar" level="project" />
-    <orderEntry type="library" name="sbt: io.netty:netty-codec-socks:4.1.10.Final:jar" level="project" />
-    <orderEntry type="library" name="sbt: io.netty:netty-codec-http2:4.1.10.Final:jar" level="project" />
     <orderEntry type="library" name="sbt: io.netty:netty:3.10.1.Final:jar" level="project" />
     <orderEntry type="library" name="sbt: io.jsonwebtoken:jjwt:0.7.0:jar" level="project" />
     <orderEntry type="library" name="sbt: commons-logging:commons-logging:1.2:jar" level="project" />
@@ -99,47 +130,11 @@
     <orderEntry type="library" name="sbt: com.zaxxer:HikariCP:2.5.1:jar" level="project" />
     <orderEntry type="library" name="sbt: com.typesafe.netty:netty-reactive-streams-http:2.0.0:jar" level="project" />
     <orderEntry type="library" name="sbt: com.typesafe.netty:netty-reactive-streams:2.0.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter.common:util-system-mocks:0.0.105:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter.common:util-executor-service-shutdown:0.0.68:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter.common:stats-util:0.0.60:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter.common:quantity:0.0.100:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter.common:metrics:0.0.39:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter.common:collections:0.0.111:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter.common:base:0.0.116:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-tunable_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-stats_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-security_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-registry_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-logging_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-lint_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-jvm_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-hashing_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-function_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-events_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-core_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-collection_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-codec_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-cache_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:util-app_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:scrooge-core_2.12:4.18.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:libthrift:0.5.0-7:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:finagle-toggle_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:finagle-stats_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:finagle-serversets_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:finagle-redis_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:finagle-netty4_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:finagle-netty4-http_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:finagle-memcached_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:finagle-http_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:finagle-http2_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:finagle-core_2.12:6.45.0:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.twitter:finagle-base-http_2.12:6.45.0:jar" level="project" />
     <orderEntry type="library" name="sbt: com.twitter:bijection-util_2.12:0.9.6:jar" level="project" />
     <orderEntry type="library" name="sbt: com.twitter:bijection-core_2.12:0.9.6:jar" level="project" />
     <orderEntry type="library" name="sbt: com.thoughtworks.paranamer:paranamer:2.8:jar" level="project" />
     <orderEntry type="library" name="sbt: com.lihaoyi:sourcecode_2.12:0.1.4:jar" level="project" />
     <orderEntry type="library" name="sbt: com.google.j2objc:j2objc-annotations:1.1:jar" level="project" />
-    <orderEntry type="library" name="sbt: com.google.inject:guice:4.0:jar" level="project" />
     <orderEntry type="library" name="sbt: com.google.guava:guava:22.0:jar" level="project" />
     <orderEntry type="library" name="sbt: com.google.errorprone:error_prone_annotations:2.0.18:jar" level="project" />
     <orderEntry type="library" name="sbt: com.google.code.gson:gson:2.3.1:jar" level="project" />
