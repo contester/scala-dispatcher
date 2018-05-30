@@ -23,7 +23,7 @@ case class MoodleSubmit(id: Int, problemId: String, arrived: Timestamp, sourceMo
 }
 
 class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubmit, val testingId: Int) extends SingleProgress {
-  import slick.driver.MySQLDriver.api._
+  import slick.jdbc.MySQLProfile.api._
 
   def compile(r: CompileResult) =
     client.run(
@@ -67,7 +67,7 @@ object MoodleTableScanner {
 }
 
 class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface, inv: SolutionTester, store: TestingStore) extends Logging {
-  import slick.driver.MySQLDriver.api._
+  import slick.jdbc.MySQLProfile.api._
   implicit val getMoodleSubmit = GetResult(r=>
     MoodleSubmit(r.nextInt(), r.nextInt().toString, r.nextTimestamp(), new ByteBufferModule(r.nextString(), r.nextBytes()))
   )
@@ -87,9 +87,7 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
          mdl_contester_submits.lang = mdl_contester_languages.id and
          mdl_contester_submits.id = ${id}
           """.as[MoodleSubmit]).map(_.headOption)
-    f.onFailure {
-      case x => info(s"$x")
-    }
+    f.foreach(x => info(s"${x}"))
     f
   }
 
@@ -121,7 +119,7 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
 
 class MoodleTableScanner(db: JdbcBackend#DatabaseDef, dispatcher: MoodleDispatcher) extends Actor with Stash with Logging {
   import MoodleTableScanner._
-  import slick.driver.MySQLDriver.api._
+  import slick.jdbc.MySQLProfile.api._
 
   private def getUnprocessedEntries() =
     db.run(sql"select id from mdl_contester_submits where processed is null".as[Long])
