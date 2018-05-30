@@ -34,13 +34,13 @@
           <root url="jar://$USER_HOME$/.ivy2/cache/com.github.jnr/jnr-x86asm/jars/jnr-x86asm-1.0.2.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.github.os72/protoc-jar/jars/protoc-jar-3.5.1.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.google.guava/guava/bundles/guava-20.0.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/com.google.protobuf/protobuf-java/bundles/protobuf-java-3.5.0.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.google.protobuf/protobuf-java/bundles/protobuf-java-3.5.1.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.spotify/docker-client/jars/docker-client-8.9.0.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/com.thesamet.scalapb/compilerplugin_2.12/jars/compilerplugin_2.12-0.7.1.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.thesamet.scalapb/compilerplugin_2.12/jars/compilerplugin_2.12-0.7.4.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/com.thesamet.scalapb/protoc-bridge_2.12/jars/protoc-bridge_2.12-0.7.3.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe.play/twirl-api_2.12/jars/twirl-api_2.12-1.3.13.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe.play/twirl-compiler_2.12/jars/twirl-compiler_2.12-1.3.13.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe.play/twirl-parser_2.12/jars/twirl-parser_2.12-1.3.13.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe.play/twirl-api_2.12/jars/twirl-api_2.12-1.3.15.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe.play/twirl-compiler_2.12/jars/twirl-compiler_2.12-1.3.15.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/com.typesafe.play/twirl-parser_2.12/jars/twirl-parser_2.12-1.3.15.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/commons-codec/commons-codec/jars/commons-codec-1.9.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/commons-io/commons-io/jars/commons-io-2.5.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/commons-lang/commons-lang/jars/commons-lang-2.6.jar!/" />
@@ -107,7 +107,7 @@
           <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.12/sbt_1.0/com.thesamet/sbt-protoc/jars/sbt-protoc-0.99.18.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.12/sbt_1.0/com.timushev.sbt/sbt-updates/jars/sbt-updates-0.3.4.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.12/sbt_1.0/com.typesafe.sbt/sbt-native-packager/jars/sbt-native-packager-1.3.3.jar!/" />
-          <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.12/sbt_1.0/com.typesafe.sbt/sbt-twirl/jars/sbt-twirl-1.3.13.jar!/" />
+          <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.12/sbt_1.0/com.typesafe.sbt/sbt-twirl/jars/sbt-twirl-1.3.15.jar!/" />
           <root url="jar://$USER_HOME$/.ivy2/cache/scala_2.12/sbt_1.0/net.virtual-void/sbt-dependency-graph/jars/sbt-dependency-graph-0.9.0.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.12.4/lib/jline.jar!/" />
           <root url="jar://$USER_HOME$/.sbt/boot/scala-2.12.4/lib/scala-compiler.jar!/" />

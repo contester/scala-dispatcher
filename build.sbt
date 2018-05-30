@@ -13,7 +13,7 @@ name := "dispatcher"
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m",
   "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
-scalaVersion := "2.12.4"
+scalaVersion := "2.12.6"
 
 version := "0.2"
 
@@ -41,9 +41,9 @@ val opRabbitVersion = "2.1.0"
 
 val finagleVersion = "6.45.0"
 
-val nettyVersion = "4.1.22.Final"
+val nettyVersion = "4.1.25.Final"
 
-val playVersion = "2.6.12"
+val playVersion = "2.6.15"
 
 libraryDependencies ++= Seq(
   "javax.mail" % "javax.mail-api" % "1.6.1",
@@ -61,14 +61,14 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "util-core" % "6.45.0",
   "com.twitter" %% "bijection-util" % "0.9.6",
   "org.clapper" %% "grizzled-slf4j" % "1.3.2",
-  "com.github.nscala-time" %% "nscala-time" % "2.18.0",
+  "com.github.nscala-time" %% "nscala-time" % "2.20.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.5",
   "commons-io" % "commons-io" % "2.6",
   // "com.rabbitmq" % "amqp-client" % "4.1.0",
-  "org.mariadb.jdbc" % "mariadb-java-client" % "2.2.3",
+  "org.mariadb.jdbc" % "mariadb-java-client" % "2.2.5",
   "org.clapper" %% "avsl" % "1.0.15",
-  "com.typesafe.slick" %% "slick" % "3.2.2",
-  "com.typesafe.slick" %% "slick-hikaricp" % "3.2.2",
+  "com.typesafe.slick" %% "slick" % "3.2.3",
+  "com.typesafe.slick" %% "slick-hikaricp" % "3.2.3",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,
   "com.google.protobuf" % "protobuf-java" % "3.5.1" % "protobuf",
