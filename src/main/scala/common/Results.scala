@@ -31,7 +31,7 @@ class SingleRunResult(val value: LocalExecution) extends RunResult {
 
   lazy val flags = result.getFlags
   lazy val isTimeLimitExceeded =
-    flags.timeLimitHit || flags.timeLimitHard || flags.timeLimitHitPost || flags.inactive
+    flags.timeLimitHit || flags.wallTimeLimitHit || flags.kernelTimeLimitHit || flags.timeLimitHitPost || flags.kernelTimeLimitHitPost || flags.inactive
 
   lazy val isRuntimeError =
     returnCode != 0

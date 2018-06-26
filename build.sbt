@@ -39,7 +39,7 @@ resolvers ++= Seq(
 
 val opRabbitVersion = "2.1.0"
 
-val finagleVersion = "18.5.0"
+val finagleVersion = "18.6.0"
 
 val nettyVersion = "4.1.25.Final"
 
@@ -58,7 +58,7 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finagle-http" % finagleVersion,
   "com.twitter" %% "finagle-memcached" % finagleVersion,
   "com.twitter" %% "finagle-redis" % finagleVersion,
-  "com.twitter" %% "util-core" % "6.45.0",
+  "com.twitter" %% "util-core" % "18.6.0",
   "com.twitter" %% "bijection-util" % "0.9.6",
   "org.clapper" %% "grizzled-slf4j" % "1.3.2",
   "com.github.nscala-time" %% "nscala-time" % "2.20.0",

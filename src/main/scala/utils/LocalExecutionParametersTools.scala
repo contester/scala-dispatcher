@@ -17,7 +17,7 @@ final class RichLocalExecutionParameters(val repr: LocalExecutionParameters) ext
     repr.clearStdOut.clearStdErr.withApplicationName("")
 
   def setCompiler =
-    outputToMemory.withTimeLimitHardMicros(30 * 1000000).withJoinStdoutStderr(true)
+    outputToMemory.withWallTimeLimitMicros(30 * 1000000).withJoinStdoutStderr(true)
 
   def setSolution =
     repr.withCheckIdleness(true).withRestrictUi(true).withProcessLimit(1)
@@ -26,7 +26,7 @@ final class RichLocalExecutionParameters(val repr: LocalExecutionParameters) ext
     repr.withNoJob(true)
 
   def setTester =
-    outputToMemory.withTimeLimitHardMicros(120 * 1000000).withNoJob(true).withJoinStdoutStderr(true)
+    outputToMemory.withWallTimeLimitMicros(120 * 1000000).withNoJob(true).withJoinStdoutStderr(true)
 
   def emulateStdio(s: Sandbox) =
     repr.withStdIn(repr.getStdIn.withFilename((s.path / "input.txt").name))

@@ -6,8 +6,6 @@ import org.stingray.contester.modules.ModuleHandler
 import org.stingray.contester.proto._
 
 class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) {
-  import collection.JavaConversions._
-
   val sandboxes = clientId.sandboxes.toIndexedSeq
   val name = clientId.invokerId
 

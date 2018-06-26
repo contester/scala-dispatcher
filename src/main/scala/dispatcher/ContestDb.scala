@@ -1,22 +1,15 @@
 package org.stingray.contester.dispatcher
 
-import java.sql.Timestamp
-
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.spingo.op_rabbit._
+import grizzled.slf4j.Logging
+import org.stingray.contester.common.TestingStore
+import org.stingray.contester.polygon.PolygonProblemClient
+import org.stingray.contester.testing.{CustomTester, SolutionTester}
 import play.api.libs.json.Json
 import slick.jdbc.JdbcBackend
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import com.twitter.util.Future
-import grizzled.slf4j.Logging
-import java.io.File
-
-import org.stingray.contester.common.TestingStore
-
-import scala.concurrent.{Future => ScalaFuture}
-import org.stingray.contester.testing.{CustomTester, SolutionTester}
-import org.stingray.contester.polygon.{PolygonProblem, PolygonProblemClient}
 
 case class ServerSideEvalID(id: Int)
 
@@ -56,7 +49,6 @@ class DbDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient,
       }
     }
   }
-  import org.stingray.contester.utils.Fu._
 
   val submitSub = Subscription.run(rabbitMq) {
     import Directives._
