@@ -15,11 +15,11 @@ javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt
 
 scalaVersion := "2.12.6"
 
-version := "0.2"
+version := "2018.0.1"
 
 organization := "org.stingray.contester"
 
-scalacOptions ++= Seq("-unchecked", "-deprecation", "-optimise", "-explaintypes", "-Xcheckinit",
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-explaintypes", "-Xcheckinit",
   "-Xlint")
 //, "-Xfatal-warnings")
 
@@ -39,11 +39,11 @@ resolvers ++= Seq(
 
 val opRabbitVersion = "2.1.0"
 
-val finagleVersion = "18.6.0"
+val finagleVersion = "18.7.0"
 
-val nettyVersion = "4.1.25.Final"
+val nettyVersion = "4.1.27.Final"
 
-val playVersion = "2.6.15"
+val playVersion = "2.6.17"
 
 libraryDependencies ++= Seq(
   "javax.mail" % "javax.mail-api" % "1.6.1",
@@ -58,14 +58,14 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finagle-http" % finagleVersion,
   "com.twitter" %% "finagle-memcached" % finagleVersion,
   "com.twitter" %% "finagle-redis" % finagleVersion,
-  "com.twitter" %% "util-core" % "18.6.0",
+  "com.twitter" %% "util-core" % finagleVersion,
   "com.twitter" %% "bijection-util" % "0.9.6",
   "org.clapper" %% "grizzled-slf4j" % "1.3.2",
   "com.github.nscala-time" %% "nscala-time" % "2.20.0",
-  "org.apache.httpcomponents" % "httpclient" % "4.5.5",
+  "org.apache.httpcomponents" % "httpclient" % "4.5.6",
   "commons-io" % "commons-io" % "2.6",
   // "com.rabbitmq" % "amqp-client" % "4.1.0",
-  "org.mariadb.jdbc" % "mariadb-java-client" % "2.2.5",
+  "org.mariadb.jdbc" % "mariadb-java-client" % "2.2.6",
   "org.clapper" %% "avsl" % "1.0.15",
   "com.typesafe.slick" %% "slick" % "3.2.3",
   "com.typesafe.slick" %% "slick-hikaricp" % "3.2.3",
