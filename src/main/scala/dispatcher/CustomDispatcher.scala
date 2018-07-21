@@ -6,7 +6,7 @@ import akka.actor.ActorRef
 import com.spingo.op_rabbit.Message
 import org.stingray.contester.common._
 import org.stingray.contester.invokers.TimeKey
-import org.stingray.contester.testing.{CustomTester, CustomTestingResult, SolutionTester}
+import org.stingray.contester.testing.{CustomTester, CustomTestingResult}
 import play.api.libs.json.Json
 import slick.jdbc.{GetResult, JdbcBackend}
 
@@ -19,7 +19,7 @@ case class CustomTestObject(id: Int, contest: Int, team: Int, arrived: Timestamp
 }
 
 object CustomTestObject {
-  import slick.driver.MySQLDriver.api._
+  import slick.jdbc.MySQLProfile.api._
   import org.stingray.contester.utils.Dbutil._
 
   implicit val getResult = GetResult(r =>
@@ -35,7 +35,7 @@ object CustomTestResult {
 }
 
 class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: CustomTester, store: TestingStore, rabbitMq: ActorRef) {
-  import slick.driver.MySQLDriver.api._
+  import slick.jdbc.MySQLProfile.api._
   import org.stingray.contester.utils.Dbutil._
   import org.stingray.contester.utils.Fu._
   import com.spingo.op_rabbit.PlayJsonSupport._
