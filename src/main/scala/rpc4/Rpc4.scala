@@ -118,7 +118,7 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
     if (disconnected.get())
       Future.exception(DefaultChannelDisconnectedException)
     else {
-      trace(s"Call: $methodName($payload)")
+      trace(s"Call: $methodName(${payload.map(_.toProtoString)})")
       val resultPromise = new Promise[RpcTuple1]
       val requestId = sequenceNumber.getAndIncrement
       val header = Header(sequence = Some(requestId), messageType = Some(Header.MessageType.REQUEST),
@@ -142,7 +142,7 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
         try {
           rt.header.getMessageType match {
             case Header.MessageType.ERROR =>
-              Future.exception(new RemoteError(rt.payload.map(_.toString(StandardCharsets.UTF_8)).getOrElse("Unknown")))
+              Future.exception(RemoteError(rt.payload.map(_.toString(StandardCharsets.UTF_8)).getOrElse("Unknown")))
             case Header.MessageType.RESPONSE =>
               Future.value(deserializer.flatMap { d =>
                 rt.payload.map(p => parseWith(p,d.parseFrom))
@@ -154,7 +154,7 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
           //rt.payload.foreach(ReferenceCountUtil.release)
         }
       }.onSuccess { r =>
-        trace(s"Result($methodName): $r")
+        trace(s"Result($methodName): ${r.map(_.toProtoString)}")
       }.onFailure(error(s"Error($methodName)", _))
     }
   }
