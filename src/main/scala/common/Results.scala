@@ -1,7 +1,7 @@
 package org.stingray.contester.common
 
-import org.stingray.contester.proto.Blob
-import org.stingray.contester.proto.{StatusCodes, LocalExecution, LocalExecutionParameters, LocalExecutionResult}
+import org.stingray.contester.proto._
+import scalapb.GeneratedMessage
 
 /**
  * Result of some run, operation, or test
@@ -16,7 +16,6 @@ trait Result {
 trait RunResult extends Result {
   def status: StatusCodes
   def success = status == StatusCodes.ACCEPTED
-  def toMap: Map[String, Any]
   def time: Long
   def memory: Long
   def returnCode: Int
@@ -58,10 +57,9 @@ class SingleRunResult(val value: LocalExecution) extends RunResult {
   val time = result.getTime.userTimeMicros
   val memory = result.memory
 
-  // TODO: fix
-  def toMap: Map[String, Any] = Map(
-    "params" -> params,
-    "result" -> result
+  def toProto: SingleRunResultProto = SingleRunResultProto(
+    params = params,
+    result = Some(result)
   )
 }
 
@@ -140,7 +138,10 @@ class InteractiveRunResult(first: SingleRunResult, second: SingleRunResult) exte
       case _ => second.status
     }
 
-  def toMap = Map("first" -> first.toMap, "second" -> second.toMap)
+  def toProto = InteractiveRunResultProto(
+    first = Some(first.toProto),
+    second = Some(second.toProto)
+  )
 
   def time = second.time
 
@@ -152,7 +153,7 @@ class InteractiveRunResult(first: SingleRunResult, second: SingleRunResult) exte
 }
 
 class StepResult(val name: String, v: LocalExecution) extends SingleRunResult(v) {
-  override def toMap = super.toMap.+("name" -> name)
+  override def toProto: SingleRunResultProto = super.toProto.withName(name)
 }
 
 object StepResult {
@@ -172,7 +173,7 @@ trait CompileResult extends Result {
   val stdOut = "".getBytes
   val stdErr = "".getBytes
 
-  def toMap: Map[String, Any] = Map()
+  def toProto: RealCompileResultProto
 }
 
 class RealCompileResult(val steps: Seq[StepResult], override val success: Boolean) extends CompileResult {
@@ -190,21 +191,26 @@ class RealCompileResult(val steps: Seq[StepResult], override val success: Boolea
   override val stdErr =
     getStd(_.getStdErr)
 
-  override def toMap: Map[String, Any] = Map(
-    "steps" -> steps.map(_.toMap)
-  )
+  def toProto: RealCompileResultProto =
+    RealCompileResultProto(
+      step=steps.map(_.toProto)
+    )
 }
 
 object AlreadyCompiledResult extends CompileResult {
   def success: Boolean = true
 
   override def toString: String = super.toString + " (cached)"
+
+  override def toProto = RealCompileResultProto(cached=Some(CachedCompileResultProto(true)))
 }
 
 object ScriptingLanguageResult extends CompileResult {
   def success: Boolean = true
 
   override def toString: String = super.toString + " (script)"
+
+  override def toProto = RealCompileResultProto(script=Some(ScriptCompileResultProto()))
 }
 
 object StatusCode {
@@ -265,9 +271,13 @@ case class TestResult(solution: RunResult, tester: Option[TesterRunResult]) exte
 
   lazy val success = status == StatusCodes.ACCEPTED
 
-  def toMap = Map(
-    "solution" -> solution.toMap
-  ) ++ tester.map("tester" -> _.toMap)
+  def toProto: TestResultProto = {
+    val r = TestResultProto(tester = tester.map(_.toProto))
+    solution match {
+      case x: SingleRunResult => r.withSolution(x.toProto)
+      case x: InteractiveRunResult => r.withInteractive(x.toProto)
+    }
+  }
 
   def getTesterOutput =
     tester.map(x => Blobs.getBinary(x.stdOut)).getOrElse(Array[Byte]())

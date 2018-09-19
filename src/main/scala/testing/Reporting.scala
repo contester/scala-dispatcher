@@ -161,20 +161,22 @@ case class RawLogResultReporter(base: File, val submit: SubmitObject) extends Si
   lazy val terse = new File(base, submit.id.toString)
   lazy val detailed = new File(base, submit.id.toString + ".proto")
 
-  private def rawlog(short: String, pb: Option[String] = None) =
+  private def rawlog(short: String, pb: String = "") =
     Future {
       import collection.JavaConverters._
       val ts = CombinedResultReporter.ts
       FileUtils.writeStringToFile(terse, ts + " " + short + "\n", StandardCharsets.UTF_8, true)
       FileUtils.writeStringToFile(detailed, ts + " " + short + "\n", StandardCharsets.UTF_8, true)
-      pb.foreach(p => FileUtils.writeLines(detailed, p.toString.lines.map(ts + "     " + _).toList.asJava, true))
+      if (!pb.isEmpty) {
+        FileUtils.writeLines(detailed, pb.lines.map(ts + "     " + _).toList.asJava, true)
+      }
     }
 
   def compile(result: CompileResult): Future[Unit] =
-    rawlog(s"  $result", Some(result.toMap.toString()))
+    rawlog(s"  $result", result.toProto.toProtoString)
 
   def test(id: Int, result: TestResult): Future[Unit] =
-    rawlog(s"  Test $id: $result", Some(result.toMap.toString()))
+    rawlog(s"  Test $id: $result", result.toProto.toProtoString)
 
   def finish(result: SolutionTestingResult): Future[Unit] =
     rawlog(s"Finished testing $submit")
