@@ -24,7 +24,7 @@ object SubmitMessage {
 
 class DbDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient,
                    invoker: SolutionTester,
-                  custom: CustomTester,
+                   custom: CustomTester,
                    store: TestingStore,
                    rabbitMq: ActorRef,
                    reportbase: String) extends Logging {

@@ -50,7 +50,7 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
 
   import org.stingray.contester.utils.Fu._
 
-  def getSubmit(id: Int): Future[Option[SubmitObject]] =
+  private def getSubmit(id: Int): Future[Option[SubmitObject]] =
     db.run(
     sql"""
       select
@@ -62,10 +62,10 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
       and Contests.ID = NewSubmits.Contest
       and Contests.PolygonID != '' and NewSubmits.ID = $id""".as[SubmitObject]).map(_.headOption)
 
-  def markWith(id: Int, value: Int): Future[Int] =
+  private def markWith(id: Int, value: Int): Future[Int] =
     db.run(sqlu"update NewSubmits set Processed = $value where ID = $id")
 
-  def calculateTestingResult(m: SubmitObject, ti: Int, sr: SolutionTestingResult) = {
+  private def calculateTestingResult(m: SubmitObject, ti: Int, sr: SolutionTestingResult) = {
     val taken = sr.tests.length
     val passed = sr.tests.count(x => x._2.success)
 
@@ -106,9 +106,9 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
       case None => Future.Done
     }
 
-  val reporter = new DBReporter(db)
+  private val reporter = new DBReporter(db)
 
-  def run(m: SubmitObject): Future[Unit] =
+  private def run(m: SubmitObject): Future[Unit] =
     pdb.getProblem(m.polygonId, m.problemId).flatMap {
       case Some(problem) =>
         CombinedResultReporter.allocate(reporter, new File(reportbase), m, problem.uri).flatMap {

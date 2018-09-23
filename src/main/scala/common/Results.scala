@@ -1,7 +1,6 @@
 package org.stingray.contester.common
 
 import org.stingray.contester.proto._
-import scalapb.GeneratedMessage
 
 /**
  * Result of some run, operation, or test
