@@ -30,7 +30,7 @@ case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
   extends Submit {
   val timestamp = arrived
   override def toString =
-    "Submit(%d, %d, %s, %s)".format(id, contestId, problemId, arrived)
+    s"Submit(id=$id, contest=$contestId, team=$teamId, problem=$problemId, arrived: $arrived)"
 }
 
 case class FinishedTesting(submit: SubmitObject, testingId: Int, compiled: Boolean, passed: Int, taken: Int)
