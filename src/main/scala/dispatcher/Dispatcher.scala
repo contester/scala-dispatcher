@@ -1,7 +1,7 @@
 package org.stingray.contester.dispatcher
 
 import java.io.File
-import java.sql.{ResultSet, Timestamp}
+import java.sql.Timestamp
 
 import akka.actor.ActorRef
 import com.spingo.op_rabbit.PlayJsonSupport._
@@ -11,14 +11,12 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.common._
 import org.stingray.contester.invokers.TimeKey
 import org.stingray.contester.polygon.{PolygonContestId, PolygonProblemClient}
-import org.stingray.contester.problems.Problem
 import org.stingray.contester.testing._
 import play.api.libs.json.{JsValue, Json, Writes}
 import slick.jdbc.{GetResult, JdbcBackend}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future => ScalaFuture}
-import scala.util.{Failure, Success}
 
 trait Submit extends TimeKey with SubmitWithModule {
   def schoolMode: Boolean = false
@@ -42,7 +40,7 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
   import slick.driver.MySQLDriver.api._
   import org.stingray.contester.utils.Dbutil._
 
-  implicit val getSubmitObject = GetResult(r =>
+  implicit private val getSubmitObject = GetResult(r =>
     SubmitObject(r.nextInt(), r.nextInt(), r.nextInt(), r.nextString(), r.nextTimestamp(),
     new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBoolean(), r.nextLong(), PolygonContestId(r.nextString())
     )
@@ -72,7 +70,7 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
     FinishedTesting(m, ti, sr.compilation.success, passed, taken)
   }
 
-  implicit val submitObjectWrites = new Writes[SubmitObject] {
+  implicit private val submitObjectWrites = new Writes[SubmitObject] {
     override def writes(o: SubmitObject): JsValue =
       Json.obj(
         "id" -> o.id,
@@ -82,9 +80,8 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
         "schoolMode" -> o.schoolMode
       )
   }
-  //implicit val finishedTestingFormat = Json.format[FinishedTesting]
 
-  implicit val finishedTestingWrites = new Writes[FinishedTesting] {
+  implicit private val finishedTestingWrites = new Writes[FinishedTesting] {
     override def writes(o: FinishedTesting): JsValue =
       Json.obj(
         "submit" -> o.submit,

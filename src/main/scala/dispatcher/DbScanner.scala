@@ -56,13 +56,13 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
 
   import org.stingray.contester.utils.Fu._
 
-  def getNewContestMap =
+  private def getNewContestMap =
     getContestsFromDb.flatMap { contests =>
       trace(s"received $contests")
       Future.collect(contests.map(x => resolver.getContest(x.polygonId).map(p => x -> p))).map(_.toMap)
     }
 
-  def updateContest(row: ContestRow, contest: ContestWithProblems): Future[Unit] = {
+  private def updateContest(row: ContestRow, contest: ContestWithProblems): Future[Unit] = {
     val nameChange = maybeUpdateContestName(row.id, row.name, contest.contest.getName(row.Language))
 
     getProblemsFromDb.flatMap { problems =>
@@ -88,7 +88,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
     }.unit
   }
 
-  def updateContests(m: Map[ContestRow, ContestWithProblems]) =
+  private def updateContests(m: Map[ContestRow, ContestWithProblems]) =
     Future.collect(m.map(x => updateContest(x._1, x._2)).toSeq).unit
 
   import scala.concurrent.duration._

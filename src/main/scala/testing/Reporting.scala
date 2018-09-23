@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets
 
 import org.apache.commons.io.FileUtils
 import org.stingray.contester.engine.CustomTestResult
-import slick.driver.MySQLDriver.api._
+import slick.jdbc.MySQLProfile.api._
 import slick.jdbc.JdbcBackend
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -36,17 +36,6 @@ object CombinedResultReporter {
 
   def ts =
     "[" + fmt.print(new DateTime()) + "]"
-
-  private def toSeqs[A, B](data: Map[A, B]): (Iterable[A], Iterable[B]) = {
-    val keys = data.keys
-    (keys, keys.map(data))
-  }
-
-  private def asInsertPart(data: Map[String, Any]): (String, Seq[Any]) =
-    toSeqs(data) match {
-      case (keys, values) =>
-        ("(%s) values (%s)".format(keys.mkString(", "), keys.map(_ => "?").mkString(", ")), values.toSeq)
-    }
 
   def allocate(db: DBReporter, prefix: File, submit: SubmitObject, problemUri: String): Future[(Int, RawLogResultReporter)] =
     db.allocateAndRegister(submit, problemUri).zip {

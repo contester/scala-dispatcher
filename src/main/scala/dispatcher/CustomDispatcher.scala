@@ -40,7 +40,7 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: CustomTester, s
   import org.stingray.contester.utils.Fu._
   import com.spingo.op_rabbit.PlayJsonSupport._
 
-  def recordResult(item: CustomTestObject, result: CustomTestingResult) =
+  private def recordResult(item: CustomTestObject, result: CustomTestingResult) =
     result.test.map { tr =>
       db.run(
         sqlu"""update Eval set Output = ${tr.output.map(Blobs.getBinary).getOrElse("".getBytes)},
@@ -70,7 +70,7 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: CustomTester, s
     }
 
 
-  def run(item: CustomTestObject): Future[Unit] =
+  private def run(item: CustomTestObject): Future[Unit] =
     invoker(item, item.sourceModule, item.input, store.custom(item.id))
       .flatMap(x => recordResult(item, x))
 }
