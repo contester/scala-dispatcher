@@ -1,7 +1,8 @@
 package org.stingray.contester.invokers
 
-import org.stingray.contester.rpc4.{RpcClient, Registry}
+import org.stingray.contester.rpc4.{DefaultChannelDisconnectedException, Registry, RpcClient}
 import grizzled.slf4j.Logging
+
 import collection.mutable
 import com.twitter.util.Future
 import org.stingray.contester.modules.ModuleFactory

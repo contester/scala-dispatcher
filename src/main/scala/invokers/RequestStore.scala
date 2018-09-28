@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit
 import com.twitter.finagle.util.HashedWheelTimer
 import com.twitter.util.{Duration, Future, Promise}
 import grizzled.slf4j.Logging
+import org.stingray.contester.rpc4.ChannelDisconnectedException
 
 import scala.collection.mutable
 
@@ -66,6 +67,14 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
             tresult
           }
         }
+        case e: ChannelDisconnectedException => {
+          error("Connection lost:", e)
+          retryOrThrow(cap, schedulingKey, retries, e, f).map { tresult =>
+            trace("Traced recovery after transient error")
+            tresult
+          }
+        }
+
         case e: PermanentError => {
           error("Permanent error:", e)
           badInvoker(invoker)

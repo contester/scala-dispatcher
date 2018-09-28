@@ -30,7 +30,7 @@ trait Registry {
   def unregister(client: RpcClient): Unit
 }
 
-case class ChannelDisconnectedException(reason: Option[Throwable]=None) extends Throwable
+case class ChannelDisconnectedException(reason: Option[Throwable]=None) extends RuntimeException
 
 object DefaultChannelDisconnectedException extends ChannelDisconnectedException
 
@@ -49,9 +49,18 @@ case class UnexpectedMessageTypeError(messageType: Header.MessageType) extends R
 class ServerPipelineFactory[C <: Channel](registry: Registry) extends ChannelInitializer[C] {
   override def initChannel(ch: C): Unit = {
     val pipeline = ch.pipeline()
-    pipeline.addFirst("RpcClient", new RpcClientImpl[C](ch, registry))
+    val cl = new RpcClientImpl[C](ch, registry)
+    pipeline.addFirst("RpcClient", cl)
     pipeline.addFirst("FrameDecoder",
       new LengthFieldBasedFrameDecoder(ByteOrder.BIG_ENDIAN, 64 * 1024 * 1024, 0, 4, 0, 4, true))
+
+    ch.closeFuture().addListener(new ChannelFutureListener {
+      override def operationComplete(future: ChannelFuture): Unit = {
+        cl.channelLost()
+        pipeline.remove("RpcClient")
+        pipeline.remove("FrameDecoder")
+      }
+    })
   }
 }
 
@@ -97,8 +106,10 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
     }
   }
 
-  private def killRequest(requestId: Int, e: Option[Throwable]=None): Unit =
+  private def killRequest(requestId: Int, e: Option[Throwable]=None): Unit = {
+    trace(s"killing request $requestId")
     requests.remove(requestId).foreach(_.setException(DefaultChannelDisconnectedException))
+  }
 
   private def withLength(m: GeneratedMessage) = {
     val b = Unpooled.buffer(m.serializedSize + 4)
@@ -203,13 +214,17 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
   }
 
   override def channelUnregistered(ctx: ChannelHandlerContext): Unit = {
+    channelLost()
+    super.channelUnregistered(ctx)
+  }
+
+  def channelLost(): Unit = {
     registry.unregister(this)
     disconnected.set(true)
     while (requests.nonEmpty) {
       requests.keys.foreach(killRequest(_))
     }
     registry.unregister(this)
-    super.channelUnregistered(ctx)
   }
 
   override def channelRegistered(ctx: ChannelHandlerContext): Unit = {
