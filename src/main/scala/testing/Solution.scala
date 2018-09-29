@@ -1,6 +1,9 @@
 package org.stingray.contester.testing
 
-import org.stingray.contester.problems.{Problem, Test}
+import com.twitter.finagle.Service
+import com.twitter.finagle.http.{Request, RequestBuilder, Response, Status}
+import com.twitter.io.Buf
+import org.stingray.contester.problems.{Problem, ProblemArchiveUploadException, SimpleProblemDb, Test}
 import org.stingray.contester.common._
 import com.twitter.util.Future
 import org.stingray.contester.engine.{InvokerSimpleApi, TestOptions}

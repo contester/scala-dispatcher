@@ -121,7 +121,7 @@ object SimpleProblemDb extends Logging {
 
 case class ProblemArchiveUploadException(x: AnyRef) extends Throwable
 
-class SimpleProblemDb(val baseUrl: String, client: Service[Request, Response]) extends ProblemServerInterface with SanitizeDb with Logging {
+class SimpleProblemDb(val baseUrl: String, val client: Service[Request, Response]) extends ProblemServerInterface with SanitizeDb with Logging {
   import SimpleProblemDb._
 
   private def receiveProblem(url: String): Future[Option[Problem]] = {

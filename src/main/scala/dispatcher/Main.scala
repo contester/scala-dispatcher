@@ -68,7 +68,7 @@ object DispatcherServer extends App {
     val db = Database.forConfig(s"${name}.dbnext")
     val ts = TestingStore("filer:" + simpleDb.get.baseUrl + "fs/", name)
     val rabbitMq = actorSystem.actorOf(Props(classOf[RabbitControl], ConnectionParams.fromConfig(config.getConfig(s"$name.op-rabbit"))))
-    new DbDispatcher(db, polygonClient, tester, custom, ts, rabbitMq, reportbase)
+    new DbDispatcher(db, polygonClient, tester, custom, ts, rabbitMq, reportbase, simpleDb.get.client, simpleDb.get.baseUrl)
   }
 
   val moodles =

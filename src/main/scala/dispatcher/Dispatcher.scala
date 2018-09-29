@@ -6,6 +6,8 @@ import java.sql.Timestamp
 import akka.actor.ActorRef
 import com.spingo.op_rabbit.PlayJsonSupport._
 import com.spingo.op_rabbit.Message
+import com.twitter.finagle.Service
+import com.twitter.finagle.http.{Request, Response}
 import com.twitter.util.{Future, Return, Throw}
 import grizzled.slf4j.Logging
 import org.stingray.contester.common._
@@ -23,7 +25,7 @@ trait Submit extends TimeKey with SubmitWithModule {
 }
 
 case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
-                        arrived: Timestamp, sourceModule: Module, override val schoolMode: Boolean, computer: Long,
+                        arrived: Timestamp, sourceModule: ByteBufferModule, override val schoolMode: Boolean, computer: Long,
                         polygonId: PolygonContestId)
   extends Submit {
   val timestamp = arrived
@@ -36,7 +38,8 @@ case class FinishedTesting(submit: SubmitObject, testingId: Int, compiled: Boole
 case object ProblemNotFoundError extends Throwable
 
 class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, inv: SolutionTester,
-                       store: TestingStore, rabbitMq: ActorRef, reportbase: String) extends Logging {
+                       store: TestingStore, rabbitMq: ActorRef, reportbase: String,
+                       fsClient:Service[Request, Response], fsBaseUrl: String) extends Logging {
   import slick.driver.MySQLDriver.api._
   import org.stingray.contester.utils.Dbutil._
 
@@ -112,8 +115,10 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
           case (testingId, raw) =>
           val progress = new DBSingleResultReporter(db, m, testingId)
             val cprogress = new CombinedSingleProgress(progress, raw)
+            val stSubmit = store.submit(m.id, testingId)
+            ModuleUploader.upload(m.sourceModule, fsClient, fsBaseUrl, stSubmit.sourceModule)
           inv(m, m.sourceModule, problem.problem, cprogress, m.schoolMode,
-            store.submit(m.id, testingId),
+            stSubmit,
             Map.empty, true
           ).flatMap { testingResult =>
             raw.finish(testingResult)

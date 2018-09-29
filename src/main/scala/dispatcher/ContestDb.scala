@@ -2,6 +2,8 @@ package org.stingray.contester.dispatcher
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.spingo.op_rabbit._
+import com.twitter.finagle.Service
+import com.twitter.finagle.http.{Request, Response}
 import grizzled.slf4j.Logging
 import org.stingray.contester.common.TestingStore
 import org.stingray.contester.polygon.PolygonProblemClient
@@ -27,8 +29,9 @@ class DbDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient,
                    custom: CustomTester,
                    store: TestingStore,
                    rabbitMq: ActorRef,
-                   reportbase: String) extends Logging {
-  private val dispatcher = new SubmitDispatcher(db, pdb, invoker, store, rabbitMq, reportbase)
+                   reportbase: String,
+                   fsClient:Service[Request, Response], fsBaseUrl: String) extends Logging {
+  private val dispatcher = new SubmitDispatcher(db, pdb, invoker, store, rabbitMq, reportbase, fsClient, fsBaseUrl)
   private val evaldispatcher = new CustomTestDispatcher(db, custom, store, rabbitMq)
 
   implicit val actorSystem = ActorSystem("such-system")

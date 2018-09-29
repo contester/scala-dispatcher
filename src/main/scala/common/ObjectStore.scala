@@ -1,8 +1,16 @@
 package org.stingray.contester.common
 
+import com.twitter.finagle.Service
+import com.twitter.finagle.http.{Request, RequestBuilder, Response, Status}
+import com.twitter.io.Buf
 import com.twitter.util.Future
 import org.apache.commons.io.FilenameUtils
 import org.stingray.contester.invokers.Sandbox
+import org.stingray.contester.problems.ProblemArchiveUploadException
+
+trait SourceModuleStore {
+  def sourceModule: String
+}
 
 trait CompiledModuleStore {
   def compiledModule: String
@@ -12,12 +20,13 @@ trait TestOutputStore {
   def testOutput(test: Int): String
 }
 
-trait TestingResultStore extends CompiledModuleStore with TestOutputStore
-trait SingleTestStore extends CompiledModuleStore {
+trait TestingResultStore extends CompiledModuleStore with TestOutputStore with SourceModuleStore
+trait SingleTestStore extends CompiledModuleStore with SourceModuleStore {
   def output: String
 }
 
 class InstanceSubmitTestingHandle(submit: String, testingId: Int) extends TestingResultStore {
+  override def sourceModule: String = s"${submit}/sourceModule"
   def compiledModule = s"${submit}/compiledModule"
   def testOutput(test: Int) = s"${submit}/${testingId}/${test}/output"
 }
@@ -31,6 +40,7 @@ object InstanceSubmitTestingHandle {
 }
 
 class CustomTestingHandle(testing: String) extends SingleTestStore {
+  override def sourceModule: String = s"${testing}/sourceModule"
   override def compiledModule: String = s"${testing}/compiledModule"
   override def output: String = s"${testing}/output"
 }
@@ -60,7 +70,7 @@ class ObjectStoreModule(name: String, val moduleType: String, val moduleHash: St
     sandbox.putGridfs(name, destinationName).unit
 }
 
-class ByteBufferModule(moduleTypeRaw: String, content: Array[Byte]) extends Module {
+class ByteBufferModule(moduleTypeRaw: String, val content: Array[Byte]) extends Module {
   val moduleHash = "sha1:" + Blobs.bytesToString(Blobs.getSha1(content)).toLowerCase
   val moduleType = Module.noDot(moduleTypeRaw)
 
@@ -79,3 +89,20 @@ object Module {
       x
 }
 
+object ModuleUploader {
+  def upload(module: ByteBufferModule, client: Service[Request, Response], baseUrl: String, name: String): Future[Unit] = {
+    val xname = if (name.startsWith("filer:"))
+      name.stripPrefix("filer:")
+    else
+      baseUrl + "fs/" + name
+    val request = RequestBuilder().url(xname)
+      .addHeader("X-Fs-Module-Type", module.moduleType)
+      .buildPut(Buf.ByteArray.Owned(module.content))
+    client(request).flatMap { r =>
+      r.status match {
+        case Status.Ok => Future.Done
+        case x => Future.exception(ProblemArchiveUploadException(x))
+      }
+    }
+  }
+}
