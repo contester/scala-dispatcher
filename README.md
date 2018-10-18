@@ -27,3 +27,11 @@ TODO:
 - Separate invoker registry, dispatcher(s), and sanitizers
   like: invs - registry - dispatchers
                         - sanitizer -^
+                  
+TODO 2018:
+- per-submit stdin in moodle
+- если пишут не в тот файл, выдавать нормальное описание ошибки (не "ошибка тестирующей системы")
+- кумир
+- контестер на course.sgu.ru
+- обновить инвокер
+- https://moodle.org/plugins/pluginversions.php?plugin=filter_geshi
