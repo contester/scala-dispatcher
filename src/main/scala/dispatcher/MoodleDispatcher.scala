@@ -1,5 +1,6 @@
 package org.stingray.contester.dispatcher
 
+import java.nio.charset.StandardCharsets
 import java.sql.Timestamp
 
 import akka.actor.{Actor, Props, Stash}
@@ -29,14 +30,16 @@ class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubm
     client.run(
       sqlu"""insert into mdl_contester_results (testingid, processed, result, test, timex, memory, testeroutput, testererror)
             values ($testingId, NOW(), ${r.status.value}, 0, ${r.time / 1000}, ${r.memory},
-        ${new String(r.stdOut, "UTF-8")}, ${new String(r.stdErr, "UTF-8")})""").map(_ => ())
+        ${new String(r.stdOut, StandardCharsets.UTF_8)},
+        ${new String(r.stdErr, StandardCharsets.UTF_8)})""").map(_ => ())
 
   def test(id: Int, r: TestResult) =
     client.run(
       sqlu"""Insert into mdl_contester_results (testingid, processed, result, test, timex, memory, info, testeroutput,
              testererror, testerexitcode) values ($testingId, NOW(), ${r.status.value}, $id, ${r.solution.time / 1000},
              ${r.solution.memory}, ${r.solution.returnCode.abs},
-             ${new String(r.getTesterOutput, "UTF-8")}, ${new String(r.getTesterError, "UTF-8")},
+             ${new String(r.getTesterOutput, StandardCharsets.UTF_8)},
+             ${new String(r.getTesterError, StandardCharsets.UTF_8)},
              ${r.getTesterReturnCode.abs})""").map(_ => ())
 
   def finish(r: SolutionTestingResult) = {
@@ -49,7 +52,7 @@ class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubm
 }
 
 object MoodleResultReporter {
-  import slick.driver.MySQLDriver.api._
+  import slick.jdbc.MySQLProfile.api._
 
   def start(client: JdbcBackend#DatabaseDef, submit: MoodleSubmit) =
     client.run(sqlu"""Insert into mdl_contester_testings (submitid, start) values (${submit.id}, NOW())"""
