@@ -1,5 +1,7 @@
 package org.stingray.contester.common
 
+import java.nio.charset.StandardCharsets
+
 import org.stingray.contester.proto._
 
 /**
@@ -123,7 +125,7 @@ class InteractiveRunResult(first: SingleRunResult, second: SingleRunResult) exte
           case StatusCodes.ACCEPTED => StatusCodes.RUNTIME_ERROR
           case StatusCodes.RUNTIME_ERROR => first.returnCode match {
             case 2 => {
-              val interactorError = new String(Blobs.getBinary(first.stdErr), "UTF-8")
+              val interactorError = new String(Blobs.getBinary(first.stdErr), StandardCharsets.UTF_8)
               if (interactorError.contains("Unexpected end of file"))
                 StatusCodes.RUNTIME_ERROR
               else
