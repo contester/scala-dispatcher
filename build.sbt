@@ -73,6 +73,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-netty-server" % playVersion,
   "com.google.protobuf" % "protobuf-java" % "3.5.1" % "protobuf",
   "com.typesafe" % "config" % "1.3.3",
+  "info.faljse" % "SDNotify" % "1.1",
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 ).map(_.exclude("org.slf4j", "slf4j-jdk14")).map(_.exclude("org.slf4j", "slf4j-log4j12"))

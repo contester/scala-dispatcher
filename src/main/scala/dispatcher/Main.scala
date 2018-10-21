@@ -7,6 +7,7 @@ import com.spingo.op_rabbit.{ConnectionParams, RabbitControl}
 import com.twitter.finagle.redis.Client
 import com.typesafe.config.ConfigFactory
 import controllers.Assets
+import info.faljse.SDNotify.SDNotify
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
@@ -99,4 +100,6 @@ object DispatcherServer extends App {
     }
   }
   bindInvokerTo(new InetSocketAddress(config.getInt("dispatcher.invokerPort")))
+
+  SDNotify.sendNotify()
 }
