@@ -72,7 +72,7 @@ object MoodleTableScanner {
 class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface, inv: SolutionTester, store: TestingStore) extends Logging {
   import slick.jdbc.MySQLProfile.api._
   implicit val getMoodleSubmit = GetResult(r=>
-    MoodleSubmit(r.nextInt(), r.nextInt().toString, r.nextTimestamp(), new ByteBufferModule(r.nextString(), r.nextBytes(), r.nextBoolean()))
+    MoodleSubmit(r.nextInt(), r.nextInt().toString, r.nextTimestamp(), new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBoolean())
   )
 
   private def getSubmit(id: Int) = {
