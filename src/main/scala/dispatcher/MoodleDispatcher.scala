@@ -15,7 +15,7 @@ import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
-case class MoodleSubmit(id: Int, problemId: String, arrived: Timestamp, sourceModule: Module) extends Submit {
+case class MoodleSubmit(id: Int, problemId: String, arrived: Timestamp, sourceModule: Module, stdio: Boolean) extends Submit {
   val timestamp = arrived
   override val schoolMode = true
 
@@ -72,7 +72,7 @@ object MoodleTableScanner {
 class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface, inv: SolutionTester, store: TestingStore) extends Logging {
   import slick.jdbc.MySQLProfile.api._
   implicit val getMoodleSubmit = GetResult(r=>
-    MoodleSubmit(r.nextInt(), r.nextInt().toString, r.nextTimestamp(), new ByteBufferModule(r.nextString(), r.nextBytes()))
+    MoodleSubmit(r.nextInt(), r.nextInt().toString, r.nextTimestamp(), new ByteBufferModule(r.nextString(), r.nextBytes(), r.nextBoolean()))
   )
 
   private def getSubmit(id: Int) = {
@@ -84,6 +84,7 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
          mdl_contester_submits.submitted as Arrived,
          mdl_contester_languages.ext as ModuleId,
          mdl_contester_submits.solution as Solution
+         mdl_contester_submits.iomethod as StdioMethod
          from
          mdl_contester_submits, mdl_contester_languages
          where
@@ -112,8 +113,8 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
   def run(item: MoodleSubmit): Future[Unit] = {
     pdb.getMostRecentProblem(ProblemHandle(s"direct://school.sgu.ru/moodle/${item.problemId}")).flatMap { problem =>
       MoodleResultReporter.start(db, item).flatMap { reporter =>
-        inv(item, item.sourceModule, problem.get, reporter, true,
-          store.submit(item.id, reporter.testingId), Map.empty, false).flatMap(reporter.finish)
+        inv(item, item.sourceModule, problem.get, reporter, schoolMode = true,
+          store.submit(item.id, reporter.testingId), Map.empty, stdio = item.stdio).flatMap(reporter.finish)
       }
     }
   }
