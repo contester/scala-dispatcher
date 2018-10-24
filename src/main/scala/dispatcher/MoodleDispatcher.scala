@@ -83,7 +83,7 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
          mdl_contester_submits.problem as ProblemId,
          mdl_contester_submits.submitted as Arrived,
          mdl_contester_languages.ext as ModuleId,
-         mdl_contester_submits.solution as Solution
+         mdl_contester_submits.solution as Solution,
          mdl_contester_submits.iomethod as StdioMethod
          from
          mdl_contester_submits, mdl_contester_languages
