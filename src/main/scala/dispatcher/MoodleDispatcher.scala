@@ -133,7 +133,11 @@ class MoodleTableScanner(db: JdbcBackend#DatabaseDef, dispatcher: MoodleDispatch
   private def startProcessing(id: Long) = {
     active.add(id)
     info(s"Starting ${id}")
-    dispatcher.runId(id).ensure(self ! DoneWith(id))
+    val saved = self
+    dispatcher.runId(id).ensure {
+      info(s"Done with ${id}")
+      saved ! DoneWith(id)
+    }
   }
 
   override def receive: Receive = {
