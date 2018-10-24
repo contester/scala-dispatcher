@@ -100,15 +100,21 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
 
   import org.stingray.contester.utils.Fu._
 
-  def runId(id: Long): Future[Unit] =
-    getSubmit(id.toInt).flatMap { submit =>
+  def runId(id: Long): Future[Unit] = {
+    val r = getSubmit(id.toInt).flatMap { submit =>
       submit.map(run)
         .getOrElse(Future.Done)
-          .transform { v =>
-            val cv = if (v.isThrow) 254 else 255
-            markWith(id.toInt, cv).unit
-          }
+        .transform { v =>
+          val cv = if (v.isThrow) 254 else 255
+          markWith(id.toInt, cv).unit
+        }
     }
+    r.onFailure {
+      case e =>
+        error(s"err: $e")
+    }
+    r
+  }
 
   def run(item: MoodleSubmit): Future[Unit] = {
     pdb.getMostRecentProblem(ProblemHandle(s"direct://school.sgu.ru/moodle/${item.problemId}")).flatMap { problem =>
