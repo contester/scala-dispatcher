@@ -11,7 +11,7 @@
         <parameter value="-Xlint" />
       </parameters>
     </profile>
-    <profile name="sbt 1" modules="scala-dispatcher">
+    <profile name="sbt 1" modules="dispatcher,scala-dispatcher">
       <option name="deprecationWarnings" value="true" />
       <option name="uncheckedWarnings" value="true" />
       <option name="explainTypeErrors" value="true" />

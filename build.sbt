@@ -13,9 +13,9 @@ name := "dispatcher"
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m",
   "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.8"
 
-version := "2018.0.1"
+version := "2019.0.1"
 
 organization := "org.stingray.contester"
 
@@ -61,7 +61,7 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "util-core" % finagleVersion,
   "com.twitter" %% "bijection-util" % "0.9.6",
   "org.clapper" %% "grizzled-slf4j" % "1.3.2",
-  "com.github.nscala-time" %% "nscala-time" % "2.20.0",
+  "com.github.nscala-time" %% "nscala-time" % "2.22.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.6",
   "commons-io" % "commons-io" % "2.6",
   // "com.rabbitmq" % "amqp-client" % "4.1.0",
