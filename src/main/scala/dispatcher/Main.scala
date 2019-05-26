@@ -7,6 +7,7 @@ import com.spingo.op_rabbit.{ConnectionParams, RabbitControl}
 import com.twitter.finagle.redis.Client
 import com.typesafe.config.ConfigFactory
 import controllers.Assets
+import info.faljse.SDNotify.SDNotify
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
@@ -55,21 +56,24 @@ object DispatcherServer extends App {
   val polygons = Polygons.fromConfig(config.getConfig("polygons").root())
   val reportbase = config.getString("reporting.base")
 
- val polygonClient = PolygonClient(
-   PolygonFilter(AuthPolygonMatcher(polygons.values).apply) andThen CachedHttpService,
-   Client(config.getString("redis")), polygons, simpleDb.get, invokerApi)
 
   import slick.jdbc.MySQLProfile.api._
 
   import scala.collection.JavaConversions._
 
   val dispatchers =
-  for (name <- config.getStringList("dispatcher.standard"); if config.hasPath(name + ".dbnext")) yield {
-    val db = Database.forConfig(s"${name}.dbnext")
-    val ts = TestingStore("filer:" + simpleDb.get.baseUrl + "fs/", name)
-    val rabbitMq = actorSystem.actorOf(Props(classOf[RabbitControl], ConnectionParams.fromConfig(config.getConfig(s"$name.op-rabbit"))))
-    new DbDispatcher(db, polygonClient, tester, custom, ts, rabbitMq, reportbase, simpleDb.get.client, simpleDb.get.baseUrl)
-  }
+    if (config.hasPath("dispatcher.standard")) {
+      val polygonClient = PolygonClient(
+        PolygonFilter(AuthPolygonMatcher(polygons.values).apply) andThen CachedHttpService,
+        Client(config.getString("redis")), polygons, simpleDb.get, invokerApi)
+
+      for (name <- config.getStringList("dispatcher.standard"); if config.hasPath(name + ".dbnext")) yield {
+        val db = Database.forConfig(s"${name}.dbnext")
+        val ts = TestingStore("filer:" + simpleDb.get.baseUrl + "fs/", name)
+        val rabbitMq = actorSystem.actorOf(Props(classOf[RabbitControl], ConnectionParams.fromConfig(config.getConfig(s"$name.op-rabbit"))))
+        new DbDispatcher(db, polygonClient, tester, custom, ts, rabbitMq, reportbase, simpleDb.get.client, simpleDb.get.baseUrl)
+      }
+    } else Nil
 
   val moodles =
   if (config.hasPath("dispatcher.moodles")) {
@@ -96,4 +100,6 @@ object DispatcherServer extends App {
     }
   }
   bindInvokerTo(new InetSocketAddress(config.getInt("dispatcher.invokerPort")))
+
+  SDNotify.sendNotify()
 }

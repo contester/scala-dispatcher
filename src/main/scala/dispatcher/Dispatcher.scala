@@ -40,7 +40,7 @@ case object ProblemNotFoundError extends Throwable
 class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, inv: SolutionTester,
                        store: TestingStore, rabbitMq: ActorRef, reportbase: String,
                        fsClient:Service[Request, Response], fsBaseUrl: String) extends Logging {
-  import slick.driver.MySQLDriver.api._
+  import slick.jdbc.MySQLProfile.api._
   import org.stingray.contester.utils.Dbutil._
 
   implicit private val getSubmitObject = GetResult(r =>

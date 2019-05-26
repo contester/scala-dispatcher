@@ -221,7 +221,7 @@ class FPCSourceHandler(val compiler: String, linux: Boolean) extends SimpleCompi
 }
 
 class PascalABCSourceHandler(val compiler: String) extends SimpleCompileHandler {
-  val binaryExt = "mono"
+  val binaryExt = "exe"
   val moduleTypes = "pascalabc" :: Nil
   val sourceName = "Solution.pas"
   val binary = "Solution.exe"
@@ -249,7 +249,7 @@ class VisualCSharpSourceHandler(val compiler: String, vcvars: String) extends Si
   val sourceName = "Solution.cs"
   val binary = "Solution.exe"
   val moduleTypes = "cs" :: Nil
-  val binaryExt = "csexe"
+  val binaryExt = "exe"
 }
 
 class BPCSourceHandler(val compiler: String, bpc: String) extends SimpleCompileHandler {
