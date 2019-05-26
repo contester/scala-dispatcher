@@ -41,12 +41,12 @@ val opRabbitVersion = "2.1.0"
 
 val finagleVersion = "18.12.0"
 
-val nettyVersion = "4.1.27.Final"
+val nettyVersion = "4.1.36.Final"
 
-val playVersion = "2.6.21"
+val playVersion = "2.6.23"
 
 libraryDependencies ++= Seq(
-  "javax.mail" % "javax.mail-api" % "1.6.1",
+  "javax.mail" % "javax.mail-api" % "1.6.2",
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
   "com.spingo" %% "op-rabbit-play-json"   % opRabbitVersion,
   "io.netty" % "netty-common" % nettyVersion,
@@ -60,6 +60,7 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finagle-redis" % finagleVersion,
   "com.twitter" %% "util-core" % finagleVersion,
   "com.twitter" %% "bijection-util" % "0.9.6",
+  "org.scala-lang.modules" %% "scala-async" % "0.10.0",
   "org.clapper" %% "grizzled-slf4j" % "1.3.2",
   "com.github.nscala-time" %% "nscala-time" % "2.22.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.8",
@@ -73,7 +74,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-netty-server" % playVersion,
   "com.google.protobuf" % "protobuf-java" % "3.7.1" % "protobuf",
   "com.typesafe" % "config" % "1.3.3",
-  "info.faljse" % "SDNotify" % "1.1",
+  "info.faljse" % "SDNotify" % "1.3",
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 ).map(_.exclude("org.slf4j", "slf4j-jdk14")).map(_.exclude("org.slf4j", "slf4j-log4j12"))

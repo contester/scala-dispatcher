@@ -337,6 +337,22 @@ class JavaSourceHandler(val compiler: String, val javac: String, linux: Boolean)
     }
 }
 
+class KumirSourceHandler(baseDir: String) extends SourceHandler {
+  override val sourceName: String = "solution.kum"
+
+  /**
+    * Compile module which is already in the sandbox.
+    *
+    * @param sandbox Sandbox to use for compilation.
+    * @return Result and file name, if any.
+    */
+  override def compile(sandbox: Sandbox): Future[CompileResultAndModule] = {
+    ???
+  }
+
+  override def moduleTypes: Iterable[String] = Seq("kum")
+}
+
 /*
 call "C:\Program Files\Microsoft Visual Studio 8\Common7\Tools\vsvars32.bat"
 csc /out:Solution.csexe %1
