@@ -2,7 +2,7 @@ package org.stingray.contester.invokers
 
 import org.stingray.contester.utils.LocalEnvironmentTools
 import com.twitter.util.Future
-import org.stingray.contester.modules.ModuleHandler
+import org.stingray.contester.modules.{ModuleHandler, SpecializedModuleFactory}
 import org.stingray.contester.proto._
 
 class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) {
@@ -55,7 +55,7 @@ class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) {
     client.executeConnected(first, second).map(x => (x.getFirst, x.getSecond))
 }
 
-class Invoker(val api: InvokerAPI, val moduleFactory: Map[String, ModuleHandler]) {
+class Invoker(val api: InvokerAPI, val moduleFactory: SpecializedModuleFactory) {
   val caps = moduleFactory.keySet
   val instances = api.sandboxes.zipWithIndex.map(x => new InvokerInstance(this, x._2, x._1))
 }

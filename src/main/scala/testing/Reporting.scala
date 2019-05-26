@@ -157,7 +157,7 @@ case class RawLogResultReporter(base: File, val submit: SubmitObject) extends Si
       FileUtils.writeStringToFile(terse, ts + " " + short + "\n", StandardCharsets.UTF_8, true)
       FileUtils.writeStringToFile(detailed, ts + " " + short + "\n", StandardCharsets.UTF_8, true)
       if (!pb.isEmpty) {
-        FileUtils.writeLines(detailed, pb.lines.map(ts + "     " + _).toList.asJava, true)
+        FileUtils.writeLines(detailed, pb.linesIterator.map(ts + "     " + _).toList.asJava, true)
       }
     }
 

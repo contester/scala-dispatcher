@@ -22,7 +22,7 @@ object Compiler extends Logging {
   }
 
   def apply(instance: InvokerInstance, module: Module, stored: String): Future[(CompileResult, Option[Module])] =
-    justCompile(instance.unrestricted, instance.factory(module.moduleType).asInstanceOf[SourceHandler], module)
+    justCompile(instance.unrestricted, instance.factory.getSource(module.moduleType).get, module)
       .flatMap {
       case CompileResultAndModule(compileResult, compiledModuleOption) =>
         compiledModuleOption.map(storeCompiledModule(instance.unrestricted, stored, module.moduleHash, _))

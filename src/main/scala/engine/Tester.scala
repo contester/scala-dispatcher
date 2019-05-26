@@ -6,7 +6,7 @@ import org.apache.commons.io.FilenameUtils
 import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.common._
 import org.stingray.contester.invokers._
-import org.stingray.contester.modules.{BinaryHandler, ModuleHandler}
+import org.stingray.contester.modules.{BinaryHandler, ModuleHandler, SpecializedModuleFactory}
 import org.stingray.contester.problems.{Test, TestLimits}
 import org.stingray.contester.proto.{LocalExecutionParameters, LocalExecutionResult}
 import org.stingray.contester.rpc4.RemoteError
@@ -42,7 +42,7 @@ object Tester extends Logging {
 
   private def runInteractive(instance: InvokerInstance, handler: BinaryHandler, moduleType: String, test: Test) =
     test.prepareInteractorBinary(instance.unrestricted).flatMap { interactorName =>
-      val testerHandler = instance.factory(FilenameUtils.getExtension(interactorName)).asInstanceOf[BinaryHandler]
+      val testerHandler = instance.factory.getBinary(FilenameUtils.getExtension(interactorName)).get
       test.prepareInput(instance.unrestricted).flatMap(_ => test.prepareTester(instance.unrestricted))
           .flatMap(_ => handler.prepare(instance.restricted))
         .flatMap { _ =>
@@ -59,12 +59,12 @@ object Tester extends Logging {
     }
 
   private def testInteractive(instance: InvokerInstance, module: Module, test: Test): Future[TestResult] = {
-    val moduleHandler = instance.factory(module.moduleType).asInstanceOf[BinaryHandler]
+    val moduleHandler = instance.factory.getBinary(module.moduleType).get
     module.putToSandbox(instance.restricted, moduleHandler.solutionName).flatMap { _ =>
       runInteractive(instance, moduleHandler, module.moduleType, test)}.flatMap { runResult =>
       if (runResult.success) {
         test.prepareTesterBinary(instance.unrestricted).flatMap { testerName =>
-          executeTester(instance.unrestricted, instance.factory(FilenameUtils.getExtension(testerName)).asInstanceOf[BinaryHandler], testerName)
+          executeTester(instance.unrestricted, instance.factory.getBinary(FilenameUtils.getExtension(testerName)).get, testerName)
             .map { testerResult =>
             TestResult(runResult, Some(testerResult))
           }
@@ -88,19 +88,19 @@ object Tester extends Logging {
     We can cache the sha1 of the output here.
    */
 
-  private def prepareAndRunTester(sandbox: Sandbox, factory: (String) => ModuleHandler, test: Test): Future[TesterRunResult] =
+  private def prepareAndRunTester(sandbox: Sandbox, factory: SpecializedModuleFactory, test: Test): Future[TesterRunResult] =
     test.prepareInput(sandbox)
       .flatMap { _ => test.prepareTester(sandbox)}
       .flatMap { _ => test.prepareTesterBinary(sandbox)}
       .flatMap { testerName => // Used to have 500ms delay here.
-        executeTester(sandbox, factory(FilenameUtils.getExtension(testerName)).asInstanceOf[BinaryHandler], testerName)
+        executeTester(sandbox, factory.getBinary(FilenameUtils.getExtension(testerName)).get, testerName)
     }
 
-  private def executeAndStoreSuccess(sandbox: Sandbox, factory: (String) => ModuleHandler,
+  private def executeAndStoreSuccess(sandbox: Sandbox, factory: SpecializedModuleFactory,
                                      test: Test, module: Module, resultName: String, stdio: Boolean): Future[(RunResult, Option[String])] =
     test.prepareInput(sandbox)
       .flatMap { _ =>
-      executeSolution(sandbox, factory(module.moduleType).asInstanceOf[BinaryHandler],
+      executeSolution(sandbox, factory.getBinary(module.moduleType).get,
         module, test.getLimits(module.moduleType), stdio = stdio) }
       .flatMap { solutionResult =>
     { if (solutionResult.success) {

@@ -138,6 +138,6 @@ object Sanitizer extends Logging {
    * @return
    */
   def apply(instance: InvokerInstance, problem: ProblemItself, problemAssets: ProblemAssets) =
-    sanitize(instance.unrestricted, problem, problemAssets, instance.factory("zip").asInstanceOf[SevenzipHandler].p7z)
+    sanitize(instance.unrestricted, problem, problemAssets, instance.factory.get7z.get.p7z)
 }
 

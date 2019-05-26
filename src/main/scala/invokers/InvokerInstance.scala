@@ -1,14 +1,15 @@
 package org.stingray.contester.invokers
 
 import com.twitter.util.Future
+import org.stingray.contester.modules.SpecializedModuleFactory
 import org.stingray.contester.proto.SandboxLocations
 
 class InvokerInstance(val invoker: Invoker, val index: Int, val data: SandboxLocations) extends HasCaps[String] {
-  val restricted = new Sandbox(this, true, invoker.api.file(data.run))
-  val unrestricted = new Sandbox(this, false, invoker.api.file(data.compile))
-  val caps = invoker.caps
-  val name = invoker.api.name + "." + index
-  val factory = invoker.moduleFactory
+  val restricted: Sandbox = new Sandbox(this, true, invoker.api.file(data.run))
+  val unrestricted: Sandbox = new Sandbox(this, false, invoker.api.file(data.compile))
+  val caps: Set[String] = invoker.caps
+  val name: String = invoker.api.name + "." + index
+  val factory: SpecializedModuleFactory = invoker.moduleFactory
 
   override def toString =
     name

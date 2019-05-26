@@ -33,7 +33,7 @@ object CustomTester extends Logging {
     }.getOrElse(Future.None))
 
   def apply(instance: InvokerInstance, module: Module, input: Array[Byte], resultName: String): Future[CustomTestResult] = {
-    val moduleHandler = instance.factory(module.moduleType).asInstanceOf[BinaryHandler]
+    val moduleHandler = instance.factory.getBinary(module.moduleType).get
       instance.restricted.put(Blobs.storeBinary(input), "input.txt")
         .flatMap{ _ => Tester.executeSolution(instance.restricted, moduleHandler, module, CustomTestLimits, true) }
         .flatMap { solutionResult =>

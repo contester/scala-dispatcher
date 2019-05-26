@@ -1,15 +1,15 @@
 package org.stingray.contester.modules
 
 import com.twitter.util.Future
-import java.util.zip.ZipInputStream
-
 import org.apache.commons.io.IOUtils
 import org.stingray.contester.ContesterImplicits._
-import org.stingray.contester.common.{Blobs, RealCompileResult}
-import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
+import org.stingray.contester.common.Blobs
 import org.stingray.contester.invokers.{InvokerAPI, RemoteFileName, Sandbox}
 import org.stingray.contester.problems.TestLimits
 import org.stingray.contester.proto.LocalExecutionParameters
+import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
+
+import scala.reflect.ClassTag
 
 final class ModuleHandlerOps(val repr: Future[Seq[ModuleHandler]]) {
   def +(m: ModuleHandler): Future[Seq[ModuleHandler]] =
@@ -39,9 +39,32 @@ abstract class ModuleFactory(api: InvokerAPI) {
     api.glob(x, false).flatMap(found => Future.collect(found.map(_.name).headOption.toSeq.map(f)).map(_.flatten))
 }
 
+case class SpecializedModuleFactory(modules: Map[String, ModuleHandler]) {
+  def keySet = modules.keySet
+
+  private def tryCast[T <: ModuleHandler](x: ModuleHandler)(implicit tag: ClassTag[T]): Option[T] = x match {
+    case v: T => Some(v)
+    case _ => None
+  }
+
+  def getSource(name: String): Option[SourceHandler] =
+    modules.get(name).flatMap(tryCast(_))
+
+  def getBinary(name: String): Option[BinaryHandler] =
+    modules.get(name).flatMap(tryCast(_))
+
+  def get7z: Option[SevenzipHandler] =
+    modules.get("zip").flatMap(tryCast(_))
+}
+
 object ModuleFactory {
-  def apply(api: InvokerAPI) =
-    new Win32ModuleFactory(api).generate.map(x => x.flatMap(y => y.moduleTypes.map(_ -> y)).toMap)
+  def apply(api: InvokerAPI): Future[SpecializedModuleFactory] =
+    new Win32ModuleFactory(api).generate.map { x =>
+      SpecializedModuleFactory(byTypes(x))
+    }
+
+  private def byTypes[A <: ModuleHandler](modules: Iterable[A]) =
+    modules.flatMap(module => module.moduleTypes.map(_ -> module)).toMap
 }
 
 object ScriptLanguage {
@@ -50,33 +73,35 @@ object ScriptLanguage {
 
 class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
   def fvs(m: ModuleHandler): Future[Seq[ModuleHandler]] = Future.value(Seq(m))
+
   def fcf(s: Seq[Future[Seq[ModuleHandler]]]): Future[Seq[ModuleHandler]] = Future.collect(s).map(_.flatten)
 
   implicit def plain2rich(x: Future[Seq[ModuleHandler]]): ModuleHandlerOps = new ModuleHandlerOps(x)
-  implicit def rich2plain(x: ModuleHandlerOps): Future[Seq[ModuleHandler]] = x.repr
 
-  private def win16(ntvdm: String) =
-    add(api.disks / "WINDOWS" / "System32" / "cmd.exe", win16Compilers(_)) +
-    new Win16BinaryHandler
+  implicit def rich2plain(x: ModuleHandlerOps): Future[Seq[ModuleHandler]] = x.repr
 
   def generate: Future[Seq[ModuleHandler]] =
     add((api.disks / "mingw" / "bin" / "gcc.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "gcc.exe"), (x: String) => new GCCSourceHandler(x, false, false, false)) +
-    add((api.disks / "mingw" / "bin" / "g++.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "g++.exe"), (x: String) => new GCCSourceHandler(x, true, false, false)) +
+      add((api.disks / "mingw" / "bin" / "g++.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "g++.exe"), (x: String) => new GCCSourceHandler(x, true, false, false)) +
       add((api.disks / "mingw" / "bin" / "g++.exe") ++ (api.disks / "Programs" / "mingw" / "bin" / "g++.exe"), (x: String) => new GCCSourceHandler(x, true, false, true)) +
-    add(api.programFiles / "Borland" / "Delphi7" / "bin" / "dcc32.exe", (x: String) => new DelphiSourceHandler(x)) +
-    add(api.programFiles / "Mono" / "bin" / "mono.exe", (x: String) => new MonoBinaryHandler(x)) +
-    add((api.disks / "FPC" / "*" / "bin" / "i386-win32" / "fpc.exe") ++ (api.disks / "Programs" / "FP" / "bin" / "i386-win32" / "fpc.exe"), (x: String) => new FPCSourceHandler(x, false)) +
-    add((api.programFiles / "PascalABC.NET" / "pabcnetcclear.exe") ++ (api.disks / "Programs" / "PascalABC.NET" / "pabcnetcclear.exe"), (x: String) => new PascalABCSourceHandler(x)) +
-    add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
-    add(api.disks / "WINDOWS" / "System32" / "cmd.exe", visualStudio(_)) +
-    add((api.disks / "Python37" / "Python.exe") ++ (api.disks / "Python36" / "Python.exe") ++ (api.disks / "Python35" / "Python.exe") ++ (api.disks / "Python34" / "Python.exe") ++ (api.disks / "Programs" / "Python-3" / "Python.exe"), new PythonModuleHandler("py3", _)) +
-    add((api.disks / "Python27" / "Python.exe") ++ (api.disks / "Programs" / "Python-2" / "Python.exe"), new PythonModuleHandler("py2", _)) +
-    add(api.disks / "WINDOWS" / "System32" / "cmd.exe", java(_)) + p7z + new Win32BinaryHandler
+      add(api.programFiles / "Borland" / "Delphi7" / "bin" / "dcc32.exe", (x: String) => new DelphiSourceHandler(x)) +
+      add(api.programFiles / "Mono" / "bin" / "mono.exe", (x: String) => new MonoBinaryHandler(x)) +
+      add((api.disks / "FPC" / "*" / "bin" / "i386-win32" / "fpc.exe") ++ (api.disks / "Programs" / "FP" / "bin" / "i386-win32" / "fpc.exe"), (x: String) => new FPCSourceHandler(x, false)) +
+      add((api.programFiles / "PascalABC.NET" / "pabcnetcclear.exe") ++ (api.disks / "Programs" / "PascalABC.NET" / "pabcnetcclear.exe"), (x: String) => new PascalABCSourceHandler(x)) +
+      add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
+      add(api.disks / "WINDOWS" / "System32" / "cmd.exe", visualStudio(_)) +
+      add((api.disks / "Python37" / "Python.exe") ++ (api.disks / "Python36" / "Python.exe") ++ (api.disks / "Python35" / "Python.exe") ++ (api.disks / "Python34" / "Python.exe") ++ (api.disks / "Programs" / "Python-3" / "Python.exe"), new PythonModuleHandler("py3", _)) +
+      add((api.disks / "Python27" / "Python.exe") ++ (api.disks / "Programs" / "Python-2" / "Python.exe"), new PythonModuleHandler("py2", _)) +
+      add(api.disks / "WINDOWS" / "System32" / "cmd.exe", java(_)) + p7z + new Win32BinaryHandler
+
+  private def win16(ntvdm: String) =
+    add(api.disks / "WINDOWS" / "System32" / "cmd.exe", win16Compilers(_)) +
+      new Win16BinaryHandler
 
   private def win16Compilers(cmd: String): Future[Seq[ModuleHandler]] =
     add(api.disks / "Compiler" / "BP" / "Bin" / "bpc.exe", (x: String) => new BPCSourceHandler(cmd, x)) +
-    add(api.disks / "Compiler" / "BC" / "Bin" / "bcc.exe",
-      (x: String) => Seq(new BCCSourceHandler(cmd, x, false), new BCCSourceHandler(cmd, x, true)))
+      add(api.disks / "Compiler" / "BC" / "Bin" / "bcc.exe",
+        (x: String) => Seq(new BCCSourceHandler(cmd, x, false), new BCCSourceHandler(cmd, x, true)))
 
   private def visualStudio(cmd: String): Future[Seq[ModuleHandler]] =
     add(api.programFiles / "Microsoft Visual Studio*" / "Common7" / "Tools" / "vsvars32.bat",
@@ -84,9 +109,9 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
 
   private def java(cmd: String): Future[Seq[ModuleHandler]] =
     add((api.disks / "Programs" / "jdk*" / "bin" / "java.exe") ++ (api.programFiles / "Java" / "jdk*" / "bin" / "java.exe"), (x: String) => new JavaBinaryHandler(x, false)) +
-    add((api.disks / "Programs" / "Java-7-32" / "bin" / "javac.exe") ++ (api.programFiles / "Java" / "jdk*" / "bin" / "javac.exe"),
-      (javac: String) =>
-        add(api.programFiles / "Java" / "jdk*" / "bin" / "jar.exe", (x: String) => new JavaSourceHandler(cmd, javac, false)))
+      add((api.disks / "Programs" / "Java-7-32" / "bin" / "javac.exe") ++ (api.programFiles / "Java" / "jdk*" / "bin" / "javac.exe"),
+        (javac: String) =>
+          add(api.programFiles / "Java" / "jdk*" / "bin" / "jar.exe", (x: String) => new JavaSourceHandler(cmd, javac, false)))
 
   private def p7z: Future[Seq[ModuleHandler]] =
     add(api.programFiles / "7-Zip" / "7z.exe", new SevenzipHandler(_))
@@ -97,13 +122,13 @@ class PythonModuleHandler(ext: String, val python: String) extends BinaryHandler
 
   def getTesterParameters(sandbox: Sandbox, name: String,
                           arguments: List[String]): Future[LocalExecutionParameters] =
-  sandbox.getExecutionParameters(
-    python,  ("-O":: name :: Nil) ++ arguments)
+    sandbox.getExecutionParameters(
+      python, ("-O" :: name :: Nil) ++ arguments)
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits): Future[LocalExecutionParameters] =
     sandbox.getExecutionParameters(
-      python,  "-O":: "Solution.py" :: Nil)
-        .map(_.setSolution.setMemoryLimit(test.memoryLimit)
+      python, "-O" :: "Solution.py" :: Nil)
+      .map(_.setSolution.setMemoryLimit(test.memoryLimit)
         .setTimeLimitMicros(test.timeLimitMicros))
 
   def moduleTypes: Iterable[String] = ext :: Nil
@@ -115,11 +140,11 @@ class MonoBinaryHandler(val monoPath: String) extends BinaryHandler {
   def getTesterParameters(sandbox: Sandbox, name: String,
                           arguments: List[String]): Future[LocalExecutionParameters] =
     sandbox.getExecutionParameters(
-      monoPath,  (name :: Nil) ++ arguments)
+      monoPath, (name :: Nil) ++ arguments)
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits): Future[LocalExecutionParameters] =
     sandbox.getExecutionParameters(
-      monoPath,   "solution.exe" :: Nil)
+      monoPath, "solution.exe" :: Nil)
       .map(_.setSolution.setMemoryLimit(test.memoryLimit)
         .setTimeLimitMicros(test.timeLimitMicros))
 
@@ -127,9 +152,10 @@ class MonoBinaryHandler(val monoPath: String) extends BinaryHandler {
 }
 
 class LinuxBinaryHandler extends BinaryHandler {
-  def moduleTypes = "linux-bin" :: Nil
   val binaryExt = "bin"
   val solutionName = "Solution.bin"
+
+  def moduleTypes = "linux-bin" :: Nil
 
   def getTesterParameters(sandbox: Sandbox, name: String, arguments: List[String]) =
     sandbox.getExecutionParameters((sandbox.path / name).name, arguments)
@@ -137,7 +163,7 @@ class LinuxBinaryHandler extends BinaryHandler {
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     sandbox.getExecutionParameters((sandbox.path / "Solution.bin").name, Nil)
       .map(_.setSolution.setMemoryLimit(test.memoryLimit)
-      .setTimeLimitMicros(test.timeLimitMicros))
+        .setTimeLimitMicros(test.timeLimitMicros))
 }
 
 class Win16BinaryHandler extends BinaryHandler {
@@ -147,16 +173,17 @@ class Win16BinaryHandler extends BinaryHandler {
 
   val cmd = "C:\\Windows\\System32\\cmd.exe"
 
-  private def w16(sandbox: Sandbox, name: String) =
-    sandbox.getExecutionParameters(name, Nil).map(_.win16)
-    //sandbox.getExecutionParameters(cmd, "/S /C \"" + name + "\"")
-
   def getTesterParameters(sandbox: Sandbox, name: String, arguments: List[String]) =
     sandbox.getExecutionParameters((sandbox.path / name).name, arguments).map(_.win16)
+
+  //sandbox.getExecutionParameters(cmd, "/S /C \"" + name + "\"")
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     w16(sandbox, (sandbox.path / "Solution.exe").name)
       .map(_.setSolution.setTimeLimitMicros(test.timeLimitMicros))
+
+  private def w16(sandbox: Sandbox, name: String) =
+    sandbox.getExecutionParameters(name, Nil).map(_.win16)
 }
 
 class Win32BinaryHandler extends BinaryHandler {
@@ -170,11 +197,11 @@ class Win32BinaryHandler extends BinaryHandler {
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     sandbox.getExecutionParameters((sandbox.path / "Solution.exe").name, Nil)
       .map(_.setSolution.setMemoryLimit(test.memoryLimit)
-      .setTimeLimitMicros(test.timeLimitMicros))
+        .setTimeLimitMicros(test.timeLimitMicros))
 }
 
 class WineWin32Handler extends BinaryHandler {
-  val moduleTypes = "exe" ::  Nil
+  val moduleTypes = "exe" :: Nil
   //override def internal = true
   val binaryExt = "exe"
   val solutionName = "Solution.exe"
@@ -185,22 +212,22 @@ class WineWin32Handler extends BinaryHandler {
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     sandbox.getExecutionParameters((sandbox.path / "Solution.exe").name, Nil)
       .map(_.setSolution.setMemoryLimit(test.memoryLimit)
-      .setTimeLimitMicros(test.timeLimitMicros))
+        .setTimeLimitMicros(test.timeLimitMicros))
 }
 
 
 class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean, c11: Boolean) extends SimpleCompileHandler {
   val binaryExt = if (linux) "linux-bin" else "exe"
-  private val linuxPrefix = if (linux) "linux-" else ""
   val ext = if (cplusplus) "cc" else "c"
   val moduleTypes = linuxPrefix + (if (cplusplus) (if (c11) "cc14" else "g++") else "gcc") :: Nil
-  val commonFlags =  "-static" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
-     "-O2" :: "-o" :: "Solution." + binaryExt :: "Solution." + ext :: Nil
+  val commonFlags = "-static" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
+    "-O2" :: "-o" :: "Solution." + binaryExt :: "Solution." + ext :: Nil
   val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=67108864" :: commonFlags)
   val pflags01: Seq[String] = if (c11) "-std=c++14" :: Nil else Nil
   val flags: ExecutionArguments = if (cplusplus) ("-x" :: "c++" :: platformFlags) ++ pflags01 else platformFlags
   val sourceName = "Solution." + ext
   val binary = "Solution." + binaryExt
+  private val linuxPrefix = if (linux) "linux-" else ""
 }
 
 class DelphiSourceHandler(val compiler: String) extends SimpleCompileHandler {
@@ -212,11 +239,15 @@ class DelphiSourceHandler(val compiler: String) extends SimpleCompileHandler {
 }
 
 class FPCSourceHandler(val compiler: String, linux: Boolean) extends SimpleCompileHandler {
-  private val linuxPrefix = if (linux) "linux-" else ""
   val binaryExt = if (linux) "linux-bin" else "exe"
+  private val linuxPrefix = if (linux) "linux-" else ""
+
   def moduleTypes = (linuxPrefix + "pp") :: Nil
+
   def flags: ExecutionArguments = "-O2" :: "-dONLINE_JUDGE" :: "-Cs67107839" :: "-XS" :: "Solution.pas" :: "-oSolution.exe" :: Nil
+
   def sourceName = "Solution.pas"
+
   def binary = "Solution.exe"
 }
 
@@ -225,6 +256,7 @@ class PascalABCSourceHandler(val compiler: String) extends SimpleCompileHandler 
   val moduleTypes = "pascalabc" :: Nil
   val sourceName = "Solution.pas"
   val binary = "Solution.exe"
+
   def flags: ExecutionArguments = "Solution.pas" :: Nil
 }
 
@@ -273,10 +305,9 @@ class BCCSourceHandler(val compiler: String, bcc: String, cplusplus: Boolean) ex
 
 class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler {
   val binaryExt = "jar"
-  private val linuxPrefix = if (linux) "linux-" else ""
   val solutionName = "Solution.jar"
   val moduleTypes = (linuxPrefix + "jar") :: Nil
-
+  private val linuxPrefix = if (linux) "linux-" else ""
 
   override def prepare(sandbox: Sandbox): Future[Unit] =
     JavaUtils.resourcesToSandbox(sandbox, "contesteragent.jar", "java.policy").unit
@@ -286,22 +317,28 @@ class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler 
       java, "-XX:-UsePerfData" :: "-Xmx256M" :: "-DONLINE_JUDGE=true" :: "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
         "-jar" :: name :: arguments)
 
+  def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
+    sandbox.getExecutionParameters(
+      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss64M" :: "-DONLINE_JUDGE=true" ::
+        "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
+        "-Djava.security.manager" :: "-Djava.security.policy=java.policy" :: "-javaagent:contesteragent.jar" ::
+        "-jar" :: "Solution.jar" :: Nil))
+      .map(_.setTimeLimitMicros(test.timeLimitMicros).setSolution)
+
   private def getTestLimits(test: TestLimits): List[String] = {
     val ml0 = test.memoryLimit / (1024 * 1024)
     val ml = (if (ml0 < 32) 32 else ml0).toString
     ("-Xmx" + ml + "M") :: ("-Xms" + ml + "M") :: Nil
   }
-
-  def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
-    sandbox.getExecutionParameters(
-      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss64M" :: "-DONLINE_JUDGE=true" ::
-        "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
-        "-Djava.security.manager"::"-Djava.security.policy=java.policy"::"-javaagent:contesteragent.jar" ::
-        "-jar" :: "Solution.jar" :: Nil))
-      .map(_.setTimeLimitMicros(test.timeLimitMicros).setSolution)
 }
 
 object JavaUtils {
+  def resourcesToSandbox(sandbox: Sandbox, names: String*) =
+    Future.collect(names.map(resourceToSandbox(sandbox, _)))
+
+  private def resourceToSandbox(sandbox: Sandbox, name: String) =
+    readResource("/" + name).flatMap(buffer => sandbox.put(Blobs.storeBinary(buffer), name))
+
   private def readResource(s: String): Future[Array[Byte]] =
     Future {
       val addon = this.getClass.getResourceAsStream(s)
@@ -311,30 +348,24 @@ object JavaUtils {
         addon.close()
       }
     }
-
-  private def resourceToSandbox(sandbox: Sandbox, name: String) =
-    readResource("/" + name).flatMap(buffer => sandbox.put(Blobs.storeBinary(buffer), name))
-
-  def resourcesToSandbox(sandbox: Sandbox, names: String*) =
-    Future.collect(names.map(resourceToSandbox(sandbox, _)))
 }
 
 class JavaSourceHandler(val compiler: String, val javac: String, linux: Boolean) extends SimpleCompileHandler {
-  private val linuxPrefix = if (linux) "linux-" else ""
   val binaryExt = if (linux) "linux-jar" else "jar"
   val flags: ExecutionArguments = "/S /C javac-ext.bat Solution.java"
   val jarFlags = "cmf" :: "manifest.mf" :: "Solution.jar" :: Nil
   val moduleTypes = (linuxPrefix + "java") :: Nil
   val sourceName = "Solution.java"
   val binary = "Solution.jar"
-
-  def unpackAddon(sandbox: Sandbox) =
-    JavaUtils.resourcesToSandbox(sandbox, "javac-ext.bat").unit
+  private val linuxPrefix = if (linux) "linux-" else ""
 
   override def compile(sandbox: Sandbox): Future[CompileResultAndModule] =
     unpackAddon(sandbox).flatMap { _ =>
       super.compile(sandbox)
     }
+
+  def unpackAddon(sandbox: Sandbox) =
+    JavaUtils.resourcesToSandbox(sandbox, "javac-ext.bat").unit
 }
 
 class KumirSourceHandler(baseDir: String) extends SourceHandler {
