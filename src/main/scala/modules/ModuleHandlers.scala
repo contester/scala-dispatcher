@@ -1,6 +1,7 @@
 package org.stingray.contester.modules
 
 import com.twitter.util.Future
+import grizzled.slf4j.Logging
 import org.apache.commons.io.IOUtils
 import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.common.Blobs
@@ -39,22 +40,32 @@ abstract class ModuleFactory(api: InvokerAPI) {
     api.glob(x, false).flatMap(found => Future.collect(found.map(_.name).headOption.toSeq.map(f)).map(_.flatten))
 }
 
-case class SpecializedModuleFactory(modules: Map[String, ModuleHandler]) {
+case class SpecializedModuleFactory(modules: Map[String, ModuleHandler]) extends Logging {
   def keySet = modules.keySet
 
-  private def tryCast[T <: ModuleHandler](x: ModuleHandler)(implicit tag: ClassTag[T]): Option[T] = x match {
-    case v: T => Some(v)
-    case _ => None
-  }
-
   def getSource(name: String): Option[SourceHandler] =
-    modules.get(name).flatMap(tryCast(_))
+    modules.get(name).flatMap { m =>
+      m match {
+        case v: SourceHandler => Some(v)
+        case _ => None
+      }
+    }
 
   def getBinary(name: String): Option[BinaryHandler] =
-    modules.get(name).flatMap(tryCast(_))
+    modules.get(name).flatMap { m =>
+      m match {
+        case v: BinaryHandler => Some(v)
+        case _ => None
+      }
+    }
 
   def get7z: Option[SevenzipHandler] =
-    modules.get("zip").flatMap(tryCast(_))
+    modules.get("zip").flatMap { m =>
+      m match {
+        case v: SevenzipHandler => Some(v)
+        case _ => None
+      }
+    }
 }
 
 object ModuleFactory {
