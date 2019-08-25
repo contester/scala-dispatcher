@@ -304,10 +304,10 @@ class BCCSourceHandler(val compiler: String, bcc: String, cplusplus: Boolean) ex
 }
 
 class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler {
+  private val linuxPrefix = if (linux) "linux-" else ""
   val binaryExt = "jar"
   val solutionName = "Solution.jar"
   val moduleTypes = (linuxPrefix + "jar") :: Nil
-  private val linuxPrefix = if (linux) "linux-" else ""
 
   override def prepare(sandbox: Sandbox): Future[Unit] =
     JavaUtils.resourcesToSandbox(sandbox, "contesteragent.jar", "java.policy").unit
@@ -351,13 +351,13 @@ object JavaUtils {
 }
 
 class JavaSourceHandler(val compiler: String, val javac: String, linux: Boolean) extends SimpleCompileHandler {
+  private val linuxPrefix = if (linux) "linux-" else ""
   val binaryExt = if (linux) "linux-jar" else "jar"
   val flags: ExecutionArguments = "/S /C javac-ext.bat Solution.java"
   val jarFlags = "cmf" :: "manifest.mf" :: "Solution.jar" :: Nil
   val moduleTypes = (linuxPrefix + "java") :: Nil
   val sourceName = "Solution.java"
   val binary = "Solution.jar"
-  private val linuxPrefix = if (linux) "linux-" else ""
 
   override def compile(sandbox: Sandbox): Future[CompileResultAndModule] =
     unpackAddon(sandbox).flatMap { _ =>
