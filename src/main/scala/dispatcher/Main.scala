@@ -92,13 +92,20 @@ object DispatcherServer extends App {
   import play.api.routing.sird._
   import play.core.server._
 
-  val server = NettyServer.fromRouter(ServerConfig(
-  port = Some(config.getInt("dispatcher.port")))) {
-    case GET(p"/assets/$file*") => Assets.versioned(path = "/public", file)
-    case GET(p"/invokers") => Action {
-      Results.Ok(html.invokers(invoker))
+  val server = NettyServer.fromRouterWithComponents(
+    ServerConfig(
+      port = Some(config.getInt("dispatcher.port")),
+    )
+  ) { components =>
+    import components.{ defaultActionBuilder => Action }
+    {
+      case GET(p"/assets/$file*") => Assets.versioned(path = "/public", file)
+      case GET(p"/invokers") => Action {
+        Results.Ok(html.invokers(invoker))
+      }
     }
   }
+
   bindInvokerTo(new InetSocketAddress(config.getInt("dispatcher.invokerPort")))
 
   SDNotify.sendNotify()
