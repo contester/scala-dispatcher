@@ -1,4 +1,4 @@
-package org.stingray.contester.polygon
+/*package org.stingray.contester.polygon
 
 import java.net.URI
 
@@ -7,7 +7,7 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
 import scala.xml.XML
-/*
+
 
 class NamingTests extends FlatSpec with Matchers {
   "ProblemIds" should "match" in {

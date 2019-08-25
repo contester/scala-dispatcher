@@ -3,11 +3,8 @@ package org.stingray.contester.utils
 import com.google.protobuf.Message
 import java.io.InputStream
 
-import com.trueaccord.scalapb.GeneratedMessage
 import com.twitter.io.Buf
 import org.jboss.netty.buffer.ChannelBuffer
-
-import scala.reflect.macros.blackbox
 
 /** Parametrized functions to create protobufs.
   * You will usually do createProtobuf[MessageType](value).

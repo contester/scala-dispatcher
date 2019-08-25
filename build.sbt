@@ -13,7 +13,7 @@ name := "dispatcher"
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m",
   "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
-scalaVersion := "2.12.8"
+scalaVersion := "2.12.9"
 
 version := "2019.0.1"
 
@@ -41,9 +41,9 @@ val opRabbitVersion = "2.1.0"
 
 val finagleVersion = "18.12.0"
 
-val nettyVersion = "4.1.36.Final"
+val nettyVersion = "4.1.39.Final"
 
-val playVersion = "2.6.23"
+val playVersion = "2.7.3"
 
 libraryDependencies ++= Seq(
   "javax.mail" % "javax.mail-api" % "1.6.2",
@@ -63,17 +63,17 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-async" % "0.10.0",
   "org.clapper" %% "grizzled-slf4j" % "1.3.2",
   "com.github.nscala-time" %% "nscala-time" % "2.22.0",
-  "org.apache.httpcomponents" % "httpclient" % "4.5.8",
+  "org.apache.httpcomponents" % "httpclient" % "4.5.9",
   "commons-io" % "commons-io" % "2.6",
   // "com.rabbitmq" % "amqp-client" % "4.1.0",
-  "org.mariadb.jdbc" % "mariadb-java-client" % "2.4.1",
-  "org.clapper" %% "avsl" % "1.0.15",
-  "com.typesafe.slick" %% "slick" % "3.3.0",
-  "com.typesafe.slick" %% "slick-hikaricp" % "3.3.0",
+  "org.mariadb.jdbc" % "mariadb-java-client" % "2.4.3",
+  "org.clapper" %% "avsl" % "1.0.18",
+  "com.typesafe.slick" %% "slick" % "3.3.2",
+  "com.typesafe.slick" %% "slick-hikaricp" % "3.3.2",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,
-  "com.google.protobuf" % "protobuf-java" % "3.7.1" % "protobuf",
-  "com.typesafe" % "config" % "1.3.3",
+  "com.google.protobuf" % "protobuf-java" % "3.9.1" % "protobuf",
+  "com.typesafe" % "config" % "1.3.4",
   "info.faljse" % "SDNotify" % "1.3",
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"
