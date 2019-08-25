@@ -219,6 +219,7 @@ class WineWin32Handler extends BinaryHandler {
 class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean, c11: Boolean) extends SimpleCompileHandler {
   val binaryExt = if (linux) "linux-bin" else "exe"
   val ext = if (cplusplus) "cc" else "c"
+  private val linuxPrefix = if (linux) "linux-" else ""
   val moduleTypes = linuxPrefix + (if (cplusplus) (if (c11) "cc14" else "g++") else "gcc") :: Nil
   val commonFlags = "-static" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
     "-O2" :: "-o" :: "Solution." + binaryExt :: "Solution." + ext :: Nil
@@ -227,7 +228,6 @@ class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean,
   val flags: ExecutionArguments = if (cplusplus) ("-x" :: "c++" :: platformFlags) ++ pflags01 else platformFlags
   val sourceName = "Solution." + ext
   val binary = "Solution." + binaryExt
-  private val linuxPrefix = if (linux) "linux-" else ""
 }
 
 class DelphiSourceHandler(val compiler: String) extends SimpleCompileHandler {
