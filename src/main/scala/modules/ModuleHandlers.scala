@@ -115,7 +115,8 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
         (x: String) => Seq(new BCCSourceHandler(cmd, x, false), new BCCSourceHandler(cmd, x, true)))
 
   private def visualStudio(cmd: String): Future[Seq[ModuleHandler]] =
-    add(api.programFiles / "Microsoft Visual Studio*" / "Common7" / "Tools" / "vsvars32.bat",
+    // api.programFiles / "Microsoft Visual Studio*" / "Common7" / "Tools" / "vsvars32.bat"
+    add(api.programFiles / "Microsoft Visual Studio" / "2019"/ "Community"/ "VC" / "Auxiliary" / "Build" / "vcvars32.bat",
       (x: String) => Seq(new VisualStudioSourceHandler(cmd, x), new VisualCSharpSourceHandler(cmd, x)))
 
   private def java(cmd: String): Future[Seq[ModuleHandler]] =
