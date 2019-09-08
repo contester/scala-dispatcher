@@ -9,6 +9,9 @@
       <parameters>
         <parameter value="-Xcheckinit" />
         <parameter value="-Xlint" />
+        <parameter value="-Ypartial-unification" />
+        <parameter value="-Ywarn-dead-code" />
+        <parameter value="-optimize" />
       </parameters>
     </profile>
   </component>

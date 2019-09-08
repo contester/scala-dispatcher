@@ -15,12 +15,12 @@ javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt
 
 scalaVersion := "2.12.9"
 
-version := "2019.0.1"
+version := "2019.0.2"
 
 organization := "org.stingray.contester"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-explaintypes", "-Xcheckinit",
-  "-Xlint")
+  "-Xlint", "-Ypartial-unification","-Ywarn-dead-code", "-optimize")
 //, "-Xfatal-warnings")
 
 // javacOptions in Compile ++= Seq("-source", "1.6",  "-target", "1.7")
