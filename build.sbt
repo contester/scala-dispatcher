@@ -17,6 +17,8 @@ scalaVersion := "2.12.9"
 
 version := "2019.0.2"
 
+maintainer := "i@stingr.net"
+
 organization := "org.stingray.contester"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-explaintypes", "-Xcheckinit",
