@@ -102,9 +102,10 @@ class DBReporter(val client: JdbcBackend#DatabaseDef) {
    */
   def registerTestingOnly(submit: SubmitObject, testingId: Int) =
     client.run(
-      sqlu"""Replace Submits (Contest, Arrived, Team, Task, ID, Ext, Computer, TestingID, Touched, Finished)
+      sqlu"""insert Submits (Contest, Arrived, Team, Task, ID, Ext, Computer, TestingID, Touched, Finished)
       values (${submit.contestId}, ${submit.arrived}, ${submit.teamId}, ${submit.problemId}, ${submit.id},
-      ${submit.sourceModule.moduleType}, ${submit.computer}, $testingId, NOW(), 0)""")
+      ${submit.sourceModule.moduleType}, ${submit.computer}, $testingId, NOW(), 0) on duplicate key update
+        TestingID = $testingId, Touched = NOW()""")
 
   def allocateAndRegister(submit: SubmitObject, problemId: String): Future[Int] =
     allocateTesting(submit.id, problemId).flatMap { testingId =>
