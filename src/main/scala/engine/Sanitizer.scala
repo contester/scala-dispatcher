@@ -6,7 +6,6 @@ import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.common.Module
 import org.stingray.contester.engine.Sanitizer.ProblemItself
 import org.stingray.contester.invokers._
-import org.stingray.contester.modules.SevenzipHandler
 import org.stingray.contester.problems._
 
 import scala.util.matching.Regex
