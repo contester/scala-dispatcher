@@ -43,14 +43,6 @@ class InvokerRpcClient(val client: RpcClient) {
       CopyOperations(entries = operations, sandboxId = sandboxId),
       FileStats).map(_.entries)
 
-  def gridfsPut(names: Seq[(String, String)], sandboxId: String) = {
-    val operations = names.map {
-      case (source, destination) =>
-        CopyOperation(localFileName = destination, remoteLocation = source, upload = false)
-    }
-    gridfsCopy(operations, sandboxId)
-  }
-
   def gridfsGet(names: Seq[GridfsGetEntry], sandboxId: String) =
     gridfsCopy(names.map(_.toCopyOperation), sandboxId)
 
