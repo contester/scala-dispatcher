@@ -85,7 +85,7 @@ object ScriptLanguage {
 
 object ModuleRegistryForConfiguration {
   // TODO: finish this.
-  type ModuleRegistryFunc = Function[String, Config, Future[Seq[ModuleHandler]]]
+  type ModuleRegistryFunc = (String, Config) => Future[Seq[ModuleHandler]]
 
   private def getBoolConfig(config: Config, name: String) =
     if (config.hasPath(name)) Some(config.getBoolean(name)) else None
@@ -96,7 +96,7 @@ object ModuleRegistryForConfiguration {
       getBoolConfig(conf, "c11").getOrElse(false))))
   }
 
-  val factories = Map[String, (String, Config) => Future[Seq[ModuleHandler]]](
+  val factories = Map[String, ModuleRegistryFunc](
     "gcc" -> gccSource
   )
 
