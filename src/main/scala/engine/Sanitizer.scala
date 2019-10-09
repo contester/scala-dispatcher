@@ -6,7 +6,6 @@ import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.common.Module
 import org.stingray.contester.engine.Sanitizer.ProblemItself
 import org.stingray.contester.invokers._
-import org.stingray.contester.modules.SevenzipHandler
 import org.stingray.contester.problems._
 
 import scala.util.matching.Regex
@@ -68,7 +67,6 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemI
 
 
   private[this] val testBase = base / "tests"
-  private[this] val tests = 1 to problem.testCount
 
   def statAndSave(sandbox: Sandbox, tester: InvokerRemoteFile, interactor: Option[InvokerRemoteFile]) = {
     val problemFiles = problemFileList(tester, interactor).map(x => x._1.name(sandbox.invoker.api.pathSeparator) -> x).toMap
@@ -86,7 +84,7 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemI
   }
 
   private[this] def problemFileList(tester: InvokerRemoteFile, interactor: Option[InvokerRemoteFile]): Iterable[(RemoteFileName, String, Option[String])] =
-    tests.flatMap { i =>
+    (1 to problem.testCount).flatMap { i =>
       (testBase / "%02d".format(i), problemAssets.inputName(i), None) ::
         (testBase / "%02d.a".format(i), problemAssets.answerName(i), None) ::
       Nil

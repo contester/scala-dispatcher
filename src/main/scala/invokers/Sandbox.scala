@@ -21,11 +21,8 @@ class Sandbox(val instance: InvokerInstance, val restricted: Boolean, val path: 
   def put(blob: Blob, name: String): Future[InvokerRemoteFile] =
     i.put(sandboxId / name, blob)
 
-  private def putGridfs(source: String, dest: RemoteFileName): Future[Option[InvokerRemoteFile]] =
-    i.putGridfs(Seq(source -> dest), sandboxId.name).map(_.headOption)
-
   def putGridfs(source: String, dest: String): Future[Option[InvokerRemoteFile]] =
-    putGridfs(source, sandboxId / dest)
+    i.putGridfs(Seq(source -> (sandboxId / dest)), sandboxId.name).map(_.headOption)
 
   def getGridfs(items: Seq[(RemoteFileName, String, Option[String])]) =
     i.getGridfs(items, sandboxId.name)
