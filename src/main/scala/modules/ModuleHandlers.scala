@@ -1,6 +1,7 @@
 package org.stingray.contester.modules
 
 import com.twitter.util.Future
+import com.typesafe.config.{Config, ConfigObject}
 import grizzled.slf4j.Logging
 import org.apache.commons.io.IOUtils
 import org.stingray.contester.ContesterImplicits._
@@ -80,6 +81,30 @@ object ModuleFactory {
 
 object ScriptLanguage {
   val list = Set("py2", "py3")
+}
+
+object ModuleRegistryForConfiguration {
+  // TODO: finish this.
+  type ModuleRegistryFunc = Function[String, Config, Future[Seq[ModuleHandler]]]
+
+  private def getBoolConfig(config: Config, name: String) =
+    if (config.hasPath(name)) Some(config.getBoolean(name)) else None
+
+  def gccSource(base: String, conf: Config): Future[Seq[ModuleHandler]] = {
+    Future.value(Seq(new GCCSourceHandler(base,
+      getBoolConfig(conf, "cplusplus").getOrElse(false), false,
+      getBoolConfig(conf, "c11").getOrElse(false))))
+  }
+
+  val factories = Map[String, (String, Config) => Future[Seq[ModuleHandler]]](
+    "gcc" -> gccSource
+  )
+
+  def fromConfig(api: InvokerAPI, config: Config): Future[Seq[ModuleHandler]] = {
+    import scala.collection.JavaConverters._
+
+    Future.value(Seq())
+  }
 }
 
 class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
