@@ -80,7 +80,7 @@ object ModuleFactory {
 }
 
 object ScriptLanguage {
-  val list = Set("py2", "py3")
+  val list = Set("py2", "py3", "pypy3")
 }
 
 object ModuleRegistryForConfiguration {
