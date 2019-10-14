@@ -357,11 +357,17 @@ class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler 
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     sandbox.getExecutionParameters(
-      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss64M" :: "-DONLINE_JUDGE=true" ::
+      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-XX:+UseSerialGC" :: "-XX:TieredStopAtLevel=1" :: "-XX:NewRatio=5" :: "-Xss64M" :: "-DONLINE_JUDGE=true" ::
         "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
         "-Djava.security.manager" :: "-Djava.security.policy=java.policy" :: "-javaagent:contesteragent.jar" ::
         "-jar" :: "Solution.jar" :: Nil))
       .map(_.setTimeLimitMicros(test.timeLimitMicros).setSolution)
+//  sandbox.getExecutionParameters(
+//    java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss64M" :: "-DONLINE_JUDGE=true" ::
+//      "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
+//      "-Djava.security.manager" :: "-Djava.security.policy=java.policy" :: "-javaagent:contesteragent.jar" ::
+//      "-jar" :: "Solution.jar" :: Nil))
+//    .map(_.setTimeLimitMicros(test.timeLimitMicros).setSolution)
 
   private def getTestLimits(test: TestLimits): List[String] = {
     val ml0 = test.memoryLimit / (1024 * 1024)
