@@ -126,6 +126,7 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
       add((api.programFiles / "PascalABC.NET" / "pabcnetcclear.exe") ++ (api.disks / "Programs" / "PascalABC.NET" / "pabcnetcclear.exe"), (x: String) => new PascalABCSourceHandler(x)) +
       add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
       add(api.disks / "WINDOWS" / "System32" / "cmd.exe", visualStudio(_)) +
+      add(api.disks / "WINDOWS" / "System32" / "cmd.exe", kotlin(_)) +
       add((api.disks / "Python37" / "Python.exe") ++ (api.disks / "Python36" / "Python.exe") ++ (api.disks / "Python35" / "Python.exe") ++ (api.disks / "Python34" / "Python.exe") ++ (api.disks / "Programs" / "Python-3" / "Python.exe"), new PythonModuleHandler("py3", _)) +
       add((api.disks / "Python27" / "Python.exe") ++ (api.disks / "Programs" / "Python-2" / "Python.exe"), new PythonModuleHandler("py2", _)) +
       add((api.disks / "pypy" / "pypy3.6-v7.1.1-win32"/ "pypy3.exe"), new PythonModuleHandler("pypy3", _)) +
@@ -144,6 +145,10 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     // api.programFiles / "Microsoft Visual Studio*" / "Common7" / "Tools" / "vsvars32.bat"
     add(api.programFiles / "Microsoft Visual Studio" / "2019"/ "Community"/ "VC" / "Auxiliary" / "Build" / "vcvars32.bat",
       (x: String) => Seq(new VisualStudioSourceHandler(cmd, x), new VisualCSharpSourceHandler(cmd, x)))
+
+  private def kotlin(cmd: String): Future[Seq[ModuleHandler]] =
+    add(api.disks / "kotlinc" / "bin"/ "compile-kotlin.cmd",
+      (x: String) => Seq(new KotlinSourceHandler(cmd, x)))
 
   private def java(cmd: String): Future[Seq[ModuleHandler]] =
     add((api.disks / "Programs" / "jdk*" / "bin" / "java.exe") ++ (api.programFiles / "Java" / "jdk*" / "bin" / "java.exe"), (x: String) => new JavaBinaryHandler(x, false)) +
@@ -296,6 +301,15 @@ class PascalABCSourceHandler(val compiler: String) extends SimpleCompileHandler 
   val binary = "Solution.exe"
 
   def flags: ExecutionArguments = "Solution.pas" :: Nil
+}
+
+class KotlinSourceHandler(val compiler: String, val ckotlin: String) extends SimpleCompileHandler {
+  val binaryExt = "jar"
+  val moduleTypes = "kt" :: Nil
+  val sourceName = "Solution.kt"
+  val binary = "Solution.jar8"
+
+  val flags: ExecutionArguments = "/S /C "+ckotlin+" Solution.kt"
 }
 
 class VisualStudioSourceHandler(val compiler: String, vcvars: String) extends SimpleCompileHandler {
