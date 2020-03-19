@@ -61,7 +61,7 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
       from NewSubmits, Languages, Contests
       where NewSubmits.Contest = Languages.Contest and NewSubmits.SrcLang = Languages.ID
       and Contests.ID = NewSubmits.Contest
-      and Contests.PolygonID != '' and NewSubmits.ID = $id""".as[SubmitObject]).map(_.headOption)
+      and Contests.PolygonID != '' and NewSubmits.ID = $id limit 1""".as[SubmitObject].headOption)
 
   private def markWith(id: Int, value: Int): Future[Int] =
     db.run(sqlu"update NewSubmits set Processed = $value where ID = $id")

@@ -2,10 +2,11 @@ package org.stingray.contester.invokers
 
 import org.stingray.contester.utils.LocalEnvironmentTools
 import com.twitter.util.Future
+import grizzled.slf4j.Logging
 import org.stingray.contester.modules.{ModuleHandler, SpecializedModuleFactory}
 import org.stingray.contester.proto._
 
-class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) {
+class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) extends Logging {
   val sandboxes = clientId.sandboxes.toIndexedSeq
   val name = clientId.invokerId
 
@@ -42,8 +43,13 @@ class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) {
   def put(remote: RemoteFileName, blob: Blob) =
     client.put(FileBlob(name = remote.name, data = Some(blob))).map(file)
 
-  def putGridfs(items: Seq[(String, RemoteFileName)], sandboxId: String): Future[Seq[InvokerRemoteFile]] =
-    client.gridfsCopy(items.map(m => CopyOperation(m._1, m._2.name(pathSeparator))), sandboxId).map(_.map(file))
+  def putGridfs(items: Seq[(String, RemoteFileName)], sandboxId: String): Future[Seq[InvokerRemoteFile]] = {
+    val copies = items.map { m =>
+      CopyOperation(localFileName = m._2.name(pathSeparator), remoteLocation = m._1)
+    }
+
+    client.gridfsCopy(copies, sandboxId).map(_.map(file))
+  }
 
   def getGridfs(items: Seq[(RemoteFileName, String, Option[String])], sandboxId: String): Future[Seq[InvokerRemoteFile]] =
     client.gridfsGet(items.map(m => new GridfsGetEntry(m._1.name(pathSeparator), m._2, m._3)), sandboxId).map(_.map(file))

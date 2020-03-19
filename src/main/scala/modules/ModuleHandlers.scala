@@ -1,6 +1,7 @@
 package org.stingray.contester.modules
 
 import com.twitter.util.Future
+import com.typesafe.config.{Config, ConfigObject}
 import grizzled.slf4j.Logging
 import org.apache.commons.io.IOUtils
 import org.stingray.contester.ContesterImplicits._
@@ -79,7 +80,31 @@ object ModuleFactory {
 }
 
 object ScriptLanguage {
-  val list = Set("py2", "py3")
+  val list = Set("py2", "py3", "pypy3")
+}
+
+object ModuleRegistryForConfiguration {
+  // TODO: finish this.
+  type ModuleRegistryFunc = (String, Config) => Future[Seq[ModuleHandler]]
+
+  private def getBoolConfig(config: Config, name: String) =
+    if (config.hasPath(name)) Some(config.getBoolean(name)) else None
+
+  def gccSource(base: String, conf: Config): Future[Seq[ModuleHandler]] = {
+    Future.value(Seq(new GCCSourceHandler(base,
+      getBoolConfig(conf, "cplusplus").getOrElse(false), false,
+      getBoolConfig(conf, "c11").getOrElse(false))))
+  }
+
+  val factories = Map[String, ModuleRegistryFunc](
+    "gcc" -> gccSource
+  )
+
+  def fromConfig(api: InvokerAPI, config: Config): Future[Seq[ModuleHandler]] = {
+    import scala.collection.JavaConverters._
+
+    Future.value(Seq())
+  }
 }
 
 class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
@@ -101,6 +126,7 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
       add((api.programFiles / "PascalABC.NET" / "pabcnetcclear.exe") ++ (api.disks / "Programs" / "PascalABC.NET" / "pabcnetcclear.exe"), (x: String) => new PascalABCSourceHandler(x)) +
       add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
       add(api.disks / "WINDOWS" / "System32" / "cmd.exe", visualStudio(_)) +
+      add(api.disks / "WINDOWS" / "System32" / "cmd.exe", kotlin(_)) +
       add((api.disks / "Python37" / "Python.exe") ++ (api.disks / "Python36" / "Python.exe") ++ (api.disks / "Python35" / "Python.exe") ++ (api.disks / "Python34" / "Python.exe") ++ (api.disks / "Programs" / "Python-3" / "Python.exe"), new PythonModuleHandler("py3", _)) +
       add((api.disks / "Python27" / "Python.exe") ++ (api.disks / "Programs" / "Python-2" / "Python.exe"), new PythonModuleHandler("py2", _)) +
       add((api.disks / "pypy" / "pypy3.6-v7.1.1-win32"/ "pypy3.exe"), new PythonModuleHandler("pypy3", _)) +
@@ -119,6 +145,10 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     // api.programFiles / "Microsoft Visual Studio*" / "Common7" / "Tools" / "vsvars32.bat"
     add(api.programFiles / "Microsoft Visual Studio" / "2019"/ "Community"/ "VC" / "Auxiliary" / "Build" / "vcvars32.bat",
       (x: String) => Seq(new VisualStudioSourceHandler(cmd, x), new VisualCSharpSourceHandler(cmd, x)))
+
+  private def kotlin(cmd: String): Future[Seq[ModuleHandler]] =
+    add(api.disks / "kotlinc" / "bin"/ "compile-kotlin.cmd",
+      (x: String) => Seq(new KotlinSourceHandler(cmd, x)))
 
   private def java(cmd: String): Future[Seq[ModuleHandler]] =
     add((api.disks / "Programs" / "jdk*" / "bin" / "java.exe") ++ (api.programFiles / "Java" / "jdk*" / "bin" / "java.exe"), (x: String) => new JavaBinaryHandler(x, false)) +
@@ -273,6 +303,15 @@ class PascalABCSourceHandler(val compiler: String) extends SimpleCompileHandler 
   def flags: ExecutionArguments = "Solution.pas" :: Nil
 }
 
+class KotlinSourceHandler(val compiler: String, val ckotlin: String) extends SimpleCompileHandler {
+  val binaryExt = "jar"
+  val moduleTypes = "kt" :: Nil
+  val sourceName = "Solution.kt"
+  val binary = "Solution.jar8"
+
+  val flags: ExecutionArguments = "/S /C "+ckotlin+" Solution.kt"
+}
+
 class VisualStudioSourceHandler(val compiler: String, vcvars: String) extends SimpleCompileHandler {
   val clflags = "/W4" :: "/F67108864" :: "/EHsc" :: "/O2" :: "/DONLINE_JUDGE" :: Nil
   val bFlags = "/S" :: "/C" :: "\"" + (
@@ -332,11 +371,17 @@ class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler 
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     sandbox.getExecutionParameters(
-      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss64M" :: "-DONLINE_JUDGE=true" ::
+      java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-XX:+UseSerialGC" :: "-XX:TieredStopAtLevel=1" :: "-XX:NewRatio=5" :: "-Xss64M" :: "-DONLINE_JUDGE=true" ::
         "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
         "-Djava.security.manager" :: "-Djava.security.policy=java.policy" :: "-javaagent:contesteragent.jar" ::
         "-jar" :: "Solution.jar" :: Nil))
       .map(_.setTimeLimitMicros(test.timeLimitMicros).setSolution)
+//  sandbox.getExecutionParameters(
+//    java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss64M" :: "-DONLINE_JUDGE=true" ::
+//      "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
+//      "-Djava.security.manager" :: "-Djava.security.policy=java.policy" :: "-javaagent:contesteragent.jar" ::
+//      "-jar" :: "Solution.jar" :: Nil))
+//    .map(_.setTimeLimitMicros(test.timeLimitMicros).setSolution)
 
   private def getTestLimits(test: TestLimits): List[String] = {
     val ml0 = test.memoryLimit / (1024 * 1024)
