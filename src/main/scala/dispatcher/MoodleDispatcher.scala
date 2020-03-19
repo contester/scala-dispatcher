@@ -9,11 +9,12 @@ import grizzled.slf4j.Logging
 import org.stingray.contester.common._
 import org.stingray.contester.problems.{ProblemHandle, ProblemServerInterface}
 import org.stingray.contester.testing.{SingleProgress, SolutionTester, SolutionTestingResult}
-import slick.jdbc.{GetResult, JdbcBackend}
+import slick.jdbc.{GetResult, JdbcBackend, JdbcType}
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
-
+import com.github.nscala_time.time.Imports._
+import slick.ast.BaseTypedType
 
 case class MoodleSubmit(id: Int, problemId: String, arrived: Timestamp, sourceModule: Module, stdio: Boolean) extends Submit {
   val timestamp = arrived
@@ -21,6 +22,52 @@ case class MoodleSubmit(id: Int, problemId: String, arrived: Timestamp, sourceMo
 
   override def toString =
     "MoodleSubmit(%d)".format(id)
+}
+
+case class MoodleContesterLanguage(id: Long, name: String, ext: String, display: Option[Int])
+
+case class MoodleContesterSubmit(id: Long, contester: Long, student: Long, problem: Long, lang: Long,
+                                 iomethod: Boolean, solution: Array[Byte], submitted: DateTime, processed: Option[Int])
+
+object MoodleMariadbSchema {
+  import scala.concurrent.{Future, Await}
+  import scala.concurrent.duration.Duration
+  import slick.jdbc.MySQLProfile.api._
+  import java.sql.Date
+  import scala.reflect.ClassTag
+
+  implicit val datetimeColumnType
+  : JdbcType[DateTime] with BaseTypedType[DateTime] =
+    MappedColumnType.base[DateTime, Timestamp](
+      x => new Timestamp(x.getMillis),
+      x => new DateTime(x)
+    )
+
+  class MoodleContesterLanguages(tag: Tag) extends Table[MoodleContesterLanguage](tag, "mdl_contester_languages") {
+    def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
+    def name = column[String]("name")
+    def ext= column[String]("ext")
+    def display = column[Option[Int]]("display")
+
+    override def * = (id, name, ext, display) <> (MoodleContesterLanguage.tupled, MoodleContesterLanguage.unapply)
+  }
+
+  val contesterLanguages = TableQuery[MoodleContesterLanguages]
+
+  class MoodleContesterSubmits(tag: Tag) extends Table[MoodleContesterSubmit](tag, "mdl_contester_submits") {
+    def id= column[Long]("id", O.PrimaryKey, O.AutoInc)
+    def contester = column[Long]("contester")
+    def student = column[Long]("student")
+    def problem = column[Long]("problem")
+    def lang = column[Long]("lang")
+    def iomethod = column[Boolean]("iomethod")
+    def solution = column[Array[Byte]]("solution")
+    def submitted = column[DateTime]("submitted")
+    def processed = column[Option[Int]]("processed")
+
+    override def * = (id, contester, student, problem, lang, iomethod, solution, submitted, processed) <> (
+      MoodleContesterSubmit.tupled, MoodleContesterSubmit.unapply)
+  }
 }
 
 class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubmit, val testingId: Int) extends SingleProgress {

@@ -13,7 +13,7 @@ name := "dispatcher"
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m",
   "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
-scalaVersion := "2.12.9"
+scalaVersion := "2.12.11"
 
 version := "2019.0.2"
 
