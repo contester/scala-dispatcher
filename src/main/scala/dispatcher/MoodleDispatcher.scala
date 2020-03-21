@@ -13,7 +13,7 @@ import slick.jdbc.{GetResult, JdbcBackend, JdbcType}
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import com.github.nscala_time.time.Imports._
+import com.github.nscala_time.time.Imports.DateTime
 import slick.ast.BaseTypedType
 
 case class MoodleSubmit(id: Int, problemId: String, arrived: Timestamp, sourceModule: Module, stdio: Boolean) extends Submit {
@@ -75,15 +75,15 @@ class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubm
 
   def compile(r: CompileResult) =
     client.run(
-      sqlu"""insert into mdl_contester_results (testingid, processed, result, test, timex, memory, testeroutput, testererror)
-            values ($testingId, NOW(), ${r.status.value}, 0, ${r.time / 1000}, ${r.memory},
+      sqlu"""insert into mdl_contester_results (testingid, processed, processed_uts, result, test, timex, memory, testeroutput, testererror)
+            values ($testingId, NOW(), UNIX_TIMESTAMP(), ${r.status.value}, 0, ${r.time / 1000}, ${r.memory},
         ${new String(r.stdOut, StandardCharsets.UTF_8)},
         ${new String(r.stdErr, StandardCharsets.UTF_8)})""").map(_ => ())
 
   def test(id: Int, r: TestResult) =
     client.run(
-      sqlu"""Insert into mdl_contester_results (testingid, processed, result, test, timex, memory, info, testeroutput,
-             testererror, testerexitcode) values ($testingId, NOW(), ${r.status.value}, $id, ${r.solution.time / 1000},
+      sqlu"""Insert into mdl_contester_results (testingid, processed, processed_uts, result, test, timex, memory, info, testeroutput,
+             testererror, testerexitcode) values ($testingId, NOW(), UNIX_TIMESTAMP(), ${r.status.value}, $id, ${r.solution.time / 1000},
              ${r.solution.memory}, ${r.solution.returnCode.abs},
              ${new String(r.getTesterOutput, StandardCharsets.UTF_8)},
              ${new String(r.getTesterError, StandardCharsets.UTF_8)},
