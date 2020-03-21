@@ -83,7 +83,9 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
 
 case class TestingInfo(testingId: Int, problemId: String, state: Seq[(Int, Int)])
 
+
 class DBReporter(val client: JdbcBackend#DatabaseDef) {
+  import com.github.tototoshi.slick.MySQLJodaSupport._
   /**
    * Allocate new testing ID in the database.
    * @param submitId Submit ID.

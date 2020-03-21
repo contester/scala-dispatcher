@@ -24,8 +24,10 @@ trait Submit extends TimeKey with SubmitWithModule {
   def schoolMode: Boolean = false
 }
 
+import com.github.nscala_time.time.Imports._
+
 case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
-                        arrived: Timestamp, sourceModule: ByteBufferModule, override val schoolMode: Boolean, computer: Long,
+                        arrived: DateTime, sourceModule: ByteBufferModule, override val schoolMode: Boolean, computer: Long,
                         polygonId: PolygonContestId)
   extends Submit {
   val timestamp = arrived
@@ -44,7 +46,7 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
   import org.stingray.contester.utils.Dbutil._
 
   implicit private val getSubmitObject = GetResult(r =>
-    SubmitObject(r.nextInt(), r.nextInt(), r.nextInt(), r.nextString(), r.nextTimestamp(),
+    SubmitObject(r.nextInt(), r.nextInt(), r.nextInt(), r.nextString(), new DateTime(r.nextTimestamp()),
     new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBoolean(), r.nextLong(), PolygonContestId(r.nextString())
     )
   )

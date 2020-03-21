@@ -16,7 +16,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import com.github.nscala_time.time.Imports.DateTime
 import slick.ast.BaseTypedType
 
-case class MoodleSubmit(id: Int, problemId: String, arrived: Timestamp, sourceModule: Module, stdio: Boolean) extends Submit {
+case class MoodleSubmit(id: Int, problemId: String, arrived: DateTime, sourceModule: Module, stdio: Boolean) extends Submit {
   val timestamp = arrived
   override val schoolMode = true
 
@@ -119,7 +119,7 @@ object MoodleTableScanner {
 class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface, inv: SolutionTester, store: TestingStore) extends Logging {
   import slick.jdbc.MySQLProfile.api._
   implicit val getMoodleSubmit = GetResult(r=>
-    MoodleSubmit(r.nextInt(), r.nextInt().toString, r.nextTimestamp(), new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBoolean())
+    MoodleSubmit(r.nextInt(), r.nextInt().toString, new DateTime(r.nextTimestamp()), new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBoolean())
   )
 
   private def getSubmit(id: Int) = {

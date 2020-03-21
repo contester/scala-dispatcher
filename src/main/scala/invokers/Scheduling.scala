@@ -1,10 +1,10 @@
 package org.stingray.contester.invokers
 
-import java.sql.Timestamp
+import com.github.nscala_time.time.Imports._
 
 private object TimeKey {
-  val EARLIEST = new Timestamp(0)
-  val LATEST = new Timestamp(Long.MaxValue)
+  val EARLIEST = new DateTime(0)
+  val LATEST = new DateTime(Long.MaxValue)
 }
 
 /** If type is used for scheduling inside invoker registry, it needs to descend from this trait.
@@ -20,7 +20,7 @@ trait TimeKey extends SchedulingKey {
     *
     * @return Timestamp of the key.
     */
-  def timestamp: Timestamp
+  def timestamp: DateTime
 
   /** Compares this against other scheduling key. If it's a timestamp, compare timestamps.
     *

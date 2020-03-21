@@ -13,7 +13,10 @@ import slick.jdbc.{GetResult, JdbcBackend}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-case class CustomTestObject(id: Int, contest: Int, team: Int, arrived: Timestamp, sourceModule: Module,
+
+import com.github.nscala_time.time.Imports._
+
+case class CustomTestObject(id: Int, contest: Int, team: Int, arrived: DateTime, sourceModule: Module,
                             input: Array[Byte]) extends TimeKey with SubmitWithModule {
   val timestamp = arrived
 }
@@ -23,7 +26,7 @@ object CustomTestObject {
   import org.stingray.contester.utils.Dbutil._
 
   implicit val getResult = GetResult(r =>
-    CustomTestObject(r.nextInt(), r.nextInt(), r.nextInt(), r.nextTimestamp(),
+    CustomTestObject(r.nextInt(), r.nextInt(), r.nextInt(), new DateTime(r.nextTimestamp()),
       new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBytes())
   )
 }
