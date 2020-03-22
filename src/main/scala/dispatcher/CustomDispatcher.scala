@@ -1,7 +1,5 @@
 package org.stingray.contester.dispatcher
 
-import java.sql.Timestamp
-
 import akka.actor.ActorRef
 import com.spingo.op_rabbit.Message
 import org.stingray.contester.common._

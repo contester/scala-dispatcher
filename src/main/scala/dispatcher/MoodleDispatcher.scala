@@ -30,11 +30,7 @@ case class MoodleContesterSubmit(id: Long, contester: Long, student: Long, probl
                                  iomethod: Boolean, solution: Array[Byte], submitted: DateTime, processed: Option[Int])
 
 object MoodleMariadbSchema {
-  import scala.concurrent.{Future, Await}
-  import scala.concurrent.duration.Duration
   import slick.jdbc.MySQLProfile.api._
-  import java.sql.Date
-  import scala.reflect.ClassTag
 
   implicit val datetimeColumnType
   : JdbcType[DateTime] with BaseTypedType[DateTime] =
@@ -156,7 +152,7 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
           markWith(id.toInt, cv).unit
         }
     }
-    r.onFailure {
+    r.failed.foreach{
       case e =>
         error(s"err: $e")
     }
