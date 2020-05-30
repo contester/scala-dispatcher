@@ -55,3 +55,16 @@ trait TestingStrategy {
   def moodle(tests: Seq[Solution.NumberedTest]): Future[List[Solution.EvaluatedTestResult]] =
     parallel(tests)
 }
+
+trait TestingStrategyNew {
+  def next(remaining: Seq[Int]): Seq[Int]
+}
+
+object SchoolModeNew extends TestingStrategyNew {
+  override def next(remaining: Seq[Int]): Seq[Int] =
+    if (remaining.contains(1)) Seq(1) else remaining
+}
+
+object SequentialModeNew extends TestingStrategyNew {
+  override def next(remaining: Seq[Int]): Seq[Int] = remaining
+}

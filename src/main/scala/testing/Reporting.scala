@@ -25,6 +25,23 @@ trait SingleProgress {
   def test(id: Int, r: TestResult): Future[Unit]
 }
 
+trait GenericReporterFactory {
+  def start(submit: SubmitObject, problemID: String): Future[StartedReporter]
+}
+
+trait ClosableReporter {
+  def close(): Future[Unit]
+}
+
+trait StartedReporter {
+  def compile(compileResult: CompileResult): Future[TestingReporter]
+}
+
+trait TestingReporter {
+  def test(id: Int, testResult: TestResult): Future[Unit]
+  def finish()
+}
+
 class CombinedSingleProgress(val db: DBSingleResultReporter, val raw: RawLogResultReporter) extends SingleProgress {
   def compile(r: CompileResult): Future[Unit] = db.compile(r).zip(raw.compile(r)).map(_ => ())
 
@@ -42,6 +59,74 @@ object CombinedResultReporter {
       val r = RawLogResultReporter(prefix, submit)
       r.start
     }
+}
+
+class DBReporterFactory(client: JdbcBackend#DatabaseDef) extends GenericReporterFactory {
+  override def start(submit: SubmitObject, problemID: String): Future[StartedReporter] =
+    Future.successful(new DBStartedReporter(client, submit, problemID))
+}
+
+class DBStartedReporter(client: JdbcBackend#DatabaseDef, submit: SubmitObject, problemID: String) extends StartedReporter {
+  import com.github.tototoshi.slick.MySQLJodaSupport._
+  /**
+    * Allocate new testing ID in the database.
+    * @return Future testing ID.
+    */
+  private def allocateTesting(): Future[Long] =
+    client.run(sqlu"""Insert into Testings (Submit, ProblemID, Start) values (${submit.id}, $problemID, NOW())"""
+      .andThen(sql"select LAST_INSERT_ID()".as[Long]).withPinnedSession).map(_.head)
+
+  /**
+    * Update Submits table for given submit with given testing ID.
+    * @param testingId Testing ID to update with.
+    * @return
+    */
+  private def registerTestingOnly(testingId: Long) =
+    client.run(
+      sqlu"""insert Submits (Contest, Arrived, Team, Task, ID, Ext, Computer, TestingID, Touched, Finished)
+      values (${submit.contestId}, ${submit.arrived}, ${submit.teamId}, ${submit.problemId}, ${submit.id},
+      ${submit.sourceModule.moduleType}, ${submit.computer}, $testingId, NOW(), 0) on duplicate key update
+        TestingID = $testingId, Touched = NOW()""")
+
+  private def allocateAndRegister(): Future[Long] =
+    allocateTesting().flatMap { testingId =>
+      registerTestingOnly(testingId).map { _ => testingId }
+    }
+
+  private def recordCompile(testingID: Long, r: CompileResult): Future[Unit] = {
+    val cval = if (r.success) 1 else 0
+    client.run(
+      sqlu"""insert into Results (UID, Submit, Result, Test, Timex, Memory, TesterOutput, TesterError)
+           values ($testingID, ${submit.id}, ${r.status.value}, 0, 0, 0, ${new String(r.stdOut, "cp866")},
+            ${new String(r.stdErr, "cp866")})""").zip(
+      client.run(sqlu"Update Submits set Compiled = ${cval} where ID = ${submit.id}"))
+      .map(_ => ())
+  }
+
+  override def compile(compileResult: CompileResult): Future[TestingReporter] =
+    allocateAndRegister().flatMap { testingID =>
+      recordCompile(testingID, compileResult).map { _ =>
+        new DBTestingReporter(client, submit, testingID)
+      }
+    }
+}
+
+class DBTestingReporter(client: JdbcBackend#DatabaseDef, val submit: SubmitObject, val testingId: Long) extends TestingReporter {
+  override def test(testId: Int, result: TestResult): Future[Unit] =
+    client.run(sqlu"""Insert into Results (UID, Submit, Result, Test, Timex, Memory, Info, TesterOutput,
+        TesterError, TesterExitCode) values ($testingId, ${submit.id}, ${result.status.value}, $testId,
+        ${result.solution.time / 1000}, ${result.solution.memory}, ${result.solution.returnCode},
+        ${new String(result.getTesterOutput, "cp1251")}, ${new String(result.getTesterError, "windows-1251")},
+        ${result.getTesterReturnCode})""").map(_ => ())
+
+
+
+//  override def close(): Future[Unit] =
+//    client.run(sqlu"update Testings set Finish = NOW() where ID = $testingId".zipWith(
+//      sqlu"""Update Submits set Finished = 1, Taken = ${result.tests.size},
+//            Passed = ${result.tests.count(_._2.success)} where ID = $submitId"""
+//    )).map(_ => ())
+  override def finish(): Unit = ???
 }
 
 class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: SubmitObject, val testingId: Int) extends SingleProgress {
