@@ -21,34 +21,37 @@ maintainer := "i@stingr.net"
 
 organization := "org.stingray.contester"
 
-scalacOptions ++= Seq("-unchecked", "-deprecation", "-explaintypes", "-Xcheckinit",
-  "-Xlint", "-Ypartial-unification","-Ywarn-dead-code", "-optimize")
-//, "-Xfatal-warnings")
-
-// javacOptions in Compile ++= Seq("-source", "1.6",  "-target", "1.7")
+scalacOptions ++= Seq(
+  "-Xfatal-warnings",  // New lines for each options
+  "-deprecation",
+  "-unchecked",
+  "-language:implicitConversions",
+  "-language:higherKinds",
+  "-language:existentials",
+  "-language:postfixOps",
+  "-opt:l:method",
+  "-opt:l:inline",
+  "-opt-inline-from:<sources>"
+)
 
 updateOptions := updateOptions.value.withCachedResolution(true)
 
 resolvers ++= Seq(
-    "twitter.com" at "http://maven.twttr.com/",
-    "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases",
-    "scala tools" at "http://scala-tools.org/repo-releases/",
-    "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
-    "typesafe artefactory" at "http://typesafe.artifactoryonline.com/typesafe/repo",
-    "SpinGo OSS" at "http://spingo-oss.s3.amazonaws.com/repositories/releases",
-    "stingr.net" at "http://stingr.net/maven"
+  Resolver.jcenterRepo,
+  Resolver.sonatypeRepo("snapshots"),
+  Resolver.typesafeRepo("releases")
 )
 
 val opRabbitVersion = "2.1.0"
 
-val finagleVersion = "18.12.0"
+val finagleVersion = "20.5.0"
 
-val nettyVersion = "4.1.39.Final"
+val nettyVersion = "4.1.50.Final"
 
-val playVersion = "2.7.3"
+val playVersion = "2.8.2"
 
 libraryDependencies ++= Seq(
-  "com.github.tototoshi" %% "slick-joda-mapper" % "2.3.0",
+  "com.github.tototoshi" %% "slick-joda-mapper" % "2.4.2",
   "javax.mail" % "javax.mail-api" % "1.6.2",
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
   "com.spingo" %% "op-rabbit-play-json"   % opRabbitVersion,
@@ -62,21 +65,21 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finagle-memcached" % finagleVersion,
   "com.twitter" %% "finagle-redis" % finagleVersion,
   "com.twitter" %% "util-core" % finagleVersion,
-  "com.twitter" %% "bijection-util" % "0.9.6",
+  "com.twitter" %% "bijection-util" % "0.9.7",
   "org.scala-lang.modules" %% "scala-async" % "0.10.0",
-  "org.clapper" %% "grizzled-slf4j" % "1.3.2",
-  "com.github.nscala-time" %% "nscala-time" % "2.22.0",
-  "org.apache.httpcomponents" % "httpclient" % "4.5.9",
-  "commons-io" % "commons-io" % "2.6",
+  "org.clapper" %% "grizzled-slf4j" % "1.3.4",
+  "com.github.nscala-time" %% "nscala-time" % "2.24.0",
+  "org.apache.httpcomponents" % "httpclient" % "4.5.12",
+  "commons-io" % "commons-io" % "2.7",
   // "com.rabbitmq" % "amqp-client" % "4.1.0",
-  "org.mariadb.jdbc" % "mariadb-java-client" % "2.4.3",
-  "org.clapper" %% "avsl" % "1.0.18",
+  "org.mariadb.jdbc" % "mariadb-java-client" % "2.6.0",
+  "org.clapper" %% "avsl" % "1.1.0",
   "com.typesafe.slick" %% "slick" % "3.3.2",
   "com.typesafe.slick" %% "slick-hikaricp" % "3.3.2",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,
-  "com.google.protobuf" % "protobuf-java" % "3.9.1" % "protobuf",
-  "com.typesafe" % "config" % "1.3.4",
+//  "com.google.protobuf" % "protobuf-java" % "3.9.1" % "protobuf",
+  "com.typesafe" % "config" % "1.4.0",
   "info.faljse" % "SDNotify" % "1.3",
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"

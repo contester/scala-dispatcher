@@ -3,15 +3,17 @@
   <component name="ScalaCompilerConfiguration">
     <profile name="sbt 1" modules="scala-dispatcher_7367" />
     <profile name="sbt 2" modules="dispatcher">
+      <option name="postfixOps" value="true" />
+      <option name="implicitConversions" value="true" />
+      <option name="higherKinds" value="true" />
+      <option name="existentials" value="true" />
       <option name="deprecationWarnings" value="true" />
       <option name="uncheckedWarnings" value="true" />
-      <option name="explainTypeErrors" value="true" />
       <parameters>
-        <parameter value="-Xcheckinit" />
-        <parameter value="-Xlint" />
-        <parameter value="-Ypartial-unification" />
-        <parameter value="-Ywarn-dead-code" />
-        <parameter value="-optimize" />
+        <parameter value="-Xfatal-warnings" />
+        <parameter value="-opt:l:method" />
+        <parameter value="-opt:l:inline" />
+        <parameter value="-opt-inline-from:&lt;sources&gt;" />
       </parameters>
     </profile>
   </component>
