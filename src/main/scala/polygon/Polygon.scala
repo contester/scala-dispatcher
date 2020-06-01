@@ -17,21 +17,21 @@ import org.stingray.contester.utils.RequestWithURI
 import scala.xml.Elem
 
 case class PolygonAuthInfo2(username: String, password: String) {
-  import scala.collection.JavaConversions._
+  import scala.collection.JavaConverters._
 
   private def toParams = Seq(
     new BasicNameValuePair("login", username),
     new BasicNameValuePair("password", password)
-  )
+  ).asJava
 
   def toPostBody = URLEncodedUtils.format(toParams, Charsets.UTF_8)
 }
 
 object Polygons {
   def fromConfig(config: ConfigObject): Map[String, PolygonConfig] = {
-    import scala.collection.JavaConversions._
+    import scala.collection.JavaConverters._
 
-    config.flatMap {
+    config.asScala.flatMap {
       case (k, v) =>
         v.valueType() match {
           case ConfigValueType.OBJECT =>

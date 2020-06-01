@@ -11,7 +11,7 @@ trait ObjectCache {
   def cacheGet(key: String): Future[Option[Buf]]
   def cacheSet(key: String, value: Buf, expiry: Option[Time]): Future[Unit]
 
-  def maybeCached[S, I <: GeneratedMessage with Message[I]](key: String, expiry: Option[Time],
+  def maybeCached[S, I <: GeneratedMessage](key: String, expiry: Option[Time],
                                            fetch: => Future[S], wrap: (I) => S,
                                            unwrap: (S) => I)(implicit cmp: GeneratedMessageCompanion[I]): Future[S] =
     cacheGet(key).flatMap { optValue =>

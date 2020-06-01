@@ -24,7 +24,7 @@ import org.stingray.contester.utils.CachedHttpService
 import play.api.{Logger, Logging}
 
 object DispatcherServer extends App with Logging {
-  InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
+  InternalLoggerFactory.setDefaultFactory(Slf4JLoggerFactory.INSTANCE)
 
   private val config = ConfigFactory.load()
 
@@ -59,7 +59,7 @@ object DispatcherServer extends App with Logging {
 
   import slick.jdbc.MySQLProfile.api._
 
-  import scala.collection.JavaConversions._
+  import scala.collection.JavaConverters._
 
   val dispatchers =
     if (config.hasPath("dispatcher.standard")) {
@@ -67,7 +67,7 @@ object DispatcherServer extends App with Logging {
         PolygonFilter(AuthPolygonMatcher(polygons.values).apply) andThen CachedHttpService,
         Client(config.getString("redis")), polygons, simpleDb.get, invokerApi)
 
-      for (name <- config.getStringList("dispatcher.standard"); if config.hasPath(name + ".dbnext")) yield {
+      for (name <- config.getStringList("dispatcher.standard").asScala; if config.hasPath(name + ".dbnext")) yield {
         val db = Database.forConfig(s"${name}.dbnext")
         val ts = TestingStore("filer:" + simpleDb.get.baseUrl + "fs/", name)
         val rabbitMq = actorSystem.actorOf(Props(classOf[RabbitControl], ConnectionParams.fromConfig(config.getConfig(s"$name.op-rabbit"))))
@@ -77,7 +77,7 @@ object DispatcherServer extends App with Logging {
 
   val moodles =
   if (config.hasPath("dispatcher.moodles")) {
-    for (name <- config.getStringList("dispatcher.moodles"); if config.hasPath(name + ".dbnext")) yield {
+    for (name <- config.getStringList("dispatcher.moodles").asScala; if config.hasPath(name + ".dbnext")) yield {
         val db = Database.forConfig(s"${name}.dbnext")
         val ts = TestingStore("filer:"+simpleDb.get.baseUrl + "fs/", "school.sgu.ru/moodle")
         val dispatcher = new MoodleDispatcher(db, simpleDb.get, tester, ts)
@@ -100,7 +100,7 @@ object DispatcherServer extends App with Logging {
 
     import components.{ defaultActionBuilder => Action }
     {
-      case GET(p"/assets/$file*") => Assets.versioned(path = "/public", file)
+      // case GET(p"/assets/$file*") => Assets.versioned(path = "/public", file)
       case GET(p"/invokers") => Action {
         Results.Ok(html.invokers(invoker))
       }

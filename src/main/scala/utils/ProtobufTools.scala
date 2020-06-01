@@ -8,11 +8,11 @@ import scalapb.{GeneratedMessage, GeneratedMessageCompanion, Message}
   *
   */
 object ProtobufTools {
-  def createProtobuf[I <: GeneratedMessage with Message[I]](buffer: Buf)(implicit cmp: GeneratedMessageCompanion[I]): I = {
+  def createProtobuf[I <: GeneratedMessage](buffer: Buf)(implicit cmp: GeneratedMessageCompanion[I]): I = {
     createProtobuf(Buf.ByteArray.Shared.extract(buffer))
   }
 
-  def createProtobuf[I <: GeneratedMessage with Message[I]](bytes: Array[Byte])(implicit cmp: GeneratedMessageCompanion[I]): I = {
+  def createProtobuf[I <: GeneratedMessage](bytes: Array[Byte])(implicit cmp: GeneratedMessageCompanion[I]): I = {
     cmp.parseFrom(bytes)
   }
 
@@ -23,6 +23,6 @@ object ProtobufTools {
     * @tparam I
     * @return
     */
-  def createProtobuf[I <: GeneratedMessage with Message[I]](opt: Option[Array[Byte]])(implicit cmp: GeneratedMessageCompanion[I]): I =
+  def createProtobuf[I <: GeneratedMessage](opt: Option[Array[Byte]])(implicit cmp: GeneratedMessageCompanion[I]): I =
     opt.map(createProtobuf[I](_)).getOrElse(cmp.defaultInstance)
 }

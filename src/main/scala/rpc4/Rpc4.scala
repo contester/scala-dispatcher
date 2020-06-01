@@ -67,10 +67,10 @@ class ServerPipelineFactory[C <: Channel](registry: Registry) extends ChannelIni
 trait RpcClient {
   type Deserializer[T] = (ByteBufInputStream) => T
 
-  def callFull[A <: GeneratedMessage with Message[A]](methodName: String, payload: Option[GeneratedMessage],
+  def callFull[A <: GeneratedMessage](methodName: String, payload: Option[GeneratedMessage],
               deserializer: Option[GeneratedMessageCompanion[A]]): Future[Option[A]]
 
-  def call[A <: GeneratedMessage with Message[A]](methodName: String, payload: GeneratedMessage, deserializer: GeneratedMessageCompanion[A]): Future[A] =
+  def call[A <: GeneratedMessage](methodName: String, payload: GeneratedMessage, deserializer: GeneratedMessageCompanion[A]): Future[A] =
     callFull[A](methodName, Some(payload), Some(deserializer)).map(_.getOrElse(deserializer.defaultInstance))
 
   def callNoResult(methodName: String, payload: GeneratedMessage): Future[Unit] =
@@ -123,7 +123,7 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
     b
   }
 
-  def callFull[A <: GeneratedMessage with Message[A]](methodName: String,
+  def callFull[A <: GeneratedMessage](methodName: String,
                                                       payload: Option[GeneratedMessage],
                                                       deserializer: Option[GeneratedMessageCompanion[A]]): Future[Option[A]] = {
     if (disconnected.get())
