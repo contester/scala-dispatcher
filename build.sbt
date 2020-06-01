@@ -50,6 +50,8 @@ val nettyVersion = "4.1.50.Final"
 
 val playVersion = "2.7.5"
 
+val slickPG = "0.19.0"
+
 libraryDependencies ++= Seq(
   "com.github.tototoshi" %% "slick-joda-mapper" % "2.4.2",
   "javax.mail" % "javax.mail-api" % "1.6.2",
@@ -71,16 +73,18 @@ libraryDependencies ++= Seq(
   "com.github.nscala-time" %% "nscala-time" % "2.24.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.12",
   "commons-io" % "commons-io" % "2.7",
-  // "com.rabbitmq" % "amqp-client" % "4.1.0",
   "org.mariadb.jdbc" % "mariadb-java-client" % "2.6.0",
   "org.clapper" %% "avsl" % "1.1.0",
   "com.typesafe.slick" %% "slick" % "3.3.2",
   "com.typesafe.slick" %% "slick-hikaricp" % "3.3.2",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,
-//  "com.google.protobuf" % "protobuf-java" % "3.9.1" % "protobuf",
   "com.typesafe" % "config" % "1.4.0",
   "info.faljse" % "SDNotify" % "1.3",
+  "org.postgresql" % "postgresql" % "42.2.12",
+  "com.github.tminglei" %% "slick-pg" % slickPG,
+  "com.github.tminglei" %% "slick-pg_joda-time" % slickPG,
+  "com.github.tminglei" %% "slick-pg_play-json" % slickPG,
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 ).map(_.exclude("org.slf4j", "slf4j-jdk14")).map(_.exclude("org.slf4j", "slf4j-log4j12"))

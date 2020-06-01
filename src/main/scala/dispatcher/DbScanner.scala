@@ -33,23 +33,23 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
   import ContestTableScanner._
 
   implicit val getContestRow = GetResult(r =>
-    ContestRow(r.nextInt(), r.nextString(), PolygonContestId(r.nextString()), r.nextBoolean(), r.nextString())
+    ContestRow(r.nextInt(), r.nextString(), PolygonContestId(r.nextString()), false, r.nextString())
   )
 
   private def getContestsFromDb =
-    db.run(sql"select ID, Name, PolygonID, SchoolMode, Language from Contests where PolygonID != ''".as[ContestRow])
+    db.run(sql"select id, name, polygon_id, language from contests where polygon_id != ''".as[ContestRow])
 
   implicit val getProblemRow = GetResult(r =>
-    ProblemRow(r.nextInt(), r.nextString(), r.nextInt(), r.nextString(), r.nextInt())
+    ProblemRow(r.nextInt(), r.nextString(), r.nextInt(), r.nextString(), 30)
   )
 
   private def getProblemsFromDb =
-    db.run(sql"select Contest, ID, Tests, Name, Rating from Problems".as[ProblemRow])
+    db.run(sql"select contest, id, tests, name from Problems".as[ProblemRow])
 
   private[this] def maybeUpdateContestName(contestId: Int, rowName: String, contestName: String): Option[Future[Unit]] = {
     import org.stingray.contester.utils.Fu._
     if (rowName != contestName)
-      Some(db.run(sqlu"update Contests set Name = $contestName where ID = $contestId").unit)
+      Some(db.run(sqlu"update contests set name = $contestName where id = $contestId").unit)
     else
       None
   }
@@ -69,20 +69,22 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
       val problemMap = problems.filter(_.contest == row.id).map(x => x.id.toUpperCase -> x).toMap
 
       val deletes = (problemMap.keySet -- contest.problems.keySet).map { problemId =>
-        db.run(sqlu"delete from Problems where Contest = ${row.id} and ID = $problemId").unit
+        db.run(sqlu"delete from problems where contest_id = ${row.id} and id = $problemId").unit
       }.toSeq
 
       val updates = contest.problems.map(x => x -> problemMap.get(x._1)).collect {
         case ((problemId, polygonProblem), Some(problemRow))
           if (problemRow.name != polygonProblem.getTitle(row.Language) || problemRow.tests != polygonProblem.testCount) =>
-          info(s"$problemRow | ${polygonProblem.getTitle(row.Language)} | ${polygonProblem.testCount}")
+          val problemTitle = polygonProblem.getTitle(row.Language)
+          info(s"$problemRow | ${problemTitle} | ${polygonProblem.testCount}")
           info(s"replacing problem $problemId := $polygonProblem")
-        db.run(sqlu"""replace Problems (Contest, ID, Tests, Name, Rating) values (${row.id}, ${problemId},
-          ${polygonProblem.testCount}, ${polygonProblem.getTitle(row.Language)}, 30)""").unit
+        db.run(sqlu"""insert into problems (contest_id, id, tests, name) values (${row.id}, ${problemId},
+          ${polygonProblem.testCount}, ${problemTitle}) on conflict (contest_id, id) do update set tests = ${polygonProblem.testCount}, name = ${problemTitle}""").unit
         case (((problemId, polygonProblem), None)) =>
+          val problemTitle = polygonProblem.getTitle(row.Language)
           info(s"adding problem $problemId := $polygonProblem")
-        db.run(sqlu"""replace Problems (Contest, ID, Tests, Name, Rating) values (${row.id}, ${problemId},
-          ${polygonProblem.testCount}, ${polygonProblem.getTitle(row.Language)}, 30)""").unit
+        db.run(sqlu"""insert into problems (contest_id, id, tests, name) values (${row.id}, ${problemId},
+          ${polygonProblem.testCount}, ${problemTitle}) on conflict (contest_id, id) do update set tests = ${polygonProblem.testCount}, name = ${problemTitle}""").unit
       }
       Future.collect(deletes ++ updates ++ nameChange)
     }.unit
