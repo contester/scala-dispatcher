@@ -48,7 +48,7 @@ val finagleVersion = "20.5.0"
 
 val nettyVersion = "4.1.50.Final"
 
-val playVersion = "2.8.2"
+val playVersion = "2.7.5"
 
 libraryDependencies ++= Seq(
   "com.github.tototoshi" %% "slick-joda-mapper" % "2.4.2",

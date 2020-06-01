@@ -29,6 +29,8 @@ object Blobs {
           zlibDecompress(x.data, ci.originalSize)
         case Blob.CompressionInfo.CompressionType.METHOD_NONE =>
           x.data.toByteArray
+        case Blob.CompressionInfo.CompressionType.Unrecognized(_) =>
+          new Array[Byte](0)
       }
     }.getOrElse(x.data.toByteArray)
 

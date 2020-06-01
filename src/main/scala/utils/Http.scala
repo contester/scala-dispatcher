@@ -15,7 +15,7 @@ import org.apache.http.client.utils.URIUtils
 object CachedConnectionHttpService extends Function[HttpHost, Service[Request, Response]] with Logging {
   private final val maxResponseSize = new StorageUnit(64*1024*1024)
   private object PolygonClientCacheLoader extends CacheLoader[HttpHost, Service[Request, Response]] {
-    import com.twitter.conversions.time._
+    import com.twitter.conversions.DurationOps._
     private def common(key: HttpHost) =
       Http.client.withSessionPool.maxSize(1)
         .withTransport.connectTimeout(30 seconds)

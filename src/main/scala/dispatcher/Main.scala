@@ -21,9 +21,9 @@ import org.stingray.contester.problems.SimpleProblemDb
 import org.stingray.contester.rpc4.ServerPipelineFactory
 import org.stingray.contester.testing.{CustomTester, SolutionTester}
 import org.stingray.contester.utils.CachedHttpService
-import play.api.Logger
+import play.api.{Logger, Logging}
 
-object DispatcherServer extends App {
+object DispatcherServer extends App with Logging {
   InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
 
   private val config = ConfigFactory.load()
@@ -51,7 +51,7 @@ object DispatcherServer extends App {
 
   implicit val actorSystem = ActorSystem("such-system")
 
-  Logger.info("Initializing dispatchers")
+  logger.info("Initializing dispatchers")
 
   val polygons = Polygons.fromConfig(config.getConfig("polygons").root())
   val reportbase = config.getString("reporting.base")
@@ -81,12 +81,12 @@ object DispatcherServer extends App {
         val db = Database.forConfig(s"${name}.dbnext")
         val ts = TestingStore("filer:"+simpleDb.get.baseUrl + "fs/", "school.sgu.ru/moodle")
         val dispatcher = new MoodleDispatcher(db, simpleDb.get, tester, ts)
-        Logger.info(s"starting actor for ${name}")
+        logger.info(s"starting actor for ${name}")
         actorSystem.actorOf(MoodleTableScanner.props(db, dispatcher))
     }
   } else Nil
 
-  Logger.info("Starting serving")
+  logger.info("Starting serving")
 
   import play.api.mvc._
   import play.api.routing.sird._
@@ -97,6 +97,7 @@ object DispatcherServer extends App {
       port = Some(config.getInt("dispatcher.port")),
     )
   ) { components =>
+
     import components.{ defaultActionBuilder => Action }
     {
       case GET(p"/assets/$file*") => Assets.versioned(path = "/public", file)

@@ -2,7 +2,7 @@ package org.stingray.contester.invokers
 
 import java.util.concurrent.TimeUnit
 
-import com.twitter.finagle.util.HashedWheelTimer
+import com.twitter.finagle.util.DefaultTimer
 import com.twitter.util.{Duration, Future, Promise}
 import grizzled.slf4j.Logging
 import org.stingray.contester.rpc4.ChannelDisconnectedException
@@ -48,7 +48,7 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
     if (!retries.exists(_ > 0))
       Future.exception(new TooManyErrors(e))
     else {
-      implicit val timer = HashedWheelTimer.Default
+      implicit val timer = DefaultTimer
       Future.sleep(Duration(2, TimeUnit.SECONDS))
         .flatMap(_ => get(cap, schedulingKey, retries.map(_ - 1))(f))
     }
