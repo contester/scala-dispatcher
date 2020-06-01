@@ -12,8 +12,8 @@ import org.stingray.contester.polygon._
 import scala.concurrent.{Future => ScalaFuture}
 
 
-case class ContestRow(id: Int, name: String, polygonId: PolygonContestId, schoolMode: Boolean, Language: String)
-case class ProblemRow(contest: Int, id: String, tests: Int, name: String, rating: Int)
+case class ContestRow(id: Int, name: String, polygonId: PolygonContestId, Language: String)
+case class ProblemRow(contest: Int, id: String, tests: Int, name: String)
 
 class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
@@ -33,18 +33,18 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
   import ContestTableScanner._
 
   implicit val getContestRow = GetResult(r =>
-    ContestRow(r.nextInt(), r.nextString(), PolygonContestId(r.nextString()), false, r.nextString())
+    ContestRow(r.nextInt(), r.nextString(), PolygonContestId(r.nextString()), r.nextString())
   )
 
   private def getContestsFromDb =
     db.run(sql"select id, name, polygon_id, language from contests where polygon_id != ''".as[ContestRow])
 
   implicit val getProblemRow = GetResult(r =>
-    ProblemRow(r.nextInt(), r.nextString(), r.nextInt(), r.nextString(), 30)
+    ProblemRow(r.nextInt(), r.nextString(), r.nextInt(), r.nextString())
   )
 
   private def getProblemsFromDb =
-    db.run(sql"select contest, id, tests, name from Problems".as[ProblemRow])
+    db.run(sql"select contest_id, id, tests, name from Problems".as[ProblemRow])
 
   private[this] def maybeUpdateContestName(contestId: Int, rowName: String, contestName: String): Option[Future[Unit]] = {
     import org.stingray.contester.utils.Fu._
