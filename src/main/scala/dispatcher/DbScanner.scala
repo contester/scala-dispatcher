@@ -12,6 +12,7 @@ import scala.concurrent.{Future => ScalaFuture}
 
 case class Contest(id: Int, name: String, polygonId: PolygonContestId, Language: String)
 case class Problem(contest: Int, id: String, tests: Int, name: String)
+case class Language(id: Int, name: String, moduleID: String)
 
 class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
@@ -45,6 +46,42 @@ object CPModel {
   }
 
   val problems = TableQuery[Problems]
+
+  case class Languages(tag: Tag) extends Table[Language](tag, "languages") {
+    def id = column[Int]("id")
+    def name = column[String]("name")
+    def moduleID = column[String]("module_id")
+
+    def * = (id, name, moduleID) <> (Language.tupled, Language.unapply)
+  }
+
+  val languages = TableQuery[Languages]
+
+  case class Submits(tag: Tag) extends Table[(Int, Int, Int, String, Int, Array[Byte], DateTime, Int, Boolean, Boolean, Int, Long)](tag, "submits") {
+    def id = column[Int]("id", O.AutoInc)
+    def contest = column[Int]("contest")
+    def team = column[Int]("team_id")
+    def problem = column[String]("problem")
+    def language = column[Int]("language_id")
+    def source = column[Array[Byte]]("Source")
+    def arrived = column[DateTime]("submit_time_absolute")
+    def arrivedSeconds = column[Int]("submit_time_relative_seconds")
+    def tested = column[Boolean]("tested")
+    def success = column[Boolean]("success")
+    def passed = column[Int]("passed")
+    def testingID = column[Long]("testing_id")
+
+    override def * = (id, contest, team, problem, language, source, arrived, arrivedSeconds, tested, success, passed, testingID)
+  }
+
+  val submits = TableQuery[Submits]
+
+  def getSubmitByID(id: Int) =
+    for {
+      submit <- submits if submit.id === id
+      lang <- languages if lang.id === submit.language
+      contest <- contests if contest.id === submit.contest && contest.polygonId =!= ""
+    } yield (submit.id, submit.contest, submit.team, submit.problem, submit.arrived, lang.moduleID, submit.source, contest.polygonId)
 }
 
 object ContestTableScanner {

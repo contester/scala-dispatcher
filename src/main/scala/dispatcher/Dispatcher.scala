@@ -53,20 +53,33 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
 
   import org.stingray.contester.utils.Fu._
 
-  private def getSubmit(id: Int): Future[Option[SubmitObject]] =
-    db.run(
-    sql"""
-      select
-      NewSubmits.ID, NewSubmits.Contest, NewSubmits.Team, NewSubmits.Problem,
-      NewSubmits.Arrived, Languages.Ext, NewSubmits.Source, Contests.SchoolMode, NewSubmits.Computer,
-      Contests.PolygonID
-      from NewSubmits, Languages, Contests
-      where NewSubmits.Contest = Languages.Contest and NewSubmits.SrcLang = Languages.ID
-      and Contests.ID = NewSubmits.Contest
-      and Contests.PolygonID != '' and NewSubmits.ID = $id limit 1""".as[SubmitObject].headOption)
+  private def getSubmit(id: Int): Future[Option[SubmitObject]] = {
+    import CPModel._
+    import slick.jdbc.PostgresProfile.api._
 
-  private def markWith(id: Int, value: Int): Future[Int] =
-    db.run(sqlu"update NewSubmits set Processed = $value where ID = $id")
+    db.run(getSubmitByID(id).result.headOption).map(_.map {x =>
+      SubmitObject(x._1, x._2, x._3, x._4, x._5, new ByteBufferModule(x._6, x._7), false, 0, PolygonContestId(x._8))
+    })
+  }
+
+
+//    db.run(
+//    sql"""
+//      select
+//      NewSubmits.ID, NewSubmits.Contest, NewSubmits.Team, NewSubmits.Problem,
+//      NewSubmits.Arrived, Languages.Ext, NewSubmits.Source, Contests.SchoolMode, NewSubmits.Computer,
+//      Contests.PolygonID
+//      from NewSubmits, Languages, Contests
+//      where NewSubmits.Contest = Languages.Contest and NewSubmits.SrcLang = Languages.ID
+//      and Contests.ID = NewSubmits.Contest
+//      and Contests.PolygonID != '' and NewSubmits.ID = $id limit 1""".as[SubmitObject].headOption)
+
+  private def markWith(id: Int, value: Int): Future[Int] = {
+    import CPModel._
+    import slick.jdbc.PostgresProfile.api._
+
+    db.run(submits.filter(_.id === id).map(_.tested).update(true))
+  }
 
   private def calculateTestingResult(m: SubmitObject, ti: Int, sr: SolutionTestingResult) = {
     val taken = sr.tests.length
