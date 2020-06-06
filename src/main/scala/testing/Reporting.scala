@@ -72,26 +72,17 @@ class DBStartedReporter(client: JdbcBackend#DatabaseDef, submit: SubmitObject, p
   import CPModel._
   import slick.jdbc.PostgresProfile.api._
 
-  private def allocateAndRegister(): Future[Long] = {
+  override def compile(compileResult: CompileResult): Future[TestingReporter] = {
     val allocTesting = (testings.map(x => (x.submit, x.problemURL)) returning testings.map(_.id)) += (submit.id, problemID)
 
     client.run(allocTesting.flatMap { testingID =>
-      submits.filter(_.id === submit.id).map(_.testingID).update(testingID).map(_ => testingID)
-    })
-  }
-
-  private def recordCompile(testingID: Long, r: CompileResult) = {
-    val addResult = results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError)) += (testingID, r.status.value, 0, r.time, r.memory, r.stdOut, r.stdErr)
-
-    client.run(addResult)
-  }
-
-  override def compile(compileResult: CompileResult): Future[TestingReporter] =
-    allocateAndRegister().flatMap { testingID =>
-      recordCompile(testingID, compileResult).map { _ =>
-        new DBTestingReporter(client, submit, testingID)
-      }
+      val addResult = results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError)) += (
+        testingID, compileResult.status.value, 0, compileResult.time, compileResult.memory, compileResult.stdOut, compileResult.stdErr)
+      (submits.filter(_.id === submit.id).map(_.testingID).update(testingID) zip addResult).map(_ => testingID)
+    }).map { testingID =>
+      new DBTestingReporter(client, submit, testingID)
     }
+  }
 }
 
 class DBTestingReporter(client: JdbcBackend#DatabaseDef, val submit: SubmitObject, val testingId: Long) extends TestingReporter {
