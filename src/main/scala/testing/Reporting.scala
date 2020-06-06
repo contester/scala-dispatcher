@@ -77,7 +77,7 @@ class DBStartedReporter(client: JdbcBackend#DatabaseDef, submit: SubmitObject, p
 
     client.run(allocTesting.flatMap { testingID =>
       val addResult = results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError)) += (
-        testingID, compileResult.status.value, 0, compileResult.time, compileResult.memory, compileResult.stdOut, compileResult.stdErr)
+        testingID, compileResult.status.value, 0, compileResult.time / 1000, compileResult.memory, compileResult.stdOut, compileResult.stdErr)
       (submits.filter(_.id === submit.id).map(_.testingID).update(testingID) zip addResult).map(_ => testingID)
     }).map { testingID =>
       new DBTestingReporter(client, submit, testingID)
@@ -86,48 +86,32 @@ class DBStartedReporter(client: JdbcBackend#DatabaseDef, submit: SubmitObject, p
 }
 
 class DBTestingReporter(client: JdbcBackend#DatabaseDef, val submit: SubmitObject, val testingId: Long) extends TestingReporter {
-  override def test(testId: Int, result: TestResult): Future[Unit] =
-    client.run(sqlu"""Insert into Results (UID, Submit, Result, Test, Timex, Memory, Info, TesterOutput,
-        TesterError, TesterExitCode) values ($testingId, ${submit.id}, ${result.status.value}, $testId,
-        ${result.solution.time / 1000}, ${result.solution.memory}, ${result.solution.returnCode},
-        ${new String(result.getTesterOutput, "cp1251")}, ${new String(result.getTesterError, "windows-1251")},
-        ${result.getTesterReturnCode})""").map(_ => ())
+  import CPModel._
+  import slick.jdbc.PostgresProfile.api._
 
-
-
-//  override def close(): Future[Unit] =
-//    client.run(sqlu"update Testings set Finish = NOW() where ID = $testingId".zipWith(
-//      sqlu"""Update Submits set Finished = 1, Taken = ${result.tests.size},
-//            Passed = ${result.tests.count(_._2.success)} where ID = $submitId"""
-//    )).map(_ => ())
+  override def test(testId: Int, result: TestResult): Future[Unit] = {
+    client.run(results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.returnCode, x.testerOutput, x.testerError, x.testerReturnCode)) += (
+      testingId, result.status.value, testId, result.solution.time / 1000, result.solution.memory, result.solution.returnCode,
+      result.getTesterOutput, result.getTesterError, result.getTesterReturnCode
+    )).map(_ => ())
+  }
   override def finish(): Unit = ???
 }
 
 class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: SubmitObject, val testingId: Long) extends SingleProgress {
+  import CPModel._
+  import slick.jdbc.PostgresProfile.api._
+
   def compile(r: CompileResult): Future[Unit] = {
-    val cval = if (r.success) 1 else 0
-      client.run(
-        sqlu"""insert into Results (UID, Submit, Result, Test, Timex, Memory, TesterOutput, TesterError)
-           values ($testingId, ${submit.id}, ${r.status.value}, 0, 0, 0, ${new String(r.stdOut, "cp866")},
-            ${new String(r.stdErr, "cp866")})""").zip(
-          client.run(sqlu"Update Submits set Compiled = ${cval} where ID = ${submit.id}"))
-        .map(_ => ())
+      client.run(results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError)) += (
+      testingId, r.status.value, 0, r.time / 1000, r.memory, r.stdOut, r.stdErr)).map(_ => ())
   }
 
   def test(testId: Int, result: TestResult): Future[Unit] =
-    client.run(sqlu"""Insert into Results (UID, Submit, Result, Test, Timex, Memory, Info, TesterOutput,
-        TesterError, TesterExitCode) values ($testingId, ${submit.id}, ${result.status.value}, $testId,
-        ${result.solution.time / 1000}, ${result.solution.memory}, ${result.solution.returnCode},
-        ${new String(result.getTesterOutput, "cp1251")}, ${new String(result.getTesterError, "windows-1251")},
-        ${result.getTesterReturnCode})""").map(_ => ())
-
-  private def finishTesting(testingId: Long) =
-    client.run(sqlu"update Testings set Finish = NOW() where ID = $testingId").map(_ => ())
-
-  private def finishSubmit(submitId: Long, result: SolutionTestingResult) =
-    client.run(
-      sqlu"""Update Submits set Finished = 1, Taken = ${result.tests.size},
-            Passed = ${result.tests.count(_._2.success)} where ID = $submitId""").map(_ => ())
+    client.run(results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.returnCode, x.testerOutput, x.testerError, x.testerReturnCode)) += (
+      testingId, result.status.value, testId, result.solution.time / 1000, result.solution.memory, result.solution.returnCode,
+      result.getTesterOutput, result.getTesterError, result.getTesterReturnCode
+    )).map(_ => ())
 
   /**
    * Close the testing and update submits table
@@ -136,8 +120,12 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
    * @param testingId
    * @return
    */
-  def finish(result: SolutionTestingResult, submitId: Long, testingId: Long): Future[Unit] =
-    finishTesting(testingId).zip(finishSubmit(submitId, result)).map(_ => ())
+  def finish(result: SolutionTestingResult, submitId: Long, testingId: Long): Future[Unit] = {
+    client.run(
+      (sqlu"update testings set finish_time = CURRENT_TIMESTAMP() where id = $testingId")
+        .zip(submits.filter(_.id === submitId).map(x => (x.tested, x.taken, x.passed))
+          .update(true, result.tests.size, result.tests.count(_._2.success)))).map(_ => ())
+  }
 }
 
 case class TestingInfo(testingId: Int, problemId: String, state: Seq[(Int, Int)])
