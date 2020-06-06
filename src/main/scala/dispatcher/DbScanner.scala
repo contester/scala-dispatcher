@@ -57,8 +57,8 @@ object CPModel {
 
   val languages = TableQuery[Languages]
 
-  case class Submits(tag: Tag) extends Table[(Int, Int, Int, String, Int, Array[Byte], DateTime, Int, Boolean, Boolean, Int, Long)](tag, "submits") {
-    def id = column[Int]("id", O.AutoInc)
+  case class Submits(tag: Tag) extends Table[(Long, Int, Int, String, Int, Array[Byte], DateTime, Int, Boolean, Boolean, Int, Long, Int)](tag, "submits") {
+    def id = column[Long]("id", O.AutoInc, O.PrimaryKey)
     def contest = column[Int]("contest")
     def team = column[Int]("team_id")
     def problem = column[String]("problem")
@@ -70,13 +70,14 @@ object CPModel {
     def success = column[Boolean]("success")
     def passed = column[Int]("passed")
     def testingID = column[Long]("testing_id")
+    def taken = column[Int]("taken")
 
-    override def * = (id, contest, team, problem, language, source, arrived, arrivedSeconds, tested, success, passed, testingID)
+    override def * = (id, contest, team, problem, language, source, arrived, arrivedSeconds, tested, success, passed, testingID, taken)
   }
 
   val submits = TableQuery[Submits]
 
-  def getSubmitByID(id: Int) =
+  def getSubmitByID(id: Long) =
     for {
       submit <- submits if submit.id === id
       lang <- languages if lang.id === submit.language

@@ -25,17 +25,17 @@ trait SingleTestStore extends CompiledModuleStore with SourceModuleStore {
   def output: String
 }
 
-class InstanceSubmitTestingHandle(submit: String, testingId: Int) extends TestingResultStore {
+class InstanceSubmitTestingHandle(submit: String, testingId: Long) extends TestingResultStore {
   override def sourceModule: String = s"${submit}/sourceModule"
   def compiledModule = s"${submit}/compiledModule"
   def testOutput(test: Int) = s"${submit}/${testingId}/${test}/output"
 }
 
 object InstanceSubmitTestingHandle {
-  def submit(baseUrl: String, handle: String, submitId: Int) =
+  def submit(baseUrl: String, handle: String, submitId: Long) =
     s"${baseUrl}submit/${handle}/${submitId}"
 
-  def apply(baseUrl: String, handle: String, submitId: Int, testingId: Int) =
+  def apply(baseUrl: String, handle: String, submitId: Long, testingId: Long) =
     new InstanceSubmitTestingHandle(submit(baseUrl, handle, submitId), testingId)
 }
 
@@ -51,7 +51,7 @@ object CustomTestingHandle {
 }
 
 case class TestingStore(baseUrl: String, handle: String) {
-  def submit(submitId: Int, testingId: Int) =
+  def submit(submitId: Long, testingId: Long) =
     InstanceSubmitTestingHandle(baseUrl, handle, submitId, testingId)
 
   def custom(testingId: Int) =

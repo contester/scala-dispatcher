@@ -3,7 +3,7 @@ package org.stingray.contester.testing
 import org.stingray.contester.common.{CompileResult, Result, TestResult}
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.DateTime
-import org.stingray.contester.dispatcher.SubmitObject
+import org.stingray.contester.dispatcher.{CPModel, SubmitObject}
 import java.io.File
 import java.nio.charset.StandardCharsets
 
@@ -14,6 +14,8 @@ import slick.jdbc.JdbcBackend
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.stingray.contester.utils.Dbutil._
+import slick.dbio.Effect
+import slick.sql.FixedSqlAction
 
 import scala.concurrent.Future
 
@@ -54,7 +56,7 @@ object CombinedResultReporter {
   def ts =
     "[" + fmt.print(new DateTime()) + "]"
 
-  def allocate(db: DBReporter, prefix: File, submit: SubmitObject, problemUri: String): Future[(Int, RawLogResultReporter)] =
+  def allocate(db: DBReporter, prefix: File, submit: SubmitObject, problemUri: String): Future[(Long, RawLogResultReporter)] =
     db.allocateAndRegister(submit, problemUri).zip {
       val r = RawLogResultReporter(prefix, submit)
       r.start
@@ -67,31 +69,16 @@ class DBReporterFactory(client: JdbcBackend#DatabaseDef) extends GenericReporter
 }
 
 class DBStartedReporter(client: JdbcBackend#DatabaseDef, submit: SubmitObject, problemID: String) extends StartedReporter {
-  import com.github.tototoshi.slick.MySQLJodaSupport._
-  /**
-    * Allocate new testing ID in the database.
-    * @return Future testing ID.
-    */
-  private def allocateTesting(): Future[Long] =
-    client.run(sqlu"""Insert into Testings (Submit, ProblemID, Start) values (${submit.id}, $problemID, NOW())"""
-      .andThen(sql"select LAST_INSERT_ID()".as[Long]).withPinnedSession).map(_.head)
+  import CPModel._
+  import slick.jdbc.PostgresProfile.api._
 
-  /**
-    * Update Submits table for given submit with given testing ID.
-    * @param testingId Testing ID to update with.
-    * @return
-    */
-  private def registerTestingOnly(testingId: Long) =
-    client.run(
-      sqlu"""insert Submits (Contest, Arrived, Team, Task, ID, Ext, Computer, TestingID, Touched, Finished)
-      values (${submit.contestId}, ${submit.arrived}, ${submit.teamId}, ${submit.problemId}, ${submit.id},
-      ${submit.sourceModule.moduleType}, ${submit.computer}, $testingId, NOW(), 0) on duplicate key update
-        TestingID = $testingId, Touched = NOW()""")
+  private def allocateAndRegister(): Future[Long] = {
+    val allocTesting = (testings.map(x => (x.submit, x.problemURL)) returning testings.map(_.id)) += (submit.id, problemID)
 
-  private def allocateAndRegister(): Future[Long] =
-    allocateTesting().flatMap { testingId =>
-      registerTestingOnly(testingId).map { _ => testingId }
-    }
+    client.run(allocTesting.flatMap { testingID =>
+      submits.filter(_.id === submit.id).map(_.testingID).update(testingID).map(_ => testingID)
+    })
+  }
 
   private def recordCompile(testingID: Long, r: CompileResult): Future[Unit] = {
     val cval = if (r.success) 1 else 0
@@ -129,7 +116,7 @@ class DBTestingReporter(client: JdbcBackend#DatabaseDef, val submit: SubmitObjec
   override def finish(): Unit = ???
 }
 
-class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: SubmitObject, val testingId: Int) extends SingleProgress {
+class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: SubmitObject, val testingId: Long) extends SingleProgress {
   def compile(r: CompileResult): Future[Unit] = {
     val cval = if (r.success) 1 else 0
       client.run(
@@ -147,10 +134,10 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
         ${new String(result.getTesterOutput, "cp1251")}, ${new String(result.getTesterError, "windows-1251")},
         ${result.getTesterReturnCode})""").map(_ => ())
 
-  private def finishTesting(testingId: Int) =
+  private def finishTesting(testingId: Long) =
     client.run(sqlu"update Testings set Finish = NOW() where ID = $testingId").map(_ => ())
 
-  private def finishSubmit(submitId: Int, result: SolutionTestingResult) =
+  private def finishSubmit(submitId: Long, result: SolutionTestingResult) =
     client.run(
       sqlu"""Update Submits set Finished = 1, Taken = ${result.tests.size},
             Passed = ${result.tests.count(_._2.success)} where ID = $submitId""").map(_ => ())
@@ -162,7 +149,7 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
    * @param testingId
    * @return
    */
-  def finish(result: SolutionTestingResult, submitId: Int, testingId: Int): Future[Unit] =
+  def finish(result: SolutionTestingResult, submitId: Long, testingId: Long): Future[Unit] =
     finishTesting(testingId).zip(finishSubmit(submitId, result)).map(_ => ())
 }
 
@@ -170,34 +157,16 @@ case class TestingInfo(testingId: Int, problemId: String, state: Seq[(Int, Int)]
 
 
 class DBReporter(val client: JdbcBackend#DatabaseDef) {
-  import com.github.tototoshi.slick.MySQLJodaSupport._
-  /**
-   * Allocate new testing ID in the database.
-   * @param submitId Submit ID.
-   * @param problemId Problem ID/Url.
-   * @return Future testing ID.
-   */
-  def allocateTesting(submitId: Int, problemId: String): Future[Int] =
-    client.run(sqlu"""Insert into Testings (Submit, ProblemID, Start) values ($submitId, $problemId, NOW())"""
-      .andThen(sql"select LAST_INSERT_ID()".as[Int]).withPinnedSession).map(_.head)
+  import CPModel._
+  import slick.jdbc.PostgresProfile.api._
 
-  /**
-   * Update Submits table for given submit with given testing ID.
-   * @param submit Submit object to consider.
-   * @param testingId Testing ID to update with.
-   * @return
-   */
-  def registerTestingOnly(submit: SubmitObject, testingId: Int) =
-    client.run(
-      sqlu"""insert Submits (Contest, Arrived, Team, Task, ID, Ext, Computer, TestingID, Touched, Finished)
-      values (${submit.contestId}, ${submit.arrived}, ${submit.teamId}, ${submit.problemId}, ${submit.id},
-      ${submit.sourceModule.moduleType}, ${submit.computer}, $testingId, NOW(), 0) on duplicate key update
-        TestingID = $testingId, Touched = NOW()""")
+  def allocateAndRegister(submit: SubmitObject, problemId: String): Future[Long] = {
+    val allocTesting = (testings.map(x => (x.submit, x.problemURL)) returning testings.map(_.id)) += (submit.id, problemId)
 
-  def allocateAndRegister(submit: SubmitObject, problemId: String): Future[Int] =
-    allocateTesting(submit.id, problemId).flatMap { testingId =>
-      registerTestingOnly(submit, testingId).map { _ => testingId }
-    }
+    client.run(allocTesting.flatMap { testingID =>
+      submits.filter(_.id === submit.id).map(_.testingID).update(testingID).map(_ => testingID)
+    })
+  }
 
   // Get testing ID from submit row, or None
   private def getTestingIdFromSubmit(submitId: Int): Future[Option[Int]] =

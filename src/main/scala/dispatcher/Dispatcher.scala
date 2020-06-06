@@ -26,7 +26,7 @@ trait Submit extends TimeKey with SubmitWithModule {
 
 import com.github.nscala_time.time.Imports._
 
-case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
+case class SubmitObject(id: Long, contestId: Int, teamId: Int, problemId: String,
                         arrived: DateTime, sourceModule: ByteBufferModule, override val schoolMode: Boolean, computer: Long,
                         polygonId: PolygonContestId)
   extends Submit {
@@ -35,7 +35,7 @@ case class SubmitObject(id: Int, contestId: Int, teamId: Int, problemId: String,
     s"Submit(id=$id, contest=$contestId, team=$teamId, problem=$problemId, arrived: $arrived)"
 }
 
-case class FinishedTesting(submit: SubmitObject, testingId: Int, compiled: Boolean, passed: Int, taken: Int)
+case class FinishedTesting(submit: SubmitObject, testingId: Long, compiled: Boolean, passed: Int, taken: Int)
 
 case object ProblemNotFoundError extends Throwable
 
@@ -56,14 +56,14 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
     })
   }
 
-  private def markWith(id: Int, value: Int): Future[Int] = {
+  private def markWith(id: Long): Future[Int] = {
     import CPModel._
     import slick.jdbc.PostgresProfile.api._
 
     db.run(submits.filter(_.id === id).map(_.tested).update(true))
   }
 
-  private def calculateTestingResult(m: SubmitObject, ti: Int, sr: SolutionTestingResult) = {
+  private def calculateTestingResult(m: SubmitObject, ti: Long, sr: SolutionTestingResult) = {
     val taken = sr.tests.length
     val passed = sr.tests.count(x => x._2.success)
 
@@ -97,8 +97,8 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
     getSubmit(id).flatMap {
       case Some(submit) =>
         run(submit).transform {
-          case Return(x) => markWith(id, 255).unit
-          case Throw(x) => markWith(id, 254).unit
+          case Return(x) => markWith(id).unit
+          case Throw(x) => markWith(id).unit
         }
       case None => Future.Done
     }
