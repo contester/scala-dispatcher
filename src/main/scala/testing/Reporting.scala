@@ -9,14 +9,9 @@ import java.nio.charset.StandardCharsets
 
 import org.apache.commons.io.FileUtils
 import org.stingray.contester.engine.CustomTestResult
-import slick.jdbc.MySQLProfile.api._
 import slick.jdbc.JdbcBackend
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import org.stingray.contester.utils.Dbutil._
-import slick.dbio.Effect
-import slick.sql.FixedSqlAction
-
 import scala.concurrent.Future
 
 case class SolutionTestingResult(compilation: CompileResult, tests: Seq[(Int, Result)])

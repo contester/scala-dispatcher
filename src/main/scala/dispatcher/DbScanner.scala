@@ -1,14 +1,12 @@
 package org.stingray.contester.dispatcher
 
-import akka.actor.{Actor, Props}
+import akka.actor.Actor
 import com.twitter.util.Future
-import slick.jdbc.{GetResult, JdbcBackend}
-
-import scala.concurrent.ExecutionContext.Implicits.global
 import grizzled.slf4j.Logging
 import org.stingray.contester.polygon._
+import slick.jdbc.JdbcBackend
 
-import scala.concurrent.{Future => ScalaFuture}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 case class Contest(id: Int, name: String, polygonId: PolygonContestId, Language: String)
 case class Problem(contest: Int, id: String, tests: Int, name: String)
@@ -17,9 +15,9 @@ case class Language(id: Int, name: String, moduleID: String)
 class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
 object CPModel {
-  import slick.jdbc.PostgresProfile.api._
-  import com.github.tototoshi.slick.PostgresJodaSupport._
   import com.github.nscala_time.time.Imports._
+  import com.github.tototoshi.slick.PostgresJodaSupport._
+  import slick.jdbc.PostgresProfile.api._
 
   case class Contests(tag: Tag) extends Table[(Int, String, DateTime, Option[DateTime], DateTime, DateTime, String, String)](tag, "contests") {
     def id = column[Int]("id")
@@ -124,10 +122,9 @@ object ContestTableScanner {
 
 class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
   extends Actor with Logging {
-  import org.stingray.contester.utils.Dbutil._
   import ContestTableScanner._
 
-  private def getContestsFromDb = {
+  private[this] def getContestsFromDb = {
     import CPModel._
     import slick.jdbc.PostgresProfile.api._
 
