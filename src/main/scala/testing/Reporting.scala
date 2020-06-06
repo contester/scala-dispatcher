@@ -168,39 +168,6 @@ class DBReporter(val client: JdbcBackend#DatabaseDef) {
     })
   }
 
-  // Get testing ID from submit row, or None
-  private def getTestingIdFromSubmit(submitId: Int): Future[Option[Int]] =
-    client.run(sql"select TestingID from Submits where Id = $submitId".as[Option[Int]]).map(_.headOption.flatten)
-
-  // Get active testing from testingId, or None
-  private def getTestingFromSubmitAndId(submitId: Int, testingId: Int): Future[Option[(Int, String)]] =
-    client.run(
-      sql"""select ID, ProblemID from Testings where Finish is null and ProblemID is not null and
-           Submit = $submitId and ID = $testingId""".as[(Int, String)]).map(_.headOption)
-
-  // Get most recent active testing
-  private def getTestingFromSubmit(submitId: Int): Future[Option[(Int, String)]] =
-    client.run(
-      sql"select ID, ProblemID from Testings where Finish is null and ProblemID is not null and Submit = $submitId order by ID desc limit 1"
-        .as[(Int, String)]).map(_.headOption)
-
-  private def getAnyTesting(submitId: Int): Future[Option[(Int, String)]] =
-    getTestingIdFromSubmit(submitId).flatMap { optTestingId =>
-      optTestingId.map(getTestingFromSubmitAndId(submitId, _)).getOrElse(Future.successful(None))
-    }.flatMap { optTesting =>
-        if (optTesting.isEmpty)
-          getTestingFromSubmit(submitId)
-        else
-          Future.successful(optTesting)
-    }
-
-  private def getTestingState(testingId: Int): Future[Seq[(Int, Int)]] =
-    client.run(sql"select Test, Result from Results where UID = $testingId and Test > 0".as[(Int, Int)])
-
-  def getAnyTestingAndState(submitId: Int): Future[Option[TestingInfo]] =
-    getAnyTesting(submitId).flatMap(_.map { testing =>
-      getTestingState(testing._1).map(x => Some(new TestingInfo(testing._1, testing._2, x)))
-    }.getOrElse(Future.successful(None)))
 }
 
 case class RawLogResultReporter(base: File, val submit: SubmitObject) extends SingleProgress {
