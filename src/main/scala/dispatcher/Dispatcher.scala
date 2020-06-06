@@ -1,11 +1,10 @@
 package org.stingray.contester.dispatcher
 
 import java.io.File
-import java.sql.Timestamp
 
 import akka.actor.ActorRef
-import com.spingo.op_rabbit.PlayJsonSupport._
 import com.spingo.op_rabbit.Message
+import com.spingo.op_rabbit.PlayJsonSupport._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.util.{Future, Return, Throw}
@@ -15,7 +14,7 @@ import org.stingray.contester.invokers.TimeKey
 import org.stingray.contester.polygon.{PolygonContestId, PolygonProblemClient}
 import org.stingray.contester.testing._
 import play.api.libs.json.{JsValue, Json, Writes}
-import slick.jdbc.{GetResult, JdbcBackend}
+import slick.jdbc.JdbcBackend
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future => ScalaFuture}
@@ -42,9 +41,6 @@ case object ProblemNotFoundError extends Throwable
 class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, inv: SolutionTester,
                        store: TestingStore, rabbitMq: ActorRef, reportbase: String,
                        fsClient:Service[Request, Response], fsBaseUrl: String) extends Logging {
-  import slick.jdbc.MySQLProfile.api._
-  import org.stingray.contester.utils.Dbutil._
-
   import org.stingray.contester.utils.Fu._
 
   private def getSubmit(id: Int): Future[Option[SubmitObject]] = {

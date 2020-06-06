@@ -30,7 +30,7 @@ case class MoodleContesterSubmit(id: Long, contester: Long, student: Long, probl
                                  iomethod: Boolean, solution: Array[Byte], submitted: DateTime, processed: Option[Int])
 
 object MoodleMariadbSchema {
-  import slick.jdbc.MySQLProfile.api._
+  import slick.jdbc.PostgresProfile.api._
 
   implicit val datetimeColumnType
   : JdbcType[DateTime] with BaseTypedType[DateTime] =
