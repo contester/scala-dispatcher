@@ -45,12 +45,6 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
   import slick.jdbc.MySQLProfile.api._
   import org.stingray.contester.utils.Dbutil._
 
-  implicit private val getSubmitObject = GetResult(r =>
-    SubmitObject(r.nextInt(), r.nextInt(), r.nextInt(), r.nextString(), new DateTime(r.nextTimestamp()),
-    new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBoolean(), r.nextLong(), PolygonContestId(r.nextString())
-    )
-  )
-
   import org.stingray.contester.utils.Fu._
 
   private def getSubmit(id: Int): Future[Option[SubmitObject]] = {
@@ -61,18 +55,6 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
       SubmitObject(x._1, x._2, x._3, x._4, x._5, new ByteBufferModule(x._6, x._7), false, 0, PolygonContestId(x._8))
     })
   }
-
-
-//    db.run(
-//    sql"""
-//      select
-//      NewSubmits.ID, NewSubmits.Contest, NewSubmits.Team, NewSubmits.Problem,
-//      NewSubmits.Arrived, Languages.Ext, NewSubmits.Source, Contests.SchoolMode, NewSubmits.Computer,
-//      Contests.PolygonID
-//      from NewSubmits, Languages, Contests
-//      where NewSubmits.Contest = Languages.Contest and NewSubmits.SrcLang = Languages.ID
-//      and Contests.ID = NewSubmits.Contest
-//      and Contests.PolygonID != '' and NewSubmits.ID = $id limit 1""".as[SubmitObject].headOption)
 
   private def markWith(id: Int, value: Int): Future[Int] = {
     import CPModel._

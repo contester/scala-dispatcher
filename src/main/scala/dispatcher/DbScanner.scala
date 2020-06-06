@@ -82,6 +82,35 @@ object CPModel {
       lang <- languages if lang.id === submit.language
       contest <- contests if contest.id === submit.contest && contest.polygonId =!= ""
     } yield (submit.id, submit.contest, submit.team, submit.problem, submit.arrived, lang.moduleID, submit.source, contest.polygonId)
+
+  case class Testings(tag: Tag) extends Table[(Long, Long, DateTime, String, Option[DateTime])](tag, "testings") {
+    def id = column[Long]("id", O.AutoInc, O.PrimaryKey)
+    def submit = column[Long]("submit")
+    def startTime = column[DateTime]("start_time")
+    def problemURL = column[String]("problem_id")
+    def finishTime = column[Option[DateTime]]("finish_time")
+
+    override def * = (id, submit, startTime, problemURL, finishTime)
+  }
+
+  val testings = TableQuery[Testings]
+
+  case class Results(tag: Tag) extends Table[(Long, Long, Long, DateTime, Long, Long, Long, String, String, Long)](tag, "results") {
+    def testingID = column[Long]("testing_id")
+    def testID = column[Long]("test_id")
+    def resultCode = column[Long]("result_code")
+    def recordTime = column[DateTime]("record_time")
+    def timeMs = column[Long]("time_ms")
+    def memoryBytes = column[Long]("memory_bytes")
+    def returnCode = column[Long]("return_code")
+    def testerOutput = column[String]("tester_output")
+    def testerError = column[String]("tester_error")
+    def testerReturnCode = column[Long]("tester_return_code")
+
+    override def * = (testingID, testID, resultCode, recordTime, timeMs, memoryBytes, returnCode, testerOutput, testerError, testerReturnCode)
+  }
+
+  val results = TableQuery[Results]
 }
 
 object ContestTableScanner {
