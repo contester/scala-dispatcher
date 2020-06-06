@@ -80,14 +80,10 @@ class DBStartedReporter(client: JdbcBackend#DatabaseDef, submit: SubmitObject, p
     })
   }
 
-  private def recordCompile(testingID: Long, r: CompileResult): Future[Unit] = {
-    val cval = if (r.success) 1 else 0
-    client.run(
-      sqlu"""insert into Results (UID, Submit, Result, Test, Timex, Memory, TesterOutput, TesterError)
-           values ($testingID, ${submit.id}, ${r.status.value}, 0, 0, 0, ${new String(r.stdOut, "cp866")},
-            ${new String(r.stdErr, "cp866")})""").zip(
-      client.run(sqlu"Update Submits set Compiled = ${cval} where ID = ${submit.id}"))
-      .map(_ => ())
+  private def recordCompile(testingID: Long, r: CompileResult) = {
+    val addResult = results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError)) += (testingID, r.status.value, 0, r.time, r.memory, r.stdOut, r.stdErr)
+
+    client.run(addResult)
   }
 
   override def compile(compileResult: CompileResult): Future[TestingReporter] =
