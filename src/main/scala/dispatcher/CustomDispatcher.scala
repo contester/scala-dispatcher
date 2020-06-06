@@ -1,77 +1,70 @@
 package org.stingray.contester.dispatcher
 
 import akka.actor.ActorRef
+import com.github.nscala_time.time.Imports._
 import com.spingo.op_rabbit.Message
 import org.stingray.contester.common._
 import org.stingray.contester.invokers.TimeKey
 import org.stingray.contester.testing.{CustomTester, CustomTestingResult}
 import play.api.libs.json.Json
-import slick.jdbc.{GetResult, JdbcBackend}
+import slick.jdbc.JdbcBackend
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-
-import com.github.nscala_time.time.Imports._
-
-case class CustomTestObject(id: Int, contest: Int, team: Int, arrived: DateTime, sourceModule: Module,
+case class CustomTestObject(id: Long, contest: Int, team: Int, arrived: DateTime, sourceModule: Module,
                             input: Array[Byte]) extends TimeKey with SubmitWithModule {
   val timestamp = arrived
 }
 
-object CustomTestObject {
-  import slick.jdbc.MySQLProfile.api._
-  import org.stingray.contester.utils.Dbutil._
-
-  implicit val getResult = GetResult(r =>
-    CustomTestObject(r.nextInt(), r.nextInt(), r.nextInt(), new DateTime(r.nextTimestamp()),
-      new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBytes())
-  )
-}
-
-case class CustomTestResult(id: Int, contest:Int, team: Int)
+case class CustomTestResult(id: Long, contest:Int, team: Int)
 
 object CustomTestResult {
   implicit val formatCustomTestResult = Json.format[CustomTestResult]
 }
 
 class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: CustomTester, store: TestingStore, rabbitMq: ActorRef) {
-  import slick.jdbc.MySQLProfile.api._
-  import org.stingray.contester.utils.Dbutil._
-  import org.stingray.contester.utils.Fu._
+  import CPModel._
   import com.spingo.op_rabbit.PlayJsonSupport._
+  import org.stingray.contester.utils.Fu._
+  import slick.jdbc.PostgresProfile.api._
 
-  private def recordResult(item: CustomTestObject, result: CustomTestingResult) =
-    result.test.map { tr =>
-      db.run(
-        sqlu"""update Eval set Output = ${tr.output.map(Blobs.getBinary).getOrElse("".getBytes)},
-                Timex = ${tr.run.time / 1000},
-                Memory = ${tr.run.memory},
-                Info = ${tr.run.returnCode},
-                Result = ${tr.run.status.value},
-                Processed = 255 where ID = ${item.id}"""
-      )
-    }.getOrElse {
-      val tr = result.compilation
-      db.run(sqlu"""update Eval set Output = ${tr.stdOut},
-                Timex = ${tr.time / 1000},
-                Memory = ${tr.memory},
-                Result = ${tr.status.value},
-                Processed = 255 where ID = ${item.id}""")
-    }.map { x =>
+  private[this] def updateCustom(id: Long, output: Array[Byte], timeMs: Long, memoryBytes: Long, returnCode: Long, resultCode: Int) = {
+    import org.stingray.contester.utils.Dbutil._
+    sqlu"""update custom_test set output = $output,
+                time_ms = $timeMs,
+                memory_bytes = $memoryBytes,
+                return_code = $returnCode,
+                result_code = $resultCode,
+                finish_time = CURRENT_TIMESTAMP() where ID = $id"""
+  }
+
+  private[this] def recordResult(item: CustomTestObject, result: CustomTestingResult) = {
+    db.run(
+      result.test.map { tr =>
+        updateCustom(item.id, tr.output.map(Blobs.getBinary).getOrElse("".getBytes), tr.run.time / 1000, tr.run.memory,
+          tr.run.returnCode, tr.run.status.value)
+      }.getOrElse {
+        val tr = result.compilation
+        updateCustom(item.id, tr.stdOut, tr.time / 1000, tr.memory, 0, tr.status.value)
+      }
+    ).map { x =>
         rabbitMq ! Message.queue(CustomTestResult(item.id, item.contest, item.team), queue = "contester.evals")
       ()
       }
+  }
 
   def runthis(what: ServerSideEvalID): Future[Unit] = {
-    db.run(sql"""select ID, Contest, Team, Arrived, Ext, Source, Input from Eval where ID = ${what.id}""".as[CustomTestObject])
-      .map(_.headOption).flatMap { optItem =>
-      optItem.map(run(_)).getOrElse(Done)
-      }
+    db.run(getCustomTestByID(what.id).result.headOption).flatMap { optItem =>
+      optItem.map { x =>
+        val c = CustomTestObject(x._1, x._2, x._3, x._4, new ByteBufferModule(x._5, x._6), x._7)
+        run(c)
+      }.getOrElse(Done)
     }
+  }
 
 
-  private def run(item: CustomTestObject): Future[Unit] =
+  private[this] def run(item: CustomTestObject): Future[Unit] =
     invoker(item, item.sourceModule, item.input, store.custom(item.id))
       .flatMap(x => recordResult(item, x))
 }

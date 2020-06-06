@@ -46,7 +46,7 @@ class CustomTestingHandle(testing: String) extends SingleTestStore {
 }
 
 object CustomTestingHandle {
-  def apply(baseUrl: String, handle: String, testingId: Int): CustomTestingHandle =
+  def apply(baseUrl: String, handle: String, testingId: Long): CustomTestingHandle =
     new CustomTestingHandle(s"${baseUrl}eval/${handle}/${testingId}")
 }
 
@@ -54,7 +54,7 @@ case class TestingStore(baseUrl: String, handle: String) {
   def submit(submitId: Long, testingId: Long) =
     InstanceSubmitTestingHandle(baseUrl, handle, submitId, testingId)
 
-  def custom(testingId: Int) =
+  def custom(testingId: Long) =
     CustomTestingHandle(baseUrl, handle, testingId)
 }
 

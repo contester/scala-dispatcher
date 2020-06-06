@@ -61,7 +61,7 @@ object CPModel {
     def team = column[Int]("team_id")
     def problem = column[String]("problem")
     def language = column[Int]("language_id")
-    def source = column[Array[Byte]]("Source")
+    def source = column[Array[Byte]]("source")
     def arrived = column[DateTime]("submit_time_absolute")
     def arrivedSeconds = column[Int]("submit_time_relative_seconds")
     def tested = column[Boolean]("tested")
@@ -110,6 +110,34 @@ object CPModel {
   }
 
   val results = TableQuery[Results]
+
+  case class CustomTests(tag: Tag) extends Table[(Long, Int, Int, Int, Array[Byte], Array[Byte], Array[Byte], DateTime, Int, Option[DateTime], Int, Long, Long, Long)](tag, "custom_tests") {
+    def id = column[Long]("id", O.AutoInc, O.PrimaryKey)
+    def contest = column[Int]("contest")
+    def team = column[Int]("team_id")
+    def language = column[Int]("language_id")
+    def source = column[Array[Byte]]("source")
+    def input = column[Array[Byte]]("input")
+    def output = column[Array[Byte]]("output")
+    def arrived = column[DateTime]("submit_time_absolute")
+    def arrivedSeconds = column[Int]("submit_time_relative_seconds")
+    def finishTime = column[Option[DateTime]]("finish_time")
+    def resultCode = column[Int]("result_code")
+    def timeMs = column[Long]("time_ms")
+    def memoryBytes = column[Long]("memory_bytes")
+    def returnCode = column[Long]("return_code")
+
+    override def * = (id, contest, team, language, source, input, output, arrived, arrivedSeconds, finishTime, resultCode, timeMs, memoryBytes, returnCode)
+  }
+
+  val customTests = TableQuery[CustomTests]
+
+  def getCustomTestByID(id: Long) =
+    for {
+      c <- customTests if c.id === id
+      lang <- languages if lang.id === c.language
+    } yield (c.id, c.contest, c.team, c.arrived, lang.moduleID, c.source, c.input)
+
 }
 
 object ContestTableScanner {
