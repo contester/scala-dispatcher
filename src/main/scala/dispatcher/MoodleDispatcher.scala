@@ -5,7 +5,6 @@ import java.sql.Timestamp
 
 import akka.actor.{Actor, Props, Stash}
 import com.twitter.util.Future
-import grizzled.slf4j.Logging
 import org.stingray.contester.common._
 import org.stingray.contester.problems.{ProblemHandle, ProblemServerInterface}
 import org.stingray.contester.testing.{SingleProgress, SolutionTester, SolutionTestingResult}
@@ -14,6 +13,7 @@ import slick.jdbc.{GetResult, JdbcBackend, JdbcType}
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import com.github.nscala_time.time.Imports.DateTime
+import play.api.Logging
 import slick.ast.BaseTypedType
 
 case class MoodleSubmit(id: Int, problemId: String, arrived: DateTime, sourceModule: Module, stdio: Boolean) extends Submit {
@@ -134,7 +134,7 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
          mdl_contester_submits.lang = mdl_contester_languages.id and
          mdl_contester_submits.id = ${id}
           """.as[MoodleSubmit]).map(_.headOption)
-    f.foreach(x => info(s"${x}"))
+    f.foreach(x => logger.info(s"${x}"))
     f
   }
 
@@ -154,7 +154,7 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
     }
     r.failed.foreach{
       case e =>
-        error(s"err: $e")
+        logger.error(s"$id: error $e", e)
     }
     r
   }
@@ -181,10 +181,10 @@ class MoodleTableScanner(db: JdbcBackend#DatabaseDef, dispatcher: MoodleDispatch
 
   private def startProcessing(id: Long) = {
     active.add(id)
-    info(s"Starting ${id}")
+    logger.info(s"Starting ${id}")
     val saved = self
     dispatcher.runId(id).ensure {
-      info(s"Done with ${id}")
+      logger.info(s"Done with ${id}")
       saved ! DoneWith(id)
     }
   }

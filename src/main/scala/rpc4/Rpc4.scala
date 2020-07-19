@@ -6,12 +6,12 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicReference}
 
 import com.twitter.util.{Future, Promise}
-import grizzled.slf4j.Logging
 import io.netty.buffer._
 import io.netty.channel._
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder
 import org.stingray.contester.rpc4.proto.Header
-import scalapb.{GeneratedMessage, GeneratedMessageCompanion, Message}
+import play.api.Logging
+import scalapb.{GeneratedMessage, GeneratedMessageCompanion}
 
 /** Connected server registry. Will be called for connected and disconnected channels.
   *
@@ -107,7 +107,7 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
   }
 
   private def killRequest(requestId: Int, e: Option[Throwable]=None): Unit = {
-    trace(s"killing request $requestId")
+    logger.trace(s"killing request $requestId")
     requests.remove(requestId).foreach(_.setException(DefaultChannelDisconnectedException))
   }
 
@@ -129,7 +129,7 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
     if (disconnected.get())
       Future.exception(DefaultChannelDisconnectedException)
     else {
-      trace(s"Call: $methodName(${payload.map(_.toProtoString)})")
+      logger.trace(s"Call: $methodName(${payload.map(_.toProtoString)})")
       val resultPromise = new Promise[RpcTuple1]
       val requestId = sequenceNumber.getAndIncrement
       val header = Header(sequence = Some(requestId), messageType = Some(Header.MessageType.REQUEST),
@@ -165,22 +165,22 @@ class RpcClientImpl[C <: Channel](channel: C, registry: Registry) extends Simple
           //rt.payload.foreach(ReferenceCountUtil.release)
         }
       }.onSuccess { r =>
-        trace(s"Result($methodName): ${r.map(_.toProtoString)}")
-      }.onFailure(error(s"Error($methodName)", _))
+        logger.trace(s"Result($methodName): ${r.map(_.toProtoString)}")
+      }.onFailure(logger.error(s"Error($methodName)", _))
     }
   }
 
   def messageReceived(header: Header, payload: Option[ByteBuf]) = {
     requests.remove(header.getSequence.toInt) match {
       case None =>
-        trace(s"Sequence id mismatch: ${header}")
+        logger.trace(s"Sequence id mismatch: ${header}")
         //payload.foreach(ReferenceCountUtil.release)
       case Some(p) =>
         header.getMessageType match {
           case Header.MessageType.ERROR | Header.MessageType.RESPONSE =>
             p.setValue(RpcTuple1(header, payload))
           case v =>
-            trace(s"Message type mismatch: ${v}")
+            logger.trace(s"Message type mismatch: ${v}")
           //case _ => payload.foreach(ReferenceCountUtil.release)
         }
     }

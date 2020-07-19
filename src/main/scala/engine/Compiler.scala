@@ -4,8 +4,8 @@ import org.stingray.contester.invokers.{InvokerInstance, Sandbox}
 import org.stingray.contester.modules.{CompileResultAndModule, CompiledModuleHandle, SourceHandler}
 import com.twitter.util.Future
 import org.stingray.contester.common._
-import grizzled.slf4j.Logging
 import org.stingray.contester.utils.SandboxUtil
+import play.api.Logging
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -18,7 +18,7 @@ object Compiler extends Logging {
   private def storeCompiledModule(sandbox: Sandbox, stored: String, sourceHash: String,
                                   module: CompiledModuleHandle): Future[Option[Module]] = {
     SandboxUtil.putModule(sandbox, stored, sandbox.sandboxId / module.filename, module.moduleType)
-      .onFailure(error(s"storeCompiledModule($stored)", _))
+      .onFailure(logger.error(s"storeCompiledModule($stored)", _))
   }
 
   def apply(instance: InvokerInstance, module: Module, stored: String): Future[(CompileResult, Option[Module])] =

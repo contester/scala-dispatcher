@@ -2,8 +2,8 @@ package org.stingray.contester.dispatcher
 
 import akka.actor.Actor
 import com.twitter.util.Future
-import grizzled.slf4j.Logging
 import org.stingray.contester.polygon._
+import play.api.Logging
 import slick.jdbc.JdbcBackend
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -55,7 +55,7 @@ object CPModel {
 
   val languages = TableQuery[Languages]
 
-  case class Submits(tag: Tag) extends Table[(Long, Int, Int, String, Int, Array[Byte], DateTime, Int, Boolean, Boolean, Int, Long, Int)](tag, "submits") {
+  case class Submits(tag: Tag) extends Table[(Long, Int, Int, String, Int, Array[Byte], DateTime, Int, Boolean, Boolean, Int, Long, Int, Boolean)](tag, "submits") {
     def id = column[Long]("id", O.AutoInc, O.PrimaryKey)
     def contest = column[Int]("contest")
     def team = column[Int]("team_id")
@@ -69,8 +69,9 @@ object CPModel {
     def passed = column[Int]("passed")
     def testingID = column[Long]("testing_id")
     def taken = column[Int]("taken")
+    def compiled = column[Boolean]("compiled")
 
-    override def * = (id, contest, team, problem, language, source, arrived, arrivedSeconds, tested, success, passed, testingID, taken)
+    override def * = (id, contest, team, problem, language, source, arrived, arrivedSeconds, tested, success, passed, testingID, taken, compiled)
   }
 
   val submits = TableQuery[Submits]
@@ -111,7 +112,8 @@ object CPModel {
 
   val results = TableQuery[Results]
 
-  case class CustomTests(tag: Tag) extends Table[(Long, Int, Int, Int, Array[Byte], Array[Byte], Array[Byte], DateTime, Int, Option[DateTime], Int, Long, Long, Long)](tag, "custom_tests") {
+  case class CustomTests(tag: Tag) extends Table[(Long, Int, Int, Int, Array[Byte], Array[Byte], Array[Byte], DateTime,
+    Option[DateTime], Int, Long, Long, Long)](tag, "custom_test") {
     def id = column[Long]("id", O.AutoInc, O.PrimaryKey)
     def contest = column[Int]("contest")
     def team = column[Int]("team_id")
@@ -120,14 +122,13 @@ object CPModel {
     def input = column[Array[Byte]]("input")
     def output = column[Array[Byte]]("output")
     def arrived = column[DateTime]("submit_time_absolute")
-    def arrivedSeconds = column[Int]("submit_time_relative_seconds")
     def finishTime = column[Option[DateTime]]("finish_time")
     def resultCode = column[Int]("result_code")
     def timeMs = column[Long]("time_ms")
     def memoryBytes = column[Long]("memory_bytes")
     def returnCode = column[Long]("return_code")
 
-    override def * = (id, contest, team, language, source, input, output, arrived, arrivedSeconds, finishTime, resultCode, timeMs, memoryBytes, returnCode)
+    override def * = (id, contest, team, language, source, input, output, arrived, finishTime, resultCode, timeMs, memoryBytes, returnCode)
   }
 
   val customTests = TableQuery[CustomTests]
@@ -174,7 +175,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
 
   private def getNewContestMap =
     getContestsFromDb.flatMap { contests =>
-      trace(s"received $contests")
+      logger.trace(s"received $contests")
 
       Future.collect(contests.map(x => resolver.getContest(x.polygonId).map(p => x -> p))).map(_.toMap)
     }
@@ -195,14 +196,14 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
         case ((problemId, polygonProblem), Some(problemRow))
           if (problemRow.name != polygonProblem.getTitle(row.Language) || problemRow.tests != polygonProblem.testCount) =>
           val problemTitle = polygonProblem.getTitle(row.Language)
-          info(s"$problemRow | ${problemTitle} | ${polygonProblem.testCount}")
-          info(s"replacing problem $problemId := $polygonProblem")
+          logger.trace(s"$problemRow | ${problemTitle} | ${polygonProblem.testCount}")
+          logger.trace(s"replacing problem $problemId := $polygonProblem")
 
           problems.insertOrUpdate(Problem(row.id, problemId, polygonProblem.testCount, problemTitle))
 
         case (((problemId, polygonProblem), None)) =>
           val problemTitle = polygonProblem.getTitle(row.Language)
-          info(s"adding problem $problemId := $polygonProblem")
+          logger.trace(s"adding problem $problemId := $polygonProblem")
           problems.insertOrUpdate(Problem(row.id, problemId, polygonProblem.testCount, problemTitle))
       }
       DBIO.sequence(deletes ++ updates)
@@ -219,22 +220,22 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
 
   override def receive = {
     case ContestMap(map) =>
-      trace("Contest map received")
+      logger.trace("Contest map received: $map")
 
     case Rescan =>
-      trace("Starting contest rescan")
+      logger.trace("Starting contest rescan")
       val cm = getNewContestMap
       cm.foreach { newMap =>
-        trace(s"Contest rescan done, $newMap")
+        logger.trace(s"Contest rescan done, $newMap")
         self ! ContestMap(newMap)
         val f = updateContests(newMap)
           f.onComplete { _ =>
-          trace("Scheduling next rescan")
+          logger.trace("Scheduling next rescan")
           context.system.scheduler.scheduleOnce(60 seconds, self, Rescan)
         }
-        f.failed.foreach(e => error("rescan failed", e))
+        f.failed.foreach(e => logger.error("rescan failed", e))
       }
-      cm.failed.foreach(e => error("rerescan failed", e))
+      cm.failed.foreach(e => logger.error("rerescan failed", e))
   }
 
   context.system.scheduler.scheduleOnce(0 seconds, self, Rescan)

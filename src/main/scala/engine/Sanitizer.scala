@@ -1,12 +1,12 @@
 package org.stingray.contester.engine
 
 import com.twitter.util.Future
-import grizzled.slf4j.Logging
 import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.common.Module
 import org.stingray.contester.engine.Sanitizer.ProblemItself
 import org.stingray.contester.invokers._
 import org.stingray.contester.problems._
+import play.api.Logging
 
 import scala.util.matching.Regex
 
@@ -39,7 +39,7 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemI
   private[this] def useGenerator(gen: RemoteFileName) =
     sandbox.getExecutionParameters(gen.name, Nil)
       .map(_.setCurrentAndTemp(gen.parent.name(sandbox.invoker.api.pathSeparator)).setSanitizer)
-      .flatMap(sandbox.execute).map(trace(_)).map(_ => this)
+      .flatMap(sandbox.execute).map(x => logger.trace(s"$x")).map(_ => this)
 
   private[this] def sanitize =
     detectGenerator.flatMap(g => g.map(useGenerator(_)).getOrElse(Future.value(this)))
@@ -47,7 +47,6 @@ class ProblemSanitizer(sandbox: Sandbox, base: RemoteFileName, problem: ProblemI
   private[this] def findTester =
     sandbox.invoker.api.glob(base / "*" :: Nil, false)
       .map { list =>
-      trace(list.filter(_.isFile).map(_.basename.toLowerCase))
       val m = list.filter(_.isFile)
         .filter(x => testerRe.findFirstIn(x.basename.toLowerCase).nonEmpty)
         .map(x => x.ext.toLowerCase -> x).toMap

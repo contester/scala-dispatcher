@@ -4,8 +4,8 @@ import java.util.concurrent.TimeUnit
 
 import com.twitter.finagle.util.DefaultTimer
 import com.twitter.util.{Duration, Future, Promise}
-import grizzled.slf4j.Logging
 import org.stingray.contester.rpc4.ChannelDisconnectedException
+import play.api.Logging
 
 import scala.collection.mutable
 
@@ -55,33 +55,33 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
 
   def get[X](cap: CapsType, schedulingKey: KeyType, extra: AnyRef, retries: Option[Int] = Some(5))(f: InvokerType => Future[X]): Future[X] =
     getInvoker(cap, schedulingKey, extra).flatMap { invoker =>
-      trace("Using %s for %s".format(invoker, schedulingKey))
+      logger.trace(s"Using $invoker for $schedulingKey")
       f(invoker)
         .onSuccess(_ => reuseInvoker(invoker, schedulingKey))
         .rescue {
         case e: TransientError => {
-          error("Transient error:", e)
+          logger.error(s"transient error: $invoker/$schedulingKey", e)
           reuseInvoker(invoker, schedulingKey)
           retryOrThrow(cap, schedulingKey, retries, e, f).map { tresult =>
-            trace("Traced recovery after transient error")
+            logger.trace(s"recovered after transient error: $tresult")
             tresult
           }
         }
         case e: ChannelDisconnectedException => {
-          error("Connection lost:", e)
+          logger.error(s"$invoker connection lost:", e)
           retryOrThrow(cap, schedulingKey, retries, e, f).map { tresult =>
-            trace("Traced recovery after transient error")
+            logger.trace("recovered after reconnecting $invoker: $tresult")
             tresult
           }
         }
 
         case e: PermanentError => {
-          error("Permanent error:", e)
+          logger.error("Permanent $invoker error:", e)
           badInvoker(invoker)
           retryOrThrow(cap, schedulingKey, retries, e, f)
         }
         case e: Throwable => {
-          error("Unknown error:", e)
+          logger.error("Unknown $invoker error:", e)
           reuseInvoker(invoker, schedulingKey)
           Future.exception(e)
         }
@@ -121,7 +121,7 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
    */
   private[this] def addInvoker(invoker: InvokerType): Unit =
     if (stillAlive(invoker)) {
-      trace("Adding " + invoker)
+      logger.trace(s"Adding $invoker")
       waiting.filterKeys(invoker.caps.toSet).values.flatMap(w => w.headOption.map(_ -> w)).toSeq
         .sortBy(_._1._1).headOption.map { candidate =>
         val result = candidate._2.dequeue()
@@ -142,7 +142,7 @@ trait RequestStore[CapsType, KeyType <: Ordered[KeyType], InvokerType <: HasCaps
   private[this] def reuseInvoker(invoker: InvokerType, schedulingKey: KeyType): Unit =
     synchronized {
       uselist.remove(invoker).foreach { _ =>
-        trace("Returning %s after %s".format(invoker, schedulingKey))
+        logger.trace(s"Returning $invoker after $schedulingKey")
         addInvoker(invoker)
       }
     }

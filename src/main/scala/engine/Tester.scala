@@ -1,7 +1,6 @@
 package org.stingray.contester.engine
 
 import com.twitter.util.Future
-import grizzled.slf4j.Logging
 import org.apache.commons.io.FilenameUtils
 import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.common._
@@ -11,6 +10,7 @@ import org.stingray.contester.problems.{Test, TestLimits}
 import org.stingray.contester.proto.{LocalExecutionParameters, LocalExecutionResult}
 import org.stingray.contester.rpc4.RemoteError
 import org.stingray.contester.utils.SandboxUtil
+import play.api.Logging
 
 case class TestOptions(stdio: Boolean = false)
 

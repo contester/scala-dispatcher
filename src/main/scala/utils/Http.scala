@@ -2,15 +2,15 @@ package org.stingray.contester.utils
 
 import java.net.{URI, URISyntaxException}
 import java.util.concurrent.TimeUnit
-import javax.net.ssl.SSLContext
 
+import javax.net.ssl.SSLContext
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.twitter.finagle.{Http, Service}
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.util.{Future, StorageUnit}
-import grizzled.slf4j.Logging
 import org.apache.http.HttpHost
 import org.apache.http.client.utils.URIUtils
+import play.api.Logging
 
 object CachedConnectionHttpService extends Function[HttpHost, Service[Request, Response]] with Logging {
   private final val maxResponseSize = new StorageUnit(64*1024*1024)
@@ -40,7 +40,7 @@ object CachedConnectionHttpService extends Function[HttpHost, Service[Request, R
         settings.withTransport.tls(SSLContext.getDefault()).withTls(key.getHostName)
       else settings
       val stringKey = hostString(key)
-      trace(s"opening new connection to $stringKey")
+      logger.trace(s"opening new connection to $stringKey")
       s2.newService(stringKey)
     }
   }
@@ -60,7 +60,7 @@ case class RequestWithURI(req: Request, uri: URI)
 
 object CachedHttpService extends Service[RequestWithURI, Response] with Logging {
   override def apply(request: RequestWithURI): Future[Response] = {
-    CachedConnectionHttpService(request.uri)(request.req).onFailure(error(s"apply($request)", _))
+    CachedConnectionHttpService(request.uri)(request.req).onFailure(logger.error(s"apply($request)", _))
   }
 }
 

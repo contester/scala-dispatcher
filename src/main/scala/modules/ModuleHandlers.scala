@@ -2,7 +2,6 @@ package org.stingray.contester.modules
 
 import com.twitter.util.Future
 import com.typesafe.config.{Config, ConfigObject}
-import grizzled.slf4j.Logging
 import org.apache.commons.io.IOUtils
 import org.stingray.contester.ContesterImplicits._
 import org.stingray.contester.common.Blobs
@@ -10,6 +9,7 @@ import org.stingray.contester.invokers.{InvokerAPI, RemoteFileName, Sandbox}
 import org.stingray.contester.problems.TestLimits
 import org.stingray.contester.proto.LocalExecutionParameters
 import org.stingray.contester.utils.{CommandLineTools, ExecutionArguments}
+import play.api.Logging
 
 import scala.reflect.ClassTag
 

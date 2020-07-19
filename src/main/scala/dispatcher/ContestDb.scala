@@ -4,10 +4,10 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import com.spingo.op_rabbit._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response}
-import grizzled.slf4j.Logging
 import org.stingray.contester.common.TestingStore
 import org.stingray.contester.polygon.PolygonProblemClient
 import org.stingray.contester.testing.{CustomTester, SolutionTester}
+import play.api.Logging
 import play.api.libs.json.Json
 import slick.jdbc.JdbcBackend
 
@@ -46,7 +46,7 @@ class DbDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient,
     channel(qos = 10) {
       consume(queue("contester.evalrequests")) {
         body(as[ServerSideEvalID]) { evalreq =>
-          info(s"Received $evalreq")
+          logger.info(s"Received eval $evalreq")
           ack(evaldispatcher.runthis(evalreq))
         }
       }
@@ -58,7 +58,7 @@ class DbDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient,
     channel(qos = 10000) {
       consume(queue("contester.submitrequests")) {
         body(as[SubmitMessage]) { submitreq =>
-          info(s"Received $submitreq")
+          logger.info(s"Received submit $submitreq")
           ack(dispatcher.runq(submitreq.id))
         }
       }

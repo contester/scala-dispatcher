@@ -3,8 +3,8 @@ package org.stingray.contester.common
 import com.twitter.finagle.Memcached
 import com.twitter.io.Buf
 import com.twitter.util.{Future, Time}
-import grizzled.slf4j.Logging
 import org.stingray.contester.utils.ProtobufTools
+import play.api.Logging
 import scalapb.{GeneratedMessage, GeneratedMessageCompanion, Message}
 
 trait ObjectCache {
@@ -32,12 +32,12 @@ class MemcachedObjectCache(host: String) extends ObjectCache with Logging {
   val client = Memcached.client.newRichClient(host)
 
   def cacheGet(key: String): Future[Option[Buf]] = {
-    trace(s"Get: $key")
+    logger.trace(s"Get: $key")
     client.get(key)
   }
 
   def cacheSet(key: String, value: Buf, expiry: Option[Time]=None): Future[Unit] = {
-    trace(s"Set($expiry): $key")
+    logger.trace(s"Set($expiry): $key")
     client.set(key, 0, expiry.getOrElse(Time.epoch), value)
   }
 }

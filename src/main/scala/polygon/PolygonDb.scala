@@ -7,11 +7,11 @@ import com.twitter.finagle.redis.Client
 import com.twitter.finagle.redis.util.{BufToString, StringToBuf}
 import com.twitter.io.Buf
 import com.twitter.util.Future
-import grizzled.slf4j.Logging
 import org.apache.http.client.utils.URIBuilder
 import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.problems._
 import org.stingray.contester.utils.{Fu, ScannerCache, SerialHash}
+import play.api.Logging
 
 import scala.xml.XML
 
@@ -99,23 +99,23 @@ case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: 
 
   private[this] def resolve(contest: PolygonContestId) = {
     val r = polygonMap(contest.polygon).contest(contest.contestId)
-    trace(s"resolve($contest) = $r")
+    logger.trace(s"resolve($contest) = $r")
     r
   }
 
   override def getContest(contest: PolygonContestId): Future[ContestWithProblems] = {
     contestClient.refresh(resolve(contest)).flatMap { cdesc =>
       Future.collect(cdesc.problems.mapValues(PolygonProblemShort).mapValues(problemClient.refresh)).map { pmap =>
-        pmap.mapValues(sanitize1).foreach(x => x._2.onFailure(error(s"$x", _)))
+        pmap.mapValues(sanitize1).foreach(x => x._2.onFailure(logger.error(s"$x", _)))
         ContestWithProblems(cdesc, pmap)
       }
-    }.onFailure(error(s"getContest: $contest", _))
+    }.onFailure(logger.error(s"getContest: $contest", _))
   }
 
   val serialSanitizer = new SerialHash[PolygonProblem, Problem]
 
   def maybeSanitize(p: PolygonProblem): Future[Problem] = {
-    trace(s"maybeSanitize called: $p")
+    logger.trace(s"maybeSanitize called: $p")
     pdb.getProblem(p).flatMap {
       case Some(x) => Future.value(x)
       case None =>
@@ -138,7 +138,7 @@ case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: 
       Fu.liftOption(cdesc.problems.get(problem).map(PolygonProblemShort).map(problemClient)).flatMap {
         case None => Future.None
         case Some(p) =>
-          trace(s"${p.uri.toASCIIString} - ${p.revision}")
+          logger.trace(s"${p.uri.toASCIIString} - ${p.revision}")
           sanitize1(p).map(x => Some(ProblemWithURI(p.uri.toASCIIString + s"?revision=${p.revision}", x)))
       }
     }

@@ -7,14 +7,14 @@
   <conversionRule conversionWord="coloredLevel" converterClass="play.api.Logger$ColoredLevel" />
 
   <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-     <file>logs/application.log</file>
+     <file>logs/d.log</file>
      <encoder>
        <pattern>%date [%level] from %logger in %thread - %message%n%xException</pattern>
      </encoder>
   </appender>
 
   <appender name="MYSQL" class="ch.qos.logback.core.FileAppender">
-	  <file>logs/mysql_trace.log</file>
+	  <file>logs/slick.log</file>
 	       <encoder>
 		              <pattern>%date [%level] from %logger in %thread - %message%n%xException</pattern>
 			           </encoder>
@@ -22,7 +22,7 @@
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%coloredLevel %logger{15} - %message%n%xException{10}</pattern>
+      <pattern>%logger{15} - %message%n%xException{10}</pattern>
     </encoder>
   </appender>
 
@@ -47,15 +47,13 @@
   <logger name="com.avaje.ebeaninternal.server.lib.BackgroundThread" level="OFF" />
   <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
 
-  <logger name="org.stingray.contester.db" level="TRACE" additivity="false">
+  <logger name="slick" level="TRACE" additivity="false">
 	  <appender-ref ref="MYSQL"/>
   </logger>
-  <logger name="org.stingray.contester" level="TRACE" additivity="false">
-	  <appender-ref ref="FILE"/>
-  </logger>
 
-  <root level="INFO">
+  <root level="TRACE">
     <appender-ref ref="ASYNCSTDOUT" />
+    <appender-ref ref="FILE" />
   </root>
   
 </configuration>

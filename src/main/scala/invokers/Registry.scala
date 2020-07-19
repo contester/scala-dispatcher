@@ -1,12 +1,13 @@
 package org.stingray.contester.invokers
 
 import org.stingray.contester.rpc4.{DefaultChannelDisconnectedException, Registry, RpcClient}
-import grizzled.slf4j.Logging
 
 import collection.mutable
 import com.twitter.util.Future
 import org.stingray.contester.modules.ModuleFactory
 import java.util.concurrent.ConcurrentHashMap
+
+import play.api.Logging
 
 class InvokerRegistry(contesterId: String) extends Registry with RequestStore[String, SchedulingKey, InvokerInstance] with Logging {
   private[this] val channelMap = {
@@ -15,28 +16,28 @@ class InvokerRegistry(contesterId: String) extends Registry with RequestStore[St
   }
 
   def register(client: RpcClient): Unit = {
-    trace(s"Registering client: ${client}")
+    logger.trace(s"Registering client: ${client}")
     val invokerClient = new InvokerRpcClient(client)
     invokerClient.identify(contesterId)
       .flatMap { clientId =>
-        trace(s"Client ID: $clientId")
+        logger.trace(s"Client ID: $clientId")
       val api = new InvokerAPI(clientId, invokerClient)
       ModuleFactory(api)
-        .onFailure(error("Module factory error", _))
+        .onFailure(logger.error("Module factory error", _))
         .map { factory =>
         new Invoker(api, factory)
       }
     }.map { invoker =>
-      trace(s"Built invoker $invoker for client $client")
+      logger.trace(s"Built invoker $invoker for client $client")
       channelMap.put(client, invoker)
       addInvokers(invoker.instances)
-    }.onFailure(error("Register error", _))
+    }.onFailure(logger.error("Register error", _))
   }
 
   def unregister(client: RpcClient): Unit = {
       channelMap.remove(client)
     .foreach { inv =>
-        info(s"Lost channel: ${inv.api.name}")
+        logger.info(s"Lost channel: ${inv.api.name}")
         removeInvokers(inv.instances)
       }
     }

@@ -8,7 +8,7 @@ import com.spingo.op_rabbit.PlayJsonSupport._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.util.{Future, Return, Throw}
-import grizzled.slf4j.Logging
+import play.api.Logging
 import org.stingray.contester.common._
 import org.stingray.contester.invokers.TimeKey
 import org.stingray.contester.polygon.{PolygonContestId, PolygonProblemClient}
@@ -106,14 +106,17 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
       case Some(problem) =>
         CombinedResultReporter.allocate(reporter, new File(reportbase), m, problem.uri).flatMap {
           case (testingId, raw) =>
+            logger.info(s"allocated testing: $testingId - $raw")
           val progress = new DBSingleResultReporter(db, m, testingId)
             val cprogress = new CombinedSingleProgress(progress, raw)
             val stSubmit = store.submit(m.id, testingId)
             ModuleUploader.upload(m.sourceModule, fsClient, fsBaseUrl, stSubmit.sourceModule)
-          inv(m, m.sourceModule, problem.problem, cprogress, m.schoolMode,
+            logger.info("before inv call")
+          val xf = inv(m, m.sourceModule, problem.problem, cprogress, m.schoolMode,
             stSubmit,
             Map.empty, true
           ).flatMap { testingResult =>
+            logger.info(s"testing result: $testingResult")
             raw.finish(testingResult)
             val f = progress.finish(testingResult, m.id, testingId)
             f.onComplete { _ =>
@@ -121,6 +124,11 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
             }
             f
           }
+            logger.info("after inv call")
+            xf.onComplete { e =>
+              logger.info(s"oc: $e")
+            }
+            xf
         }
       case None => Future.exception(ProblemNotFoundError)
     }

@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets
 
 import org.apache.commons.io.FileUtils
 import org.stingray.contester.engine.CustomTestResult
+import play.api.Logging
 import slick.jdbc.JdbcBackend
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -63,7 +64,7 @@ class DBReporterFactory(client: JdbcBackend#DatabaseDef) extends GenericReporter
     Future.successful(new DBStartedReporter(client, submit, problemID))
 }
 
-class DBStartedReporter(client: JdbcBackend#DatabaseDef, submit: SubmitObject, problemID: String) extends StartedReporter {
+class DBStartedReporter(client: JdbcBackend#DatabaseDef, submit: SubmitObject, problemID: String) extends StartedReporter with Logging {
   import CPModel._
   import slick.jdbc.PostgresProfile.api._
 
@@ -73,7 +74,10 @@ class DBStartedReporter(client: JdbcBackend#DatabaseDef, submit: SubmitObject, p
     client.run(allocTesting.flatMap { testingID =>
       val addResult = results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError)) += (
         testingID, compileResult.status.value, 0, compileResult.time / 1000, compileResult.memory, compileResult.stdOut, compileResult.stdErr)
-      (submits.filter(_.id === submit.id).map(_.testingID).update(testingID) zip addResult).map(_ => testingID)
+
+      val updateSub = submits.filter(_.id === submit.id).map(x => (x.testingID, x.compiled)).update((testingID, compileResult.success))
+      logger.info(s"updSub: ${updateSub.statements}")
+      (updateSub zip addResult).map(_ => testingID)
     }).map { testingID =>
       new DBTestingReporter(client, submit, testingID)
     }
@@ -98,8 +102,11 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
   import slick.jdbc.PostgresProfile.api._
 
   def compile(r: CompileResult): Future[Unit] = {
-      client.run(results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError)) += (
-      testingId, r.status.value, 0, r.time / 1000, r.memory, r.stdOut, r.stdErr)).map(_ => ())
+    val addResult = results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError)) += (
+      testingId, r.status.value, 0, r.time / 1000, r.memory, r.stdOut, r.stdErr)
+    val updSub = submits.filter(_.id === submit.id).map(x => (x.testingID, x.compiled)).update((testingId, r.success))
+
+      client.run(addResult zip updSub).map(_ => ())
   }
 
   def test(testId: Int, result: TestResult): Future[Unit] =
@@ -117,7 +124,7 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
    */
   def finish(result: SolutionTestingResult, submitId: Long, testingId: Long): Future[Unit] = {
     client.run(
-      (sqlu"update testings set finish_time = CURRENT_TIMESTAMP() where id = $testingId")
+      (sqlu"update testings set finish_time = CURRENT_TIMESTAMP where id = $testingId")
         .zip(submits.filter(_.id === submitId).map(x => (x.tested, x.taken, x.passed))
           .update(true, result.tests.size, result.tests.count(_._2.success)))).map(_ => ())
   }

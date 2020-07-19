@@ -7,7 +7,7 @@ import org.stingray.contester.problems.{Problem, ProblemArchiveUploadException, 
 import org.stingray.contester.common._
 import com.twitter.util.Future
 import org.stingray.contester.engine.{InvokerSimpleApi, TestOptions}
-import grizzled.slf4j.Logging
+import play.api.Logging
 import org.stingray.contester.invokers.SchedulingKey
 
 import scala.Some
@@ -27,8 +27,11 @@ class SolutionTester(invoker: InvokerSimpleApi) extends Logging {
     invoker.maybeCompile(submit, sourceModule,
       store.compiledModule)
       .flatMap { compiled =>
+        logger.info(s"compiled: $compiled")
           progress.compile(compiled._1).flatMap { _ =>
+            logger.info(s"compiled and recorded: $compiled, ${compiled._1.success}")
             compiled._2.map { binary =>
+              logger.info(s"binary: $binary")
               new BinarySolution(invoker, store, submit, problem,
                 binary, progress, schoolMode, state, stdio).run
             }.getOrElse(Future.value(Nil)).map(x => SolutionTestingResult(compiled._1, x.map(v => v._2)))

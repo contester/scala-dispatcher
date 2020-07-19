@@ -1,10 +1,10 @@
 package org.stingray.contester.invokers
 
-import org.stingray.contester.utils.LocalEnvironmentTools
 import com.twitter.util.Future
-import grizzled.slf4j.Logging
-import org.stingray.contester.modules.{ModuleHandler, SpecializedModuleFactory}
+import org.stingray.contester.modules.SpecializedModuleFactory
 import org.stingray.contester.proto._
+import org.stingray.contester.utils.LocalEnvironmentTools
+import play.api.Logging
 
 class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) extends Logging {
   val sandboxes = clientId.sandboxes.toIndexedSeq

@@ -1,15 +1,12 @@
 package org.stingray.contester.engine
 
-import org.stingray.contester.common._
-import org.stingray.contester.proto.Blob
-import org.stingray.contester.problems.TestLimits
-import grizzled.slf4j.Logging
-import org.stingray.contester.invokers.{InvokerInstance, Sandbox}
 import com.twitter.util.Future
-import org.stingray.contester.modules.BinaryHandler
+import org.stingray.contester.common._
+import org.stingray.contester.invokers.{InvokerInstance, Sandbox}
+import org.stingray.contester.problems.TestLimits
+import org.stingray.contester.proto.Blob
 import org.stingray.contester.utils.SandboxUtil
-
-import scala.Some
+import play.api.Logging
 
 class CustomTestResult(val run: SingleRunResult, val output: Option[Blob])
 

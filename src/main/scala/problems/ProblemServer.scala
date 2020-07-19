@@ -6,10 +6,10 @@ import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, RequestBuilder, Response, Status}
 import com.twitter.io.Buf
 import com.twitter.util.Future
-import grizzled.slf4j.Logging
 import org.apache.http.client.utils.URIBuilder
 import org.stingray.contester.invokers.Sandbox
 import org.stingray.contester.utils.CachedConnectionHttpService
+import play.api.Logging
 import play.api.libs.json._
 
 
@@ -107,7 +107,7 @@ object SimpleProblemDb extends Logging {
     Json.parse(what).validate[Seq[SimpleProblemManifest]] match {
       case s: JsSuccess[Seq[SimpleProblemManifest]] => Some(s.get.head)
       case x =>
-        error(s"parsing $x")
+        logger.error(s"parsing $x")
         None
     }
   }
@@ -133,11 +133,12 @@ class SimpleProblemDb(val baseUrl: String, val client: Service[Request, Response
             SimpleProblem(found, StandardProblemAssetInterface(baseUrl, ProblemURI.getStoragePrefix(found)))
           })
         case Status.NotFound =>
-          trace(s"problem not found: $url")
+          logger.trace(s"problem not found: $url")
           Future.None
         case _ =>
-          error(s"receiveProblem($url): $r")
-          Future.exception(SimpleProblemDbException(r.status.reason))
+          val exc = SimpleProblemDbException(r.status.reason)
+          logger.error(s"receiveProblem($url): $r", exc)
+          Future.exception(exc)
       }
     }
   }
@@ -183,7 +184,7 @@ class SimpleProblemDb(val baseUrl: String, val client: Service[Request, Response
   }
 
   override def getProblem(problem: ProblemHandleWithRevision): Future[Option[Problem]] = {
-    trace(s"Getting problem: $problem")
+    logger.trace(s"Getting problem: $problem")
     receiveProblem(new URIBuilder(baseUrl + "problem/get/")
       .addParameter("id", problem.handle)
       .addParameter("revision", problem.revision.toString)
