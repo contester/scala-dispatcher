@@ -144,7 +144,7 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
   private def visualStudio(cmd: String): Future[Seq[ModuleHandler]] =
     // api.programFiles / "Microsoft Visual Studio" / "2019"/ "Community"/ "VC" / "Auxiliary" / "Build" / "vcvars32.bat"
     // api.programFiles / "Microsoft Visual Studio*" / "Common7" / "Tools" / "vsvars32.bat"
-    add(api.programFiles / "Microsoft Visual Studio*" / "Common7" / "Tools" / "vsvars32.bat",
+    add(api.programFiles / "Microsoft Visual Studio" / "2019"/ "Community"/ "VC" / "Auxiliary" / "Build" / "vcvars32.bat",
       (x: String) => Seq(new VisualStudioSourceHandler(cmd, x), new VisualCSharpSourceHandler(cmd, x)))
 
   private def kotlin(cmd: String): Future[Seq[ModuleHandler]] =
