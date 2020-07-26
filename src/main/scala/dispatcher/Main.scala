@@ -13,7 +13,7 @@ import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.util.internal.logging.{InternalLoggerFactory, Slf4JLoggerFactory}
-import org.stingray.contester.common.{MemcachedObjectCache, TestingStore}
+import org.stingray.contester.common.TestingStore
 import org.stingray.contester.engine.InvokerSimpleApi
 import org.stingray.contester.invokers.InvokerRegistry
 import org.stingray.contester.polygon._

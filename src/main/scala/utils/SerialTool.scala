@@ -114,24 +114,24 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
   }
 }
 
-/**
- * Interface for asynchronous caches.
- *
- * @tparam KeyType Type for keys.
- * @tparam ValueType Type for values.
- */
-trait ValueCache[KeyType, ValueType] {
-  def get(key: KeyType): Future[Option[ValueType]]
+///**
+// * Interface for asynchronous caches.
+// *
+// * @tparam KeyType Type for keys.
+// * @tparam ValueType Type for values.
+// */
+//trait ValueCache[KeyType, ValueType] {
+//  def get(key: KeyType): Future[Option[ValueType]]
+//
+//  def put(key: KeyType, value: ValueType): Future[Unit]
+//}
 
-  def put(key: KeyType, value: ValueType): Future[Unit]
-}
-
-object ScannerCache {
-  def apply[A, B, C](parseFunc: (A, C) => B, nearGetFunc: A => Future[Option[C]], nearPutFunc: (A, C) => Future[Unit],
-                     farGetFunc: A => Future[C]): ScannerCache[A, B, C] = new ScannerCache[A, B, C] {
-    override def parse(key: A, what: C): B = parseFunc(key, what)
-    override def farGet(key: A): Future[C] = farGetFunc(key)
-    override def nearGet(key: A): Future[Option[C]] = nearGetFunc(key)
-    override def nearPut(key: A, value: C): Future[Unit] = nearPutFunc(key, value)
-  }
-}
+//object ScannerCache {
+//  def apply[A, B, C](parseFunc: (A, C) => B, nearGetFunc: A => Future[Option[C]], nearPutFunc: (A, C) => Future[Unit],
+//                     farGetFunc: A => Future[C]): ScannerCache[A, B, C] = new ScannerCache[A, B, C] {
+//    override def parse(key: A, what: C): B = parseFunc(key, what)
+//    override def farGet(key: A): Future[C] = farGetFunc(key)
+//    override def nearGet(key: A): Future[Option[C]] = nearGetFunc(key)
+//    override def nearPut(key: A, value: C): Future[Unit] = nearPutFunc(key, value)
+//  }
+//}
