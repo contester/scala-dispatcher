@@ -13,7 +13,7 @@ name := "dispatcher"
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m",
   "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
-scalaVersion := "2.12.11"
+scalaVersion := "2.12.12"
 
 version := "2020.0.1"
 
@@ -24,6 +24,7 @@ organization := "org.stingray.contester"
 scalacOptions ++= Seq(
   "-Xfatal-warnings",  // New lines for each options
   "-deprecation",
+  "-Xasync",
   "-unchecked",
   "-language:implicitConversions",
   "-language:higherKinds",
@@ -69,6 +70,7 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "util-core" % finagleVersion,
   "com.twitter" %% "bijection-util" % "0.9.7",
   "org.scala-lang.modules" %% "scala-async" % "0.10.0",
+  "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
   "com.github.nscala-time" %% "nscala-time" % "2.24.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.12",
   "commons-io" % "commons-io" % "2.7",

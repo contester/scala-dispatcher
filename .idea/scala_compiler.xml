@@ -11,6 +11,7 @@
       <option name="uncheckedWarnings" value="true" />
       <parameters>
         <parameter value="-Xfatal-warnings" />
+        <parameter value="-Xasync" />
         <parameter value="-opt:l:method" />
         <parameter value="-opt:l:inline" />
         <parameter value="-opt-inline-from:&lt;sources&gt;" />
