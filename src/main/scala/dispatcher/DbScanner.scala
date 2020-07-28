@@ -16,8 +16,7 @@ class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
 object CPModel {
   import com.github.nscala_time.time.Imports._
-  import com.github.tototoshi.slick.PostgresJodaSupport._
-  import slick.jdbc.PostgresProfile.api._
+  import org.stingray.contester.utils.MyPostgresProfile.api._
 
   case class Contests(tag: Tag) extends Table[(Int, String, DateTime, Option[DateTime], DateTime, DateTime, String, String)](tag, "contests") {
     def id = column[Int]("id")

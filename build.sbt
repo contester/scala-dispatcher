@@ -54,7 +54,6 @@ val playVersion = "2.7.5"
 val slickPG = "0.19.0"
 
 libraryDependencies ++= Seq(
-  "com.github.tototoshi" %% "slick-joda-mapper" % "2.4.2",
   "javax.mail" % "javax.mail-api" % "1.6.2",
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
   "com.spingo" %% "op-rabbit-play-json"   % opRabbitVersion,
