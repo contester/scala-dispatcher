@@ -55,7 +55,7 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: CustomTester, s
   }
 
   def runthis(what: ServerSideEvalID): Future[Unit] = {
-    db.run(getCustomTestByID(what.id).result.headOption).flatMap { optItem =>
+    db.run(customTestByID(what.id).result.headOption).flatMap { optItem =>
       optItem.map { x =>
         val c = CustomTestObject(x._1, x._2, x._3, x._4, new ByteBufferModule(x._5, x._6), x._7)
         run(c)

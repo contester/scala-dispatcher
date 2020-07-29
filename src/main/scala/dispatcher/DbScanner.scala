@@ -2,7 +2,7 @@ package org.stingray.contester.dispatcher
 
 import akka.actor.Actor
 import com.twitter.util.Future
-import org.stingray.contester.dbmodel.SlickModel
+import org.stingray.contester.dbmodel.{Problem, SlickModel}
 import org.stingray.contester.polygon._
 import play.api.Logging
 import slick.jdbc.JdbcBackend
@@ -10,7 +10,6 @@ import slick.jdbc.JdbcBackend
 import scala.concurrent.ExecutionContext.Implicits.global
 
 case class Contest(id: Int, name: String, polygonId: PolygonContestId, Language: String)
-case class Problem(contest: Int, id: String, tests: Int, name: String)
 case class Language(id: Int, name: String, moduleID: String)
 
 class ContestNotFoundException(id: Int) extends Throwable(id.toString)
@@ -20,17 +19,6 @@ object CPModel {
   import org.stingray.contester.dbmodel.MyPostgresProfile.api._
 
   val contestsWithPolygonID = SlickModel.contests.filter(_.polygonId =!= "").map(x => (x.id, x.name, x.polygonId, x.language))
-
-  case class Problems(tag: Tag) extends Table[Problem](tag, "problems") {
-    def contestID = column[Int]("contest_id")
-    def id = column[String]("id")
-    def tests = column[Int]("tests")
-    def name = column[String]("name")
-
-    def * = (contestID, id, tests, name) <> (Problem.tupled, Problem.unapply)
-  }
-
-  val problems = TableQuery[Problems]
 
   private[this] def getContestNameByID(id: Rep[Int]) =
     SlickModel.contests.filter(_.id === id).map(_.name)
@@ -54,62 +42,20 @@ object CPModel {
       contest <- SlickModel.contests if contest.id === submit.contest && contest.polygonId =!= ""
     } yield (submit.id, submit.contest, submit.team, submit.problem, submit.arrived, lang.moduleID, submit.source, contest.polygonId)
 
-  case class Testings(tag: Tag) extends Table[(Long, Long, DateTime, String, Option[DateTime])](tag, "testings") {
-    def id = column[Long]("id", O.AutoInc, O.PrimaryKey)
-    def submit = column[Long]("submit")
-    def startTime = column[DateTime]("start_time")
-    def problemURL = column[String]("problem_id")
-    def finishTime = column[Option[DateTime]]("finish_time")
+  val insertTestingSubmitURL =
+    SlickModel.testings.map(x => (x.submit, x.problemURL)) returning SlickModel.testings.map(_.id)
 
-    override def * = (id, submit, startTime, problemURL, finishTime)
-  }
+  val addCompileResult = SlickModel.results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError))
 
-  val testings = TableQuery[Testings]
+  val addTestResult = SlickModel.results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.returnCode, x.testerOutput, x.testerError, x.testerReturnCode))
 
-  case class Results(tag: Tag) extends Table[(Long, Long, Int, DateTime, Long, Long, Long, Array[Byte], Array[Byte], Long)](tag, "results") {
-    def testingID = column[Long]("testing_id")
-    def testID = column[Long]("test_id")
-    def resultCode = column[Int]("result_code")
-    def recordTime = column[DateTime]("record_time")
-    def timeMs = column[Long]("time_ms")
-    def memoryBytes = column[Long]("memory_bytes")
-    def returnCode = column[Long]("return_code")
-    def testerOutput = column[Array[Byte]]("tester_output")
-    def testerError = column[Array[Byte]]("tester_error")
-    def testerReturnCode = column[Long]("tester_return_code")
-
-    override def * = (testingID, testID, resultCode, recordTime, timeMs, memoryBytes, returnCode, testerOutput, testerError, testerReturnCode)
-  }
-
-  val results = TableQuery[Results]
-
-  case class CustomTests(tag: Tag) extends Table[(Long, Int, Int, Int, Array[Byte], Array[Byte], Array[Byte], DateTime,
-    Option[DateTime], Int, Long, Long, Long)](tag, "custom_test") {
-    def id = column[Long]("id", O.AutoInc, O.PrimaryKey)
-    def contest = column[Int]("contest")
-    def team = column[Int]("team_id")
-    def language = column[Int]("language_id")
-    def source = column[Array[Byte]]("source")
-    def input = column[Array[Byte]]("input")
-    def output = column[Array[Byte]]("output")
-    def arrived = column[DateTime]("submit_time_absolute")
-    def finishTime = column[Option[DateTime]]("finish_time")
-    def resultCode = column[Int]("result_code")
-    def timeMs = column[Long]("time_ms")
-    def memoryBytes = column[Long]("memory_bytes")
-    def returnCode = column[Long]("return_code")
-
-    override def * = (id, contest, team, language, source, input, output, arrived, finishTime, resultCode, timeMs, memoryBytes, returnCode)
-  }
-
-  val customTests = TableQuery[CustomTests]
-
-  def getCustomTestByID(id: Long) =
+  private[this] def getCustomTestByID(id: Rep[Long]) =
     for {
-      c <- customTests if c.id === id
+      c <- SlickModel.customTests if c.id === id
       lang <- SlickModel.compilers if lang.id === c.language
     } yield (c.id, c.contest, c.team, c.arrived, lang.moduleID, c.source, c.input)
 
+  val customTestByID = Compiled(getCustomTestByID _)
 }
 
 object ContestTableScanner {
@@ -156,11 +102,11 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
     import CPModel._
     import slick.jdbc.PostgresProfile.api._
 
-    val pfixes = problems.filter(x => x.contestID === row.id).result.flatMap { probs =>
+    val pfixes = SlickModel.problems.filter(x => x.contestID === row.id).result.flatMap { probs =>
       val problemMap = probs.filter(_.contest == row.id).map(x => x.id.toUpperCase -> x).toMap
 
       val deletes = (problemMap.keySet -- contest.problems.keySet).toSeq.map { problemId =>
-        problems.filter(x => x.contestID === row.id && x.id === problemId).delete
+        SlickModel.problems.filter(x => x.contestID === row.id && x.id === problemId).delete
       }
 
       val updates = contest.problems.map(x => x -> problemMap.get(x._1)).collect {
@@ -170,12 +116,12 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
           logger.trace(s"$problemRow | ${problemTitle} | ${polygonProblem.testCount}")
           logger.trace(s"replacing problem $problemId := $polygonProblem")
 
-          problems.insertOrUpdate(Problem(row.id, problemId, polygonProblem.testCount, problemTitle))
+          SlickModel.problems.insertOrUpdate(Problem(row.id, problemId, problemTitle, polygonProblem.testCount))
 
         case (((problemId, polygonProblem), None)) =>
           val problemTitle = polygonProblem.getTitle(row.Language)
           logger.trace(s"adding problem $problemId := $polygonProblem")
-          problems.insertOrUpdate(Problem(row.id, problemId, polygonProblem.testCount, problemTitle))
+          SlickModel.problems.insertOrUpdate(Problem(row.id, problemId, problemTitle, polygonProblem.testCount))
       }
       DBIO.sequence(deletes ++ updates)
     }

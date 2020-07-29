@@ -8,7 +8,7 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 
 import org.apache.commons.io.FileUtils
-import org.stingray.contester.dbmodel.SlickModel
+import org.stingray.contester.dbmodel.{Memory, SlickModel, TimeMs}
 import org.stingray.contester.engine.CustomTestResult
 import play.api.Logging
 import slick.jdbc.JdbcBackend
@@ -70,11 +70,11 @@ class DBStartedReporter(client: JdbcBackend#DatabaseDef, submit: SubmitObject, p
   import slick.jdbc.PostgresProfile.api._
 
   override def compile(compileResult: CompileResult): Future[TestingReporter] = {
-    val allocTesting = (testings.map(x => (x.submit, x.problemURL)) returning testings.map(_.id)) += (submit.id, problemID)
+    val allocTesting = insertTestingSubmitURL += (submit.id, problemID)
 
     client.run(allocTesting.flatMap { testingID =>
-      val addResult = results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError)) += (
-        testingID, compileResult.status.value, 0, compileResult.time / 1000, compileResult.memory, compileResult.stdOut, compileResult.stdErr)
+      val addResult = addCompileResult += ((
+        testingID, compileResult.status.value, 0, TimeMs(compileResult.time / 1000), Memory(compileResult.memory), compileResult.stdOut, compileResult.stdErr))
 
       val updateSub = submitCompiledByID(submit.id).update((testingID, compileResult.success))
       logger.info(s"updSub: ${updateSub.statements}")
@@ -90,8 +90,8 @@ class DBTestingReporter(client: JdbcBackend#DatabaseDef, val submit: SubmitObjec
   import slick.jdbc.PostgresProfile.api._
 
   override def test(testId: Int, result: TestResult): Future[Unit] = {
-    client.run(results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.returnCode, x.testerOutput, x.testerError, x.testerReturnCode)) += (
-      testingId, result.status.value, testId, result.solution.time / 1000, result.solution.memory, result.solution.returnCode,
+    client.run(addTestResult += (
+      testingId, result.status.value, testId, TimeMs(result.solution.time / 1000), Memory(result.solution.memory), result.solution.returnCode,
       result.getTesterOutput, result.getTesterError, result.getTesterReturnCode
     )).map(_ => ())
   }
@@ -103,16 +103,15 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
   import slick.jdbc.PostgresProfile.api._
 
   def compile(r: CompileResult): Future[Unit] = {
-    val addResult = results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError)) += (
-      testingId, r.status.value, 0, r.time / 1000, r.memory, r.stdOut, r.stdErr)
+    val addResult = addCompileResult += ((testingId, r.status.value, 0, TimeMs(r.time / 1000), Memory(r.memory), r.stdOut, r.stdErr))
     val updSub = submitCompiledByID(submit.id).update((testingId, r.success))
 
       client.run(addResult zip updSub).map(_ => ())
   }
 
   def test(testId: Int, result: TestResult): Future[Unit] =
-    client.run(results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.returnCode, x.testerOutput, x.testerError, x.testerReturnCode)) += (
-      testingId, result.status.value, testId, result.solution.time / 1000, result.solution.memory, result.solution.returnCode,
+    client.run(addTestResult += (
+      testingId, result.status.value, testId, TimeMs(result.solution.time / 1000), Memory(result.solution.memory), result.solution.returnCode,
       result.getTesterOutput, result.getTesterError, result.getTesterReturnCode
     )).map(_ => ())
 
@@ -139,7 +138,7 @@ class DBReporter(val client: JdbcBackend#DatabaseDef) {
   import slick.jdbc.PostgresProfile.api._
 
   def allocateAndRegister(submit: SubmitObject, problemId: String): Future[Long] = {
-    val allocTesting = (testings.map(x => (x.submit, x.problemURL)) returning testings.map(_.id)) += (submit.id, problemId)
+    val allocTesting = insertTestingSubmitURL += (submit.id, problemId)
 
     client.run(allocTesting.flatMap { testingID =>
       SlickModel.submits.filter(_.id === submit.id).map(_.testingID).update(testingID).map(_ => testingID)
