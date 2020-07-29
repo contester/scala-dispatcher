@@ -8,6 +8,7 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 
 import org.apache.commons.io.FileUtils
+import org.stingray.contester.dbmodel.SlickModel
 import org.stingray.contester.engine.CustomTestResult
 import play.api.Logging
 import slick.jdbc.JdbcBackend
@@ -75,7 +76,7 @@ class DBStartedReporter(client: JdbcBackend#DatabaseDef, submit: SubmitObject, p
       val addResult = results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError)) += (
         testingID, compileResult.status.value, 0, compileResult.time / 1000, compileResult.memory, compileResult.stdOut, compileResult.stdErr)
 
-      val updateSub = submits.filter(_.id === submit.id).map(x => (x.testingID, x.compiled)).update((testingID, compileResult.success))
+      val updateSub = submitCompiledByID(submit.id).update((testingID, compileResult.success))
       logger.info(s"updSub: ${updateSub.statements}")
       (updateSub zip addResult).map(_ => testingID)
     }).map { testingID =>
@@ -104,7 +105,7 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
   def compile(r: CompileResult): Future[Unit] = {
     val addResult = results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError)) += (
       testingId, r.status.value, 0, r.time / 1000, r.memory, r.stdOut, r.stdErr)
-    val updSub = submits.filter(_.id === submit.id).map(x => (x.testingID, x.compiled)).update((testingId, r.success))
+    val updSub = submitCompiledByID(submit.id).update((testingId, r.success))
 
       client.run(addResult zip updSub).map(_ => ())
   }
@@ -125,7 +126,7 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
   def finish(result: SolutionTestingResult, submitId: Long, testingId: Long): Future[Unit] = {
     client.run(
       (sqlu"update testings set finish_time = CURRENT_TIMESTAMP where id = $testingId")
-        .zip(submits.filter(_.id === submitId).map(x => (x.tested, x.taken, x.passed))
+        .zip(SlickModel.submits.filter(_.id === submitId).map(x => (x.tested, x.taken, x.passed))
           .update(true, result.tests.size, result.tests.count(_._2.success)))).map(_ => ())
   }
 }
@@ -141,7 +142,7 @@ class DBReporter(val client: JdbcBackend#DatabaseDef) {
     val allocTesting = (testings.map(x => (x.submit, x.problemURL)) returning testings.map(_.id)) += (submit.id, problemId)
 
     client.run(allocTesting.flatMap { testingID =>
-      submits.filter(_.id === submit.id).map(_.testingID).update(testingID).map(_ => testingID)
+      SlickModel.submits.filter(_.id === submit.id).map(_.testingID).update(testingID).map(_ => testingID)
     })
   }
 

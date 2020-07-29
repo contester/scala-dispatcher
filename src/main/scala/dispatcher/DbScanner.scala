@@ -2,6 +2,7 @@ package org.stingray.contester.dispatcher
 
 import akka.actor.Actor
 import com.twitter.util.Future
+import org.stingray.contester.dbmodel.SlickModel
 import org.stingray.contester.polygon._
 import play.api.Logging
 import slick.jdbc.JdbcBackend
@@ -16,22 +17,9 @@ class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
 object CPModel {
   import com.github.nscala_time.time.Imports._
-  import org.stingray.contester.utils.MyPostgresProfile.api._
+  import org.stingray.contester.dbmodel.MyPostgresProfile.api._
 
-  case class Contests(tag: Tag) extends Table[(Int, String, DateTime, Option[DateTime], DateTime, DateTime, String, String)](tag, "contests") {
-    def id = column[Int]("id")
-    def name = column[String]("name")
-    def startTime = column[DateTime]("start_time")
-    def freezeTime = column[Option[DateTime]]("freeze_time")
-    def endTime = column[DateTime]("end_time")
-    def exposeTime = column[DateTime]("expose_time")
-    def polygonId = column[String]("polygon_id")
-    def language = column[String]("language")
-
-    def * = (id, name, startTime, freezeTime, endTime, exposeTime, polygonId, language)
-  }
-
-  val contests = TableQuery[Contests]
+  val contestsWithPolygonID = SlickModel.contests.filter(_.polygonId =!= "").map(x => (x.id, x.name, x.polygonId, x.language))
 
   case class Problems(tag: Tag) extends Table[Problem](tag, "problems") {
     def contestID = column[Int]("contest_id")
@@ -44,42 +32,26 @@ object CPModel {
 
   val problems = TableQuery[Problems]
 
-  case class Languages(tag: Tag) extends Table[Language](tag, "languages") {
-    def id = column[Int]("id")
-    def name = column[String]("name")
-    def moduleID = column[String]("module_id")
+  private[this] def getContestNameByID(id: Rep[Int]) =
+    SlickModel.contests.filter(_.id === id).map(_.name)
 
-    def * = (id, name, moduleID) <> (Language.tupled, Language.unapply)
-  }
+  val contestNameByID = Compiled(getContestNameByID _)
 
-  val languages = TableQuery[Languages]
+  private[this] def getSubmitTestedByID(id: Rep[Long]) =
+    SlickModel.submits.filter(_.id === id).map(_.tested)
 
-  case class Submits(tag: Tag) extends Table[(Long, Int, Int, String, Int, Array[Byte], DateTime, Int, Boolean, Boolean, Int, Long, Int, Boolean)](tag, "submits") {
-    def id = column[Long]("id", O.AutoInc, O.PrimaryKey)
-    def contest = column[Int]("contest")
-    def team = column[Int]("team_id")
-    def problem = column[String]("problem")
-    def language = column[Int]("language_id")
-    def source = column[Array[Byte]]("source")
-    def arrived = column[DateTime]("submit_time_absolute")
-    def arrivedSeconds = column[Int]("submit_time_relative_seconds")
-    def tested = column[Boolean]("tested")
-    def success = column[Boolean]("success")
-    def passed = column[Int]("passed")
-    def testingID = column[Long]("testing_id")
-    def taken = column[Int]("taken")
-    def compiled = column[Boolean]("compiled")
+  val submitTestedByID = Compiled(getSubmitTestedByID _)
 
-    override def * = (id, contest, team, problem, language, source, arrived, arrivedSeconds, tested, success, passed, testingID, taken, compiled)
-  }
+  private[this] def getSubmitCompiledByID(id: Rep[Long]) =
+    SlickModel.submits.filter(_.id === id).map(x => (x.testingID, x.compiled))
 
-  val submits = TableQuery[Submits]
+  val submitCompiledByID = Compiled(getSubmitCompiledByID _)
 
   def getSubmitByID(id: Long) =
     for {
-      submit <- submits if submit.id === id
-      lang <- languages if lang.id === submit.language
-      contest <- contests if contest.id === submit.contest && contest.polygonId =!= ""
+      submit <- SlickModel.submits if submit.id === id
+      lang <- SlickModel.compilers if lang.id === submit.language
+      contest <- SlickModel.contests if contest.id === submit.contest && contest.polygonId =!= ""
     } yield (submit.id, submit.contest, submit.team, submit.problem, submit.arrived, lang.moduleID, submit.source, contest.polygonId)
 
   case class Testings(tag: Tag) extends Table[(Long, Long, DateTime, String, Option[DateTime])](tag, "testings") {
@@ -135,7 +107,7 @@ object CPModel {
   def getCustomTestByID(id: Long) =
     for {
       c <- customTests if c.id === id
-      lang <- languages if lang.id === c.language
+      lang <- SlickModel.compilers if lang.id === c.language
     } yield (c.id, c.contest, c.team, c.arrived, lang.moduleID, c.source, c.input)
 
 }
@@ -156,7 +128,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
     import CPModel._
     import slick.jdbc.PostgresProfile.api._
 
-    db.run(contests.filter(_.polygonId =!= "").map(x => (x.id, x.name, x.polygonId, x.language)).result).map(_.map(x =>
+    db.run(contestsWithPolygonID.result).map(_.map(x =>
       Contest(x._1, x._2, PolygonContestId(x._3), x._4)
     ))
   }
@@ -165,7 +137,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
     import CPModel._
     import slick.jdbc.PostgresProfile.api._
     if (rowName != contestName)
-      Some(contests.filter(_.id === contestId).map(_.name).update(contestName))
+      Some(contestNameByID(contestId).update(contestName))
     else
       None
   }

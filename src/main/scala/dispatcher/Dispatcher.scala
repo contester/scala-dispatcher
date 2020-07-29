@@ -56,7 +56,7 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
     import CPModel._
     import slick.jdbc.PostgresProfile.api._
 
-    db.run(submits.filter(_.id === id).map(_.tested).update(true))
+    db.run(submitTestedByID(id).update(true))
   }
 
   private def calculateTestingResult(m: SubmitObject, ti: Long, sr: SolutionTestingResult) = {

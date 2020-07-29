@@ -6,8 +6,6 @@ PB.targets in Compile := Seq(
   scalapb.gen(flatPackage=true, grpc=false, javaConversions=false) -> (sourceManaged in Compile).value
 )
 
-// PB.runProtoc := (args => Process("/Users/stingray/bin/protoc", args)!)
-
 name := "dispatcher"
 
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m",
@@ -38,6 +36,7 @@ scalacOptions ++= Seq(
 updateOptions := updateOptions.value.withCachedResolution(true)
 
 resolvers ++= Seq(
+  Resolver.mavenLocal,
   Resolver.jcenterRepo,
   Resolver.sonatypeRepo("snapshots"),
   Resolver.typesafeRepo("releases")
@@ -54,6 +53,7 @@ val playVersion = "2.7.5"
 val slickPG = "0.19.0"
 
 libraryDependencies ++= Seq(
+  "org.stingray.contester" %% "contester-dbmodel" % "2020.0.1",
   "javax.mail" % "javax.mail-api" % "1.6.2",
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
   "com.spingo" %% "op-rabbit-play-json"   % opRabbitVersion,
