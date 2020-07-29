@@ -10,12 +10,8 @@ import slick.jdbc.JdbcBackend
 import scala.concurrent.ExecutionContext.Implicits.global
 
 case class Contest(id: Int, name: String, polygonId: PolygonContestId, Language: String)
-case class Language(id: Int, name: String, moduleID: String)
-
-class ContestNotFoundException(id: Int) extends Throwable(id.toString)
 
 object CPModel {
-  import com.github.nscala_time.time.Imports._
   import org.stingray.contester.dbmodel.MyPostgresProfile.api._
 
   val contestsWithPolygonID = SlickModel.contests.filter(_.polygonId =!= "").map(x => (x.id, x.name, x.polygonId, x.language))
@@ -100,7 +96,7 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
   private def updateContest(row: Contest, contest: ContestWithProblems) = {
     val nameChange = maybeUpdateContestName(row.id, row.name, contest.contest.getName(row.Language))
     import CPModel._
-    import slick.jdbc.PostgresProfile.api._
+    import org.stingray.contester.dbmodel.MyPostgresProfile.api._
 
     val pfixes = SlickModel.problems.filter(x => x.contestID === row.id).result.flatMap { probs =>
       val problemMap = probs.filter(_.contest == row.id).map(x => x.id.toUpperCase -> x).toMap
