@@ -98,7 +98,7 @@ class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubm
     val cval = if (r.compilation.success) "1" else "0"
     val passed = r.tests.count(_._2.success)
     client.run(
-      sqlu"""update mdl_contester_testings set finish = NOW(), finish_uts = UNIX_TIMESTAMP(), compiled = ${cval}, taken = ${r.tests.size},
+      sqlu"""update mdl_contester_testings set finish_uts = UNIX_TIMESTAMP(), compiled = ${cval}, taken = ${r.tests.size},
          passed = ${passed} where ID = ${testingId}""").map(_ => ())
   }
 }
@@ -107,7 +107,7 @@ object MoodleResultReporter {
   import slick.jdbc.MySQLProfile.api._
 
   def start(client: JdbcBackend#DatabaseDef, submit: MoodleSubmit) =
-    client.run(sqlu"""Insert into mdl_contester_testings (submitid, start, start_uts) values (${submit.id}, NOW(), UNIX_TIMESTAMP())"""
+    client.run(sqlu"""Insert into mdl_contester_testings (submitid, start_uts) values (${submit.id}, UNIX_TIMESTAMP())"""
       .andThen(sql"select LAST_INSERT_ID()".as[Int]).withPinnedSession)
       .map(_.head).map(new MoodleSingleResult(client, submit, _))
 }
