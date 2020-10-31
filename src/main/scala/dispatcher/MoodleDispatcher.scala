@@ -71,15 +71,15 @@ class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubm
 
   def compile(r: CompileResult) =
     client.run(
-      sqlu"""insert into mdl_contester_results (testingid, processed, processed_uts, result, test, timex, memory, testeroutput, testererror)
-            values ($testingId, NOW(), UNIX_TIMESTAMP(), ${r.status.value}, 0, ${r.time / 1000}, ${r.memory},
+      sqlu"""insert into mdl_contester_results (testingid, processed_uts, result, test, timex, memory, testeroutput, testererror)
+            values ($testingId, UNIX_TIMESTAMP(), ${r.status.value}, 0, ${r.time / 1000}, ${r.memory},
         ${new String(r.stdOut, StandardCharsets.UTF_8)},
         ${new String(r.stdErr, StandardCharsets.UTF_8)})""").map(_ => ())
 
   def test(id: Int, r: TestResult) =
     client.run(
-      sqlu"""Insert into mdl_contester_results (testingid, processed, processed_uts, result, test, timex, memory, info, testeroutput,
-             testererror, testerexitcode) values ($testingId, NOW(), UNIX_TIMESTAMP(), ${r.status.value}, $id, ${r.solution.time / 1000},
+      sqlu"""insert into mdl_contester_results (testingid, processed_uts, result, test, timex, memory, info, testeroutput,
+             testererror, testerexitcode) values ($testingId, UNIX_TIMESTAMP(), ${r.status.value}, $id, ${r.solution.time / 1000},
              ${r.solution.memory}, ${r.solution.returnCode.abs},
              ${new String(r.getTesterOutput, StandardCharsets.UTF_8)},
              ${new String(r.getTesterError, StandardCharsets.UTF_8)},
