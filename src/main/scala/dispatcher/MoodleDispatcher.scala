@@ -15,6 +15,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import com.github.nscala_time.time.Imports.DateTime
 import play.api.Logging
 import slick.ast.BaseTypedType
+import slick.lifted.MappedTo
 
 case class MoodleSubmit(id: Int, problemId: String, arrived: DateTime, sourceModule: Module, stdio: Boolean) extends Submit {
   val timestamp = arrived
@@ -26,8 +27,16 @@ case class MoodleSubmit(id: Int, problemId: String, arrived: DateTime, sourceMod
 
 case class MoodleContesterLanguage(id: Long, name: String, ext: String, display: Option[Int])
 
+case class MoodleTimestamp(underlying: Long) extends AnyVal with MappedTo[Long] {
+  override def value: Long = underlying
+}
+
+object MoodleTimestamp {
+  implicit val ordering: Ordering[MoodleTimestamp] = Ordering.by(_.underlying)
+}
+
 case class MoodleContesterSubmit(id: Long, contester: Long, student: Long, problem: Long, lang: Long,
-                                 iomethod: Boolean, solution: Array[Byte], submitted: DateTime, processed: Option[Int])
+                                 iomethod: Boolean, solution: Array[Byte], submitted: MoodleTimestamp, processed: Option[Int])
 
 object MoodleMariadbSchema {
   import slick.jdbc.PostgresProfile.api._
@@ -58,7 +67,7 @@ object MoodleMariadbSchema {
     def lang = column[Long]("lang")
     def iomethod = column[Boolean]("iomethod")
     def solution = column[Array[Byte]]("solution")
-    def submitted = column[DateTime]("submitted")
+    def submitted = column[MoodleTimestamp]("submitted_uts")
     def processed = column[Option[Int]]("processed")
 
     override def * = (id, contester, student, problem, lang, iomethod, solution, submitted, processed) <> (

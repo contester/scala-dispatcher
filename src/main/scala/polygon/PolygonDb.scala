@@ -48,7 +48,7 @@ trait PolygonProblemClient {
   def getProblem(contest: PolygonContestId, problem: String): Future[Option[ProblemWithURI]]
 }
 
-case class ProblemWithURI(uri: String, problem: Problem)
+case class ProblemWithURI(uri: String, problem: ProblemBase)
 
 case class PolygonProblemNotFoundException(problem: PolygonProblemShort) extends Throwable(problem.toString)
 case class PolygonContestNotFoundException(contest: PolygonContest) extends Throwable(contest.toString)
@@ -112,9 +112,9 @@ case class PolygonClient(service: Service[URI, Option[PolygonResponse]], store: 
     }.onFailure(logger.error(s"getContest: $contest", _))
   }
 
-  val serialSanitizer = new SerialHash[PolygonProblem, Problem]
+  val serialSanitizer = new SerialHash[PolygonProblem, ProblemBase]
 
-  def maybeSanitize(p: PolygonProblem): Future[Problem] = {
+  def maybeSanitize(p: PolygonProblem): Future[ProblemBase] = {
     logger.trace(s"maybeSanitize called: $p")
     pdb.getProblem(p).flatMap {
       case Some(x) => Future.value(x)

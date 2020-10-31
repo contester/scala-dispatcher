@@ -59,7 +59,7 @@ case class SimpleProblemManifest(id: String, revision: Long, testCount: Int, tim
   def handle = id
 }
 
-case class SimpleProblem(val m: SimpleProblemManifest, val assets: ProblemAssetInterface) extends Problem {
+case class SimpleProblem(val m: SimpleProblemManifest, val assets: ProblemAssetInterface) extends ProblemBase {
   override protected def tests: Seq[Int] = 1 to m.testCount
   override def getTest(key: Int): Test = new SimpleProblemTest(this, key)
 }
@@ -124,7 +124,7 @@ case class ProblemArchiveUploadException(x: AnyRef) extends Throwable
 class SimpleProblemDb(val baseUrl: String, val client: Service[Request, Response]) extends ProblemServerInterface with SanitizeDb with Logging {
   import SimpleProblemDb._
 
-  private def receiveProblem(url: String): Future[Option[Problem]] = {
+  private def receiveProblem(url: String): Future[Option[ProblemBase]] = {
     val request = RequestBuilder().url(url).buildGet()
     client(request).flatMap { r =>
       r.status match {
@@ -143,7 +143,7 @@ class SimpleProblemDb(val baseUrl: String, val client: Service[Request, Response
     }
   }
 
-  override def getMostRecentProblem(problem: ProblemHandle): Future[Option[Problem]] = {
+  override def getMostRecentProblem(problem: ProblemHandle): Future[Option[ProblemBase]] = {
     receiveProblem(new URIBuilder(baseUrl+"problem/get/")
       .addParameter("id", problem.handle)
       .build().toASCIIString)
@@ -169,7 +169,7 @@ class SimpleProblemDb(val baseUrl: String, val client: Service[Request, Response
     }
   }
 
-  override def setProblem(manifest: SimpleProblemManifest): Future[Problem] = {
+  override def setProblem(manifest: SimpleProblemManifest): Future[ProblemBase] = {
     val request = RequestBuilder()
       .url(new URIBuilder(baseUrl+"problem/set/")
         .addParameter("id", manifest.id)
@@ -183,7 +183,7 @@ class SimpleProblemDb(val baseUrl: String, val client: Service[Request, Response
     }
   }
 
-  override def getProblem(problem: ProblemHandleWithRevision): Future[Option[Problem]] = {
+  override def getProblem(problem: ProblemHandleWithRevision): Future[Option[ProblemBase]] = {
     logger.trace(s"Getting problem: $problem")
     receiveProblem(new URIBuilder(baseUrl + "problem/get/")
       .addParameter("id", problem.handle)

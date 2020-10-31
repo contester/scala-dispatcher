@@ -3,7 +3,7 @@ package org.stingray.contester.problems
 /**
  * A problem from the testing engine point of view is a map TestID->Test.
  */
-trait Problem {
+trait ProblemBase {
   /**
    * Override this method to provide sequence of tests.
  *

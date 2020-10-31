@@ -4,12 +4,12 @@ import com.twitter.io.Buf
 import com.twitter.util.Future
 
 trait ProblemServerInterface {
-  def getMostRecentProblem(problem: ProblemHandle): Future[Option[Problem]]
+  def getMostRecentProblem(problem: ProblemHandle): Future[Option[ProblemBase]]
 }
 
 trait ProblemDb extends ProblemServerInterface {
-  def setProblem(manifest: SimpleProblemManifest): Future[Problem]
-  def getProblem(problem: ProblemHandleWithRevision): Future[Option[Problem]]
+  def setProblem(manifest: SimpleProblemManifest): Future[ProblemBase]
+  def getProblem(problem: ProblemHandleWithRevision): Future[Option[ProblemBase]]
 }
 
 trait ProblemFileStore {

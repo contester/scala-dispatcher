@@ -13,7 +13,7 @@ javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt
 
 scalaVersion := "2.12.12"
 
-version := "2020.0.1"
+version := "2020.0.2"
 
 maintainer := "i@stingr.net"
 
@@ -53,7 +53,7 @@ val playVersion = "2.7.5"
 val slickPG = "0.19.0"
 
 libraryDependencies ++= Seq(
-  "org.stingray.contester" %% "contester-dbmodel" % "2020.0.1",
+  "org.stingray.contester" %% "contester-dbmodel" % "2020.0.1-SNAPSHOT",
   "javax.mail" % "javax.mail-api" % "1.6.2",
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
   "com.spingo" %% "op-rabbit-play-json"   % opRabbitVersion,

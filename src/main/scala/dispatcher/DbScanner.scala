@@ -2,7 +2,7 @@ package org.stingray.contester.dispatcher
 
 import akka.actor.Actor
 import com.twitter.util.Future
-import org.stingray.contester.dbmodel.{Problem, SlickModel}
+import org.stingray.contester.dbmodel.{SlickModel, Problem}
 import org.stingray.contester.polygon._
 import play.api.Logging
 import slick.jdbc.JdbcBackend
