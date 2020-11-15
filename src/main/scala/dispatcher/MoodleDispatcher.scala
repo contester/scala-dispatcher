@@ -25,6 +25,7 @@ case class MoodleSubmit(id: Int, problemId: String, arrived: DateTime, sourceMod
     "MoodleSubmit(%d)".format(id)
 }
 
+/*
 case class MoodleContesterLanguage(id: Long, name: String, ext: String, display: Option[Int])
 
 case class MoodleTimestamp(underlying: Long) extends AnyVal with MappedTo[Long] {
@@ -39,14 +40,7 @@ case class MoodleContesterSubmit(id: Long, contester: Long, student: Long, probl
                                  iomethod: Boolean, solution: Array[Byte], submitted: MoodleTimestamp, processed: Option[Int])
 
 object MoodleMariadbSchema {
-  import slick.jdbc.PostgresProfile.api._
-
-  implicit val datetimeColumnType
-  : JdbcType[DateTime] with BaseTypedType[DateTime] =
-    MappedColumnType.base[DateTime, Timestamp](
-      x => new Timestamp(x.getMillis),
-      x => new DateTime(x)
-    )
+  import org.stingray.contester.dbmodel.MyPostgresProfile.api._
 
   class MoodleContesterLanguages(tag: Tag) extends Table[MoodleContesterLanguage](tag, "mdl_contester_languages") {
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
@@ -74,21 +68,22 @@ object MoodleMariadbSchema {
       MoodleContesterSubmit.tupled, MoodleContesterSubmit.unapply)
   }
 }
+ */
 
 class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubmit, val testingId: Int) extends SingleProgress {
-  import slick.jdbc.MySQLProfile.api._
+  import org.stingray.contester.dbmodel.MyPostgresProfile.api._
 
   def compile(r: CompileResult) =
     client.run(
       sqlu"""insert into mdl_contester_results (testingid, processed_uts, result, test, timex, memory, testeroutput, testererror)
-            values ($testingId, UNIX_TIMESTAMP(), ${r.status.value}, 0, ${r.time / 1000}, ${r.memory},
+            values ($testingId, extract(epoch from now()), ${r.status.value}, 0, ${r.time / 1000}, ${r.memory},
         ${new String(r.stdOut, StandardCharsets.UTF_8)},
         ${new String(r.stdErr, StandardCharsets.UTF_8)})""").map(_ => ())
 
   def test(id: Int, r: TestResult) =
     client.run(
       sqlu"""insert into mdl_contester_results (testingid, processed_uts, result, test, timex, memory, info, testeroutput,
-             testererror, testerexitcode) values ($testingId, UNIX_TIMESTAMP(), ${r.status.value}, $id, ${r.solution.time / 1000},
+             testererror, testerexitcode) values ($testingId, extract(epoch from now()), ${r.status.value}, $id, ${r.solution.time / 1000},
              ${r.solution.memory}, ${r.solution.returnCode.abs},
              ${new String(r.getTesterOutput, StandardCharsets.UTF_8)},
              ${new String(r.getTesterError, StandardCharsets.UTF_8)},
@@ -98,18 +93,9 @@ class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubm
     val cval = if (r.compilation.success) "1" else "0"
     val passed = r.tests.count(_._2.success)
     client.run(
-      sqlu"""update mdl_contester_testings set finish_uts = UNIX_TIMESTAMP(), compiled = ${cval}, taken = ${r.tests.size},
-         passed = ${passed} where ID = ${testingId}""").map(_ => ())
+      sqlu"""update mdl_contester_testings set finish_uts = extract(epoch from now()), compiled = ${cval}, taken = ${r.tests.size},
+         passed = ${passed} where id = ${testingId}""").map(_ => ())
   }
-}
-
-object MoodleResultReporter {
-  import slick.jdbc.MySQLProfile.api._
-
-  def start(client: JdbcBackend#DatabaseDef, submit: MoodleSubmit) =
-    client.run(sqlu"""Insert into mdl_contester_testings (submitid, start_uts) values (${submit.id}, UNIX_TIMESTAMP())"""
-      .andThen(sql"select LAST_INSERT_ID()".as[Int]).withPinnedSession)
-      .map(_.head).map(new MoodleSingleResult(client, submit, _))
 }
 
 object MoodleTableScanner {
@@ -121,33 +107,41 @@ object MoodleTableScanner {
     Props(classOf[MoodleTableScanner], db, dispatcher)
 }
 
-class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface, inv: SolutionTester, store: TestingStore) extends Logging {
-  import slick.jdbc.MySQLProfile.api._
-  implicit val getMoodleSubmit = GetResult(r=>
-    MoodleSubmit(r.nextInt(), r.nextInt().toString, new DateTime(r.nextLong() * 1000), new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBoolean())
-  )
 
-  private def getSubmit(id: Int) = {
+
+class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface, inv: SolutionTester, store: TestingStore) extends Logging {
+  import org.stingray.contester.dbmodel.MyPostgresProfile.api._
+
+  private[this] def getSubmit(id: Int) = {
+    implicit val getMoodleSubmit = GetResult(r=>
+      MoodleSubmit(r.nextInt(), r.nextInt().toString, new DateTime(r.nextLong() * 1000), new ByteBufferModule(r.nextString(), r.nextBytes()), r.nextBoolean())
+    )
+
     val f = db.run(
       sql"""
          select
-         mdl_contester_submits.id as SubmitId,
-         mdl_contester_submits.problem as ProblemId,
-         mdl_contester_submits.submitted_uts as Arrived,
-         mdl_contester_languages.ext as ModuleId,
-         mdl_contester_submits.solution as Solution,
-         mdl_contester_submits.iomethod as StdioMethod
+         s.id,
+         s.problem,
+         s.submitted_uts,
+         l.ext,
+         s.solution,
+         s.iomethod
          from
-         mdl_contester_submits, mdl_contester_languages
+         mdl_contester_submits s, mdl_contester_languages l
          where
-         mdl_contester_submits.lang = mdl_contester_languages.id and
-         mdl_contester_submits.id = ${id}
-          """.as[MoodleSubmit]).map(_.headOption)
+         s.lang = l.id and
+         s.id = ${id}
+          """.as[MoodleSubmit].headOption)
     f.foreach(x => logger.info(s"${x}"))
     f
   }
 
-  def markWith(id: Int, value: Int) =
+  private[this] def start(client: JdbcBackend#DatabaseDef, submit: MoodleSubmit) =
+    client.run(sqlu"""Insert into mdl_contester_testings (submitid, start_uts) values (${submit.id}, extract(epoch from now())) returning submitid""".withPinnedSession)
+      .map(new MoodleSingleResult(client, submit, _))
+
+
+  private[this] def markWith(id: Int, value: Int) =
     db.run(sqlu"update mdl_contester_submits set processed = $value where id = $id")
 
   import org.stingray.contester.utils.Fu._
@@ -168,9 +162,9 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
     r
   }
 
-  def run(item: MoodleSubmit): Future[Unit] = {
+  private[this] def run(item: MoodleSubmit): Future[Unit] = {
     pdb.getMostRecentProblem(ProblemHandle(s"direct://school.sgu.ru/moodle/${item.problemId}")).flatMap { problem =>
-      MoodleResultReporter.start(db, item).flatMap { reporter =>
+      start(db, item).flatMap { reporter =>
         inv(item, item.sourceModule, problem.get, reporter, schoolMode = true,
           store.submit(item.id, reporter.testingId), Map.empty, stdio = item.stdio).flatMap(reporter.finish)
       }
@@ -181,14 +175,14 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
 
 class MoodleTableScanner(db: JdbcBackend#DatabaseDef, dispatcher: MoodleDispatcher) extends Actor with Stash with Logging {
   import MoodleTableScanner._
-  import slick.jdbc.MySQLProfile.api._
+  import org.stingray.contester.dbmodel.MyPostgresProfile.api._
 
-  private def getUnprocessedEntries() =
+  private[this] def getUnprocessedEntries() =
     db.run(sql"select id from mdl_contester_submits where processed is null".as[Long])
 
-  val active = mutable.Set[Long]()
+  private[this] val active = mutable.Set[Long]()
 
-  private def startProcessing(id: Long) = {
+  private[this] def startProcessing(id: Long) = {
     active.add(id)
     logger.info(s"Starting ${id}")
     val saved = self
