@@ -90,7 +90,7 @@ class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubm
              ${r.getTesterReturnCode.abs})""").map(_ => ())
 
   def finish(r: SolutionTestingResult) = {
-    val cval = if (r.compilation.success) "1" else "0"
+    val cval = if (r.compilation.success) 1 else 0
     val passed = r.tests.count(_._2.success)
     client.run(
       sqlu"""update mdl_contester_testings set finish_uts = extract(epoch from now()), compiled = ${cval}, taken = ${r.tests.size},
@@ -137,9 +137,8 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
   }
 
   private[this] def start(client: JdbcBackend#DatabaseDef, submit: MoodleSubmit) =
-    client.run(sqlu"""Insert into mdl_contester_testings (submitid, start_uts) values (${submit.id}, extract(epoch from now())) returning submitid""".withPinnedSession)
-      .map(new MoodleSingleResult(client, submit, _))
-
+    client.run(sql"""Insert into mdl_contester_testings (submitid, start_uts) values (${submit.id}, extract(epoch from now())) returning id""".as[Int].headOption)
+      .map(v => new MoodleSingleResult(client, submit, v.get))
 
   private[this] def markWith(id: Int, value: Int) =
     db.run(sqlu"update mdl_contester_submits set processed = $value where id = $id")
@@ -151,6 +150,9 @@ class MoodleDispatcher(db: JdbcBackend#DatabaseDef, pdb: ProblemServerInterface,
       submit.map(run)
         .getOrElse(Future.Done)
         .transform { v =>
+          if (v.isThrow) {
+            logger.error(s"$id: error $v")
+          }
           val cv = if (v.isThrow) 254 else 255
           markWith(id.toInt, cv).unit
         }
