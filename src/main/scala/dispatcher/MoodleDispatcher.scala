@@ -94,7 +94,8 @@ class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubm
     val passed = r.tests.count(_._2.success)
     client.run(
       sqlu"""update mdl_contester_testings set finish_uts = extract(epoch from now()), compiled = ${cval}, taken = ${r.tests.size},
-         passed = ${passed} where id = ${testingId}""").map(_ => ())
+         passed = ${passed} where id = ${testingId}""".zip(
+        sqlu"""update mdl_contester_submits set testing_id = ? where submit_id = ${submit.id}""".transactionally)).map(_ => ())
   }
 }
 
@@ -198,6 +199,9 @@ class MoodleTableScanner(db: JdbcBackend#DatabaseDef, dispatcher: MoodleDispatch
     case Rescan =>
       getUnprocessedEntries()
             .onComplete { v =>
+              if (v.isFailure) {
+                logger.error(s"scan for entries: ${v}")
+              }
               self ! UnprocessedEntries(v.getOrElse(Nil))
             }
       context.become(rescanning)
