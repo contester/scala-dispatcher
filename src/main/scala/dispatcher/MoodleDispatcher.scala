@@ -95,7 +95,7 @@ class MoodleSingleResult(client: JdbcBackend#DatabaseDef, val submit: MoodleSubm
     client.run(
       sqlu"""update mdl_contester_testings set finish_uts = extract(epoch from now()), compiled = ${cval}, taken = ${r.tests.size},
          passed = ${passed} where id = ${testingId}""".zip(
-        sqlu"""update mdl_contester_submits set testing_id = ? where submit_id = ${submit.id}""".transactionally)).map(_ => ())
+        sqlu"""update mdl_contester_submits set testing_id = ${testingId} where id = ${submit.id}""".transactionally)).map(_ => ())
   }
 }
 
