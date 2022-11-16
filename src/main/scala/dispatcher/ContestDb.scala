@@ -43,7 +43,7 @@ class DbDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient,
 
   val evalSub = Subscription.run(rabbitMq) {
     import Directives._
-    channel(qos = 10) {
+    channel(qos = 100) {
       consume(queue("contester.evalrequests")) {
         body(as[ServerSideEvalID]) { evalreq =>
           logger.info(s"Received eval $evalreq")

@@ -1,7 +1,6 @@
 package org.stingray.contester.dispatcher
 
 import java.io.File
-
 import akka.actor.ActorRef
 import com.spingo.op_rabbit.Message
 import com.spingo.op_rabbit.PlayJsonSupport._
@@ -16,6 +15,7 @@ import org.stingray.contester.testing._
 import play.api.libs.json.{JsValue, Json, Writes}
 import slick.jdbc.JdbcBackend
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future => ScalaFuture}
 
@@ -47,7 +47,7 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
     import CPModel._
     import slick.jdbc.PostgresProfile.api._
 
-    db.run(getSubmitByID(id).result.headOption).map(_.map {x =>
+    db.run(submitByID(id).result.headOption).map(_.map {x =>
       SubmitObject(x._1, x._2, x._3, x._4, x._5, new ByteBufferModule(x._6, x._7), false, 0, PolygonContestId(x._8))
     })
   }
@@ -56,7 +56,14 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
     import CPModel._
     import slick.jdbc.PostgresProfile.api._
 
-    db.run(submitTestedByID(id).update(true))
+    val f = db.run(submitTestedByID(id).update(true))
+    f.foreach {
+      case x =>
+        runningSet.synchronized {
+          runningSet.remove(id.toInt)
+        }
+    }
+    f
   }
 
   private def calculateTestingResult(m: SubmitObject, ti: Long, sr: SolutionTestingResult) = {
@@ -88,16 +95,26 @@ class SubmitDispatcher(db: JdbcBackend#DatabaseDef, pdb: PolygonProblemClient, i
       )
   }
 
-
-  def runq(id: Int): ScalaFuture[Unit] =
-    getSubmit(id).flatMap {
-      case Some(submit) =>
-        run(submit).transform {
-          case Return(x) => markWith(id).unit
-          case Throw(x) => markWith(id).unit
-        }
-      case None => Future.Done
+  private[this] val runningSet = mutable.HashSet[Int]()
+  def runq(id: Int): ScalaFuture[Unit] = {
+    val cont = runningSet.synchronized {
+      if (!runningSet.contains(id)) {
+        runningSet.add(id)
+        true
+      } else false
     }
+
+    if (cont) {
+      getSubmit(id).flatMap {
+        case Some(submit) =>
+          run(submit).transform {
+            case Return(x) => markWith(id).unit
+            case Throw(x) => markWith(id).unit
+          }
+        case None => Future.Done
+      }
+    } else Future.Done
+  }
 
   private val reporter = new DBReporter(db)
 

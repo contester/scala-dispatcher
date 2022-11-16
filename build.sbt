@@ -11,13 +11,16 @@ name := "dispatcher"
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m",
   "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
-scalaVersion := "2.12.12"
+scalaVersion := "2.12.17"
 
 version := "2020.0.3"
 
 maintainer := "i@stingr.net"
 
 organization := "org.stingray.contester"
+
+ThisBuild / useCoursier := false
+
 
 scalacOptions ++= Seq(
   "-Xfatal-warnings",  // New lines for each options
@@ -48,12 +51,14 @@ val finagleVersion = "20.5.0"
 
 val nettyVersion = "4.1.50.Final"
 
-val playVersion = "2.7.5"
+val playVersion = "2.7.9"
 
-val slickPG = "0.19.0"
+val slickPG = "0.19.7"
+
+// ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-parser-combinators" % "always"
 
 libraryDependencies ++= Seq(
-  "org.stingray.contester" %% "contester-dbmodel" % "2020.0.1-SNAPSHOT",
+  "org.stingray.contester" %% "contester-dbmodel" % "2022.0.1-SNAPSHOT",
   "javax.mail" % "javax.mail-api" % "1.6.2",
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
   "com.spingo" %% "op-rabbit-play-json"   % opRabbitVersion,
@@ -68,20 +73,20 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "finagle-redis" % finagleVersion,
   "com.twitter" %% "util-core" % finagleVersion,
   "com.twitter" %% "bijection-util" % "0.9.7",
-  "org.scala-lang.modules" %% "scala-async" % "0.10.0",
+  "org.scala-lang.modules" %% "scala-async" % "1.0.1",
   "org.scala-lang" % "scala-reflect" % scalaVersion.value % Provided,
-  "com.github.nscala-time" %% "nscala-time" % "2.24.0",
+  "com.github.nscala-time" %% "nscala-time" % "2.32.0",
   "org.apache.httpcomponents" % "httpclient" % "4.5.12",
   "commons-io" % "commons-io" % "2.7",
   "org.mariadb.jdbc" % "mariadb-java-client" % "2.6.0",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
-  "com.typesafe.slick" %% "slick" % "3.3.2",
-  "com.typesafe.slick" %% "slick-hikaricp" % "3.3.2",
+  "com.typesafe.slick" %% "slick" % "3.3.3",
+  "com.typesafe.slick" %% "slick-hikaricp" % "3.3.3",
   "com.typesafe.play" %% "play" % playVersion,
   "com.typesafe.play" %% "play-netty-server" % playVersion,
   "com.typesafe" % "config" % "1.4.0",
   "info.faljse" % "SDNotify" % "1.3",
-  "org.postgresql" % "postgresql" % "42.2.12",
+  "org.postgresql" % "postgresql" % "42.5.0",
   "com.github.tminglei" %% "slick-pg" % slickPG,
   "com.github.tminglei" %% "slick-pg_joda-time" % slickPG,
   "com.github.tminglei" %% "slick-pg_play-json" % slickPG,

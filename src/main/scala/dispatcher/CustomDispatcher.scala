@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import com.github.nscala_time.time.Imports._
 import com.spingo.op_rabbit.Message
 import org.stingray.contester.common._
+import org.stingray.contester.dbmodel.TimeMs
 import org.stingray.contester.invokers.TimeKey
 import org.stingray.contester.testing.{CustomTester, CustomTestingResult}
 import play.api.libs.json.Json
@@ -36,7 +37,7 @@ class CustomTestDispatcher(db: JdbcBackend#DatabaseDef, invoker: CustomTester, s
                 memory_bytes = $memoryBytes,
                 return_code = $returnCode,
                 result_code = $resultCode,
-                finish_time = CURRENT_TIMESTAMP() where ID = $id"""
+                finish_time = CURRENT_TIMESTAMP where ID = $id"""
   }
 
   private[this] def recordResult(item: CustomTestObject, result: CustomTestingResult) = {

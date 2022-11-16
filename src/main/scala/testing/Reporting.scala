@@ -125,7 +125,7 @@ class DBSingleResultReporter(client: JdbcBackend#DatabaseDef, val submit: Submit
   def finish(result: SolutionTestingResult, submitId: Long, testingId: Long): Future[Unit] = {
     client.run(
       (sqlu"update testings set finish_time = CURRENT_TIMESTAMP where id = $testingId")
-        .zip(SlickModel.submits.filter(_.id === submitId).map(x => (x.tested, x.taken, x.passed))
+        .zip(submitToFinish(submitId)
           .update(true, result.tests.size, result.tests.count(_._2.success)))).map(_ => ())
   }
 }
@@ -141,7 +141,7 @@ class DBReporter(val client: JdbcBackend#DatabaseDef) {
     val allocTesting = insertTestingSubmitURL += (submit.id, problemId)
 
     client.run(allocTesting.flatMap { testingID =>
-      SlickModel.submits.filter(_.id === submit.id).map(_.testingID).update(testingID).map(_ => testingID)
+      submitToUpdateTestingID(submit.id).update(testingID).map(_ => testingID)
     })
   }
 

@@ -1,8 +1,9 @@
 package org.stingray.contester.dispatcher
 
 import akka.actor.Actor
+import com.github.nscala_time.time.Imports.DateTime
 import com.twitter.util.Future
-import org.stingray.contester.dbmodel.{SlickModel, Problem}
+import org.stingray.contester.dbmodel.{Problem, SlickModel}
 import org.stingray.contester.polygon._
 import play.api.Logging
 import slick.jdbc.JdbcBackend
@@ -14,7 +15,7 @@ case class Contest(id: Int, name: String, polygonId: PolygonContestId, Language:
 object CPModel {
   import org.stingray.contester.dbmodel.MyPostgresProfile.api._
 
-  val contestsWithPolygonID = SlickModel.contests.filter(_.polygonId =!= "").map(x => (x.id, x.name, x.polygonId, x.language))
+  val contestsWithPolygonID = Compiled(SlickModel.contests.filter(_.polygonId =!= "").map(x => (x.id, x.name, x.polygonId, x.language)))
 
   private[this] def getContestNameByID(id: Rep[Int]) =
     SlickModel.contests.filter(_.id === id).map(_.name)
@@ -31,19 +32,25 @@ object CPModel {
 
   val submitCompiledByID = Compiled(getSubmitCompiledByID _)
 
-  def getSubmitByID(id: Long) =
-    for {
+  private[this] def getSubmitByID(id: Rep[Long]) =
+    (for {
       submit <- SlickModel.submits if submit.id === id
       lang <- SlickModel.compilers if lang.id === submit.language
       contest <- SlickModel.contests if contest.id === submit.contest && contest.polygonId =!= ""
-    } yield (submit.id, submit.contest, submit.team, submit.problem, submit.arrived, lang.moduleID, submit.source, contest.polygonId)
+    } yield (submit.id, submit.contest, submit.team, submit.problem, submit.arrived, lang.moduleID, submit.source, contest.polygonId)).take(1)
+
+  val submitByID = Compiled(getSubmitByID _)
+
+  val submitToFinish = Compiled((submitId: Rep[Long]) => SlickModel.submits.filter(_.id === submitId).map(x => (x.tested, x.taken, x.passed)))
+
+  val submitToUpdateTestingID = Compiled((submitId: Rep[Long]) => SlickModel.submits.filter(_.id === submitId).map(_.testingID))
 
   val insertTestingSubmitURL =
-    SlickModel.testings.map(x => (x.submit, x.problemURL)) returning SlickModel.testings.map(_.id)
+    Compiled(SlickModel.testings.map(x => (x.submit, x.problemURL))) returning SlickModel.testings.map(_.id)
 
-  val addCompileResult = SlickModel.results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError))
+  val addCompileResult = Compiled(SlickModel.results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.testerOutput, x.testerError)))
 
-  val addTestResult = SlickModel.results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.returnCode, x.testerOutput, x.testerError, x.testerReturnCode))
+  val addTestResult = Compiled(SlickModel.results.map(x => (x.testingID, x.resultCode, x.testID, x.timeMs, x.memoryBytes, x.returnCode, x.testerOutput, x.testerError, x.testerReturnCode)))
 
   private[this] def getCustomTestByID(id: Rep[Long]) =
     for {
@@ -52,6 +59,22 @@ object CPModel {
     } yield (c.id, c.contest, c.team, c.arrived, lang.moduleID, c.source, c.input)
 
   val customTestByID = Compiled(getCustomTestByID _)
+
+  private[this] def getCustomActivePart(id: Rep[Long]) =
+    SlickModel.customTests.filter(_.id === id).map(x => (x.output, x.timeMs, x.memoryBytes, x.returnCode, x.resultCode, x.finishTime))
+
+  var customActivePart = Compiled(getCustomActivePart _)
+
+  val currentTimestamp = SimpleLiteral.apply[DateTime]("current_timestamp")
+
+  val problemsByContest = Compiled((contestID: Rep[Int]) =>
+    SlickModel.problems.filter(x => x.contestID === contestID)
+  )
+
+  val problemByCPID = Compiled((contestID: Rep[Int], problemID: Rep[String]) =>
+    SlickModel.problems.filter(x => x.contestID === contestID && x.id === problemID)
+  )
+
 }
 
 object ContestTableScanner {
@@ -98,11 +121,11 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
     import CPModel._
     import org.stingray.contester.dbmodel.MyPostgresProfile.api._
 
-    val pfixes = SlickModel.problems.filter(x => x.contestID === row.id).result.flatMap { probs =>
+    val pfixes = problemsByContest(row.id).result.flatMap { probs =>
       val problemMap = probs.filter(_.contest == row.id).map(x => x.id.toUpperCase -> x).toMap
 
       val deletes = (problemMap.keySet -- contest.problems.keySet).toSeq.map { problemId =>
-        SlickModel.problems.filter(x => x.contestID === row.id && x.id === problemId).delete
+        problemByCPID(row.id, problemId).delete
       }
 
       val updates = contest.problems.map(x => x -> problemMap.get(x._1)).collect {

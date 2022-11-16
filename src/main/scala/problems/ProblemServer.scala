@@ -19,9 +19,9 @@ case class FixedTestLimits(memoryLimit: Long, timeLimitMicros: Long) extends Tes
 
 class SimpleProblemTest(problem: SimpleProblem, val testId: Int) extends Test {
   override def getLimits(moduleType: String): TestLimits =
-    if (moduleType == "exe" && problem.m.id == "https://polygon.codeforces.com/p/afrolov/qf-2016-delivery")
-      defaultLimits.copy(timeLimitMicros = defaultLimits.timeLimitMicros / 2)
-    else
+//    if (moduleType == "exe" && problem.m.id == "https://polygon.codeforces.com/p/afrolov/qf-2016-delivery")
+//      defaultLimits.copy(timeLimitMicros = defaultLimits.timeLimitMicros / 2)
+//    else
       defaultLimits
 
   override def toString: String = s"${problem.m.handle}/${problem.m.revision}-$testId"
