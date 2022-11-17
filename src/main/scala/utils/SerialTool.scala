@@ -1,6 +1,7 @@
 package org.stingray.contester.utils
 
 import java.util.concurrent.ConcurrentHashMap
+import play.api.Logging
 
 import com.twitter.util.{Future, Promise, Try}
 
@@ -44,7 +45,7 @@ class SerialHash[KeyType, ValueType] extends ((KeyType, () => Future[ValueType])
   * @tparam ValueType Values that we return.
   * @tparam SomeType Type of data in the data source
   */
-abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyType, Future[ValueType]] {
+abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyType, Future[ValueType]] with Logging {
   def parse(key: KeyType, what: SomeType): ValueType
 
   /** Get data from L2, or return None if there's nothing.
@@ -84,6 +85,7 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
   def refresh(key: KeyType) = {
     val v = refresh0(key)
     v.onSuccess { _ => localCache.put(key, v) }
+    v.onFailure { x => logger.error("refresh error", x)}
     v
   }
 

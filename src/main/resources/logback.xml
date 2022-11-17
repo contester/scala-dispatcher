@@ -47,7 +47,7 @@
   <logger name="com.avaje.ebeaninternal.server.lib.BackgroundThread" level="OFF" />
   <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
 
-  <logger name="slick" level="TRACE" additivity="false">
+  <logger name="slick" level="INFO" additivity="false">
 	  <appender-ref ref="MYSQL"/>
   </logger>
 
