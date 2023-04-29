@@ -127,9 +127,9 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
       add(api.disks / "WINDOWS" / "System32" / "ntvdm.exe", win16(_)) +
       add(api.disks / "WINDOWS" / "System32" / "cmd.exe", visualStudio(_)) +
       add(api.disks / "WINDOWS" / "System32" / "cmd.exe", kotlin(_)) +
-      add((api.disks / "Python39" / "Python.exe") ++ (api.disks / "Python37" / "Python.exe") ++ (api.disks / "Python35" / "Python.exe") ++ (api.disks / "Python34" / "Python.exe") ++ (api.disks / "Programs" / "Python-3" / "Python.exe"), new PythonModuleHandler("py3", _)) +
-      add((api.disks / "Python27" / "Python.exe") ++ (api.disks / "Programs" / "Python-2" / "Python.exe"), new PythonModuleHandler("py2", _)) +
-      add((api.disks / "pypy" / "pypy3.9-v7.3.9-win64"/ "pypy3.exe"), new PythonModuleHandler("pypy3", _)) +
+      add((api.disks / "Python3" / "Python.exe") ++ (api.disks / "Python37" / "Python.exe") ++ (api.disks / "Python35" / "Python.exe") ++ (api.disks / "Python34" / "Python.exe") ++ (api.disks / "Programs" / "Python-3" / "Python.exe"), new PythonModuleHandler("py3", _)) +
+      add((api.disks / "Python2" / "Python.exe") ++ (api.disks / "Python27" / "Python.exe") ++ (api.disks / "Programs" / "Python-2" / "Python.exe"), new PythonModuleHandler("py2", _)) +
+      add((api.disks / "pypy" / "pypy3.9-v7.3.9-win64"/ "pypy3.exe") ++ (api.disks / "pypy" / "pypy3.9-v7.3.11-win64"/ "pypy3.exe"), new PythonModuleHandler("pypy3", _)) +
       add(api.disks / "WINDOWS" / "System32" / "cmd.exe", java(_)) + p7z + new Win32BinaryHandler
 
   private def win16(ntvdm: String) =

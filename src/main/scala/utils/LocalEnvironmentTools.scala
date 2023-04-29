@@ -5,7 +5,7 @@ import org.stingray.contester.proto.LocalEnvironment
 object LocalEnvironmentTools {
   val quote = "\""
   val win32ReservedVars = Set("ALLUSERSPROFILE", "CommonProgramFiles", "ComSpec", "NUMBER_OF_PROCESSORS", "OS",
-    "PATHEXT", "PATH",
+    "PATHEXT", "PATH", "KOTLIN_HOME",
     "PROCESSOR_ARCHITECTURE", "PROCESSOR_IDENTIFIER", "PROCESSOR_LEVEL", "PROCESSOR_REVISION",
     "ProgramFiles", "PROMPT", "SystemDrive", "SystemRoot", "windir").map(_.toLowerCase)
   val tempVars = "TEMP" :: "TMP" :: "TMPDIR" :: Nil
