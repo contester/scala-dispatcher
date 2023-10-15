@@ -221,5 +221,5 @@ class MoodleTableScanner(db: JdbcBackend#DatabaseDef, dispatcher: MoodleDispatch
 
   import scala.concurrent.duration._
 
-  context.system.scheduler.schedule(5 seconds, 5 seconds, self, Rescan)
+  context.system.scheduler.scheduleWithFixedDelay(5 seconds, 5 seconds, self, Rescan)
 }

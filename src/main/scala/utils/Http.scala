@@ -21,6 +21,7 @@ object CachedConnectionHttpService extends Function[HttpHost, Service[Request, R
         .withTransport.connectTimeout(30 seconds)
         .withRequestTimeout(30 seconds)
         .withMaxResponseSize(maxResponseSize)
+        .withNoHttp2
 
     private[this] def hostString(key: HttpHost) =
       if (key.getPort != -1)
@@ -37,7 +38,7 @@ object CachedConnectionHttpService extends Function[HttpHost, Service[Request, R
     def load(key: HttpHost): Service[Request, Response] = {
       val settings = common(key)
       val s2 = if (key.getSchemeName == "https")
-        settings.withTransport.tls(SSLContext.getDefault()).withTls(key.getHostName)
+        settings.withTransport.tls(key.getHostName)
       else settings
       val stringKey = hostString(key)
       logger.trace(s"opening new connection to $stringKey")

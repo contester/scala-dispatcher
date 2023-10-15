@@ -67,7 +67,8 @@ case class ContestClient1(service: Service[URI, Option[PolygonResponse]], store:
 
   def farGet(contest: PolygonContest): Future[String] =
     service(contest.uri).map {
-      case Some(x) => x.response.contentString
+      case Some(x) =>
+        x.response.contentString
       case None => throw PolygonContestNotFoundException(contest)
     }
 }

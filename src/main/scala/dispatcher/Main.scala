@@ -47,6 +47,7 @@ object DispatcherServer extends App with Logging {
         .childHandler(new ServerPipelineFactory[SocketChannel](invoker))
 
     bs.bind(socket).sync()
+    logger.info(s"invoker channel bound to ${socket.getAddress}:${socket.getPort}")
   }
 
   implicit val actorSystem = ActorSystem("such-system")
