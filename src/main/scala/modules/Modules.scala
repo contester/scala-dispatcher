@@ -56,7 +56,7 @@ class SevenzipHandler(val p7z: String) extends ModuleHandler {
 }
 
 object SourceHandler {
-  def step(stepName: String, sandbox: Sandbox, applicationName: String,
+  private[this] def step(stepName: String, sandbox: Sandbox, applicationName: String,
            arguments: ExecutionArguments): Future[StepResult] = {
     sandbox.getExecutionParameters(applicationName, arguments)
       .map(_.setCompiler)
@@ -65,7 +65,7 @@ object SourceHandler {
     }
   }
 
-  def checkForFile(sandbox: Sandbox, filename: String): Future[Boolean] =
+  private[this] def checkForFile(sandbox: Sandbox, filename: String): Future[Boolean] =
     sandbox.stat(filename, false).map(_.isFile.nonEmpty)
 
   def stepAndCheck(stepName: String, sandbox: Sandbox, applicationName: String, arguments: ExecutionArguments, resultName: String): Future[(StepResult, Boolean)] =

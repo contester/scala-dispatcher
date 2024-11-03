@@ -11,9 +11,9 @@ name := "dispatcher"
 javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt", "-Xms512m", "-Xmx512m",
   "-XX:MaxPermSize=256m", "-XX:+CMSClassUnloadingEnabled")
 
-scalaVersion := "2.12.18"
+scalaVersion := "2.12.20"
 
-version := "2023.0.1"
+version := "2024.0.1"
 
 maintainer := "i@stingr.net"
 
@@ -57,7 +57,7 @@ val slickPG = "0.21.1"
 // ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-parser-combinators" % "always"
 
 libraryDependencies ++= Seq(
-  "org.stingray.contester" %% "contester-dbmodel" % "2023.0.1-SNAPSHOT",
+  "org.stingray.contester" %% "contester-dbmodel" % "2024.0.1-SNAPSHOT",
   "javax.mail" % "javax.mail-api" % "1.6.2",
   "com.spingo" %% "op-rabbit-core"        % opRabbitVersion,
   "com.spingo" %% "op-rabbit-play-json"   % opRabbitVersion,
@@ -85,12 +85,12 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-netty-server" % playVersion,
   "com.typesafe" % "config" % "1.4.2",
   "info.faljse" % "SDNotify" % "1.5",
-  "org.postgresql" % "postgresql" % "42.6.0",
+  "org.postgresql" % "postgresql" % "42.7.3",
   "com.github.tminglei" %% "slick-pg" % slickPG,
   "com.github.tminglei" %% "slick-pg_joda-time" % slickPG,
   "com.github.tminglei" %% "slick-pg_play-json" % slickPG,
   "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
-  "org.scalatest" %% "scalatest" % "3.2.17" % "test"
+  "org.scalatest" %% "scalatest" % "3.2.19" % "test"
 ).map(_.exclude("org.slf4j", "slf4j-jdk14")).map(_.exclude("org.slf4j", "slf4j-log4j12"))
 
 libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always

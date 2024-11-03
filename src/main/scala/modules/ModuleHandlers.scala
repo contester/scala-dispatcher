@@ -129,7 +129,7 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
       add(api.disks / "WINDOWS" / "System32" / "cmd.exe", kotlin(_)) +
       add((api.disks / "Python3" / "Python.exe") ++ (api.disks / "Python37" / "Python.exe") ++ (api.disks / "Python35" / "Python.exe") ++ (api.disks / "Python34" / "Python.exe") ++ (api.disks / "Programs" / "Python-3" / "Python.exe"), new PythonModuleHandler("py3", _)) +
       add((api.disks / "Python2" / "Python.exe") ++ (api.disks / "Python27" / "Python.exe") ++ (api.disks / "Programs" / "Python-2" / "Python.exe"), new PythonModuleHandler("py2", _)) +
-      add((api.disks / "pypy" / "pypy3.9-v7.3.9-win64"/ "pypy3.exe") ++ (api.disks / "pypy" / "pypy3.9-v7.3.11-win64"/ "pypy3.exe"), new PythonModuleHandler("pypy3", _)) +
+      add((api.disks / "pypy" / "pypy3.10-v7.3.17-win64"/ "pypy3.exe") ++ (api.disks / "pypy" / "pypy3.9-v7.3.11-win64"/ "pypy3.exe"), new PythonModuleHandler("pypy3", _)) +
       add(api.disks / "WINDOWS" / "System32" / "cmd.exe", java(_)) + p7z + new Win32BinaryHandler
 
   private def win16(ntvdm: String) =
@@ -145,7 +145,8 @@ class Win32ModuleFactory(api: InvokerAPI) extends ModuleFactory(api) {
     // api.programFiles / "Microsoft Visual Studio" / "2019"/ "Community"/ "VC" / "Auxiliary" / "Build" / "vcvars32.bat"
     // api.programFiles / "Microsoft Visual Studio*" / "Common7" / "Tools" / "vsvars32.bat"
     add((api.programFiles / "Microsoft Visual Studio*" / "Common7" / "Tools" / "vsvars32.bat") ++
-      (api.programFiles / "Microsoft Visual Studio" / "2019"/ "Community"/ "VC" / "Auxiliary" / "Build" / "vcvars32.bat"),
+      (api.programFiles / "Microsoft Visual Studio" / "2019"/ "Community"/ "VC" / "Auxiliary" / "Build" / "vcvars32.bat") ++
+      (api.programFiles / "Microsoft Visual Studio" / "2022"/ "Community"/ "VC" / "Auxiliary" / "Build" / "vcvars32.bat"),
       (x: String) => Seq(new VisualStudioSourceHandler(cmd, x), new VisualCSharpSourceHandler(cmd, x)))
 
   private def kotlin(cmd: String): Future[Seq[ModuleHandler]] =
@@ -269,7 +270,7 @@ class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean,
   val commonFlags = "-static" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
     "-O2" :: "-o" :: "Solution." + binaryExt :: "Solution." + ext :: Nil
   val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=67108864" :: commonFlags)
-  val pflags01: Seq[String] = if (c11) "-std=c++14" :: Nil else Nil
+  val pflags01: Seq[String] = if (c11) "-std=c++17" :: Nil else Nil
   val flags: ExecutionArguments = if (cplusplus) ("-x" :: "c++" :: platformFlags) ++ pflags01 else platformFlags
   val sourceName = "Solution." + ext
   val binary = "Solution." + binaryExt

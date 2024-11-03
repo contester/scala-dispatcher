@@ -64,8 +64,10 @@ object DispatcherServer extends App with Logging {
 
   val dispatchers =
     if (config.hasPath("dispatcher.standard")) {
+      val polygonFetcher = PolygonFilter(AuthPolygonMatcher(polygons.values).apply) andThen CachedHttpService
+
       val polygonClient = PolygonClient(
-        PolygonFilter(AuthPolygonMatcher(polygons.values).apply) andThen CachedHttpService,
+        polygonFetcher,
         Client(config.getString("redis")), polygons, simpleDb.get, invokerApi)
 
       for (name <- config.getStringList("dispatcher.standard").asScala; if config.hasPath(name + ".dbnext")) yield {
