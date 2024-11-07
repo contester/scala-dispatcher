@@ -85,7 +85,7 @@ abstract class ScannerCache[KeyType, ValueType, SomeType] extends Function[KeyTy
   def refresh(key: KeyType) = {
     val v = refresh0(key)
     v.onSuccess { _ => localCache.put(key, v) }
-    v.onFailure { x => logger.error("refresh error", x)}
+    v.onFailure { x => logger.error(s"refresh error for $key", x)}
     v
   }
 
