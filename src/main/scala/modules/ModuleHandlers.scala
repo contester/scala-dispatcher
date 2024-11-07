@@ -175,7 +175,7 @@ class PythonModuleHandler(ext: String, val python: String) extends BinaryHandler
     sandbox.getExecutionParameters(
       python, "-O" :: "Solution.py" :: Nil)
       .map(_.setSolution.setMemoryLimit(test.memoryLimit)
-        .setTimeLimitMicros(test.timeLimitMicros))
+        .setTimeLimitMicros((test.timeLimitMicros * sandbox.i.timeLimitScale).toLong))
 
   def moduleTypes: Iterable[String] = ext :: Nil
 }
@@ -192,7 +192,7 @@ class MonoBinaryHandler(val monoPath: String) extends BinaryHandler {
     sandbox.getExecutionParameters(
       monoPath, "solution.exe" :: Nil)
       .map(_.setSolution.setMemoryLimit(test.memoryLimit)
-        .setTimeLimitMicros(test.timeLimitMicros))
+        .setTimeLimitMicros((test.timeLimitMicros * sandbox.i.timeLimitScale).toLong))
 
   def moduleTypes: Iterable[String] = "mono" :: "csexe" :: Nil
 }
@@ -209,7 +209,7 @@ class LinuxBinaryHandler extends BinaryHandler {
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     sandbox.getExecutionParameters((sandbox.path / "Solution.bin").name, Nil)
       .map(_.setSolution.setMemoryLimit(test.memoryLimit)
-        .setTimeLimitMicros(test.timeLimitMicros))
+        .setTimeLimitMicros((test.timeLimitMicros * sandbox.i.timeLimitScale).toLong))
 }
 
 class Win16BinaryHandler extends BinaryHandler {
@@ -226,7 +226,7 @@ class Win16BinaryHandler extends BinaryHandler {
 
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     w16(sandbox, (sandbox.path / "Solution.exe").name)
-      .map(_.setSolution.setTimeLimitMicros(test.timeLimitMicros))
+      .map(_.setSolution.setTimeLimitMicros((test.timeLimitMicros * sandbox.i.timeLimitScale).toLong))
 
   private def w16(sandbox: Sandbox, name: String) =
     sandbox.getExecutionParameters(name, Nil).map(_.win16)
@@ -243,7 +243,7 @@ class Win32BinaryHandler extends BinaryHandler {
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     sandbox.getExecutionParameters((sandbox.path / "Solution.exe").name, Nil)
       .map(_.setSolution.setMemoryLimit(test.memoryLimit)
-        .setTimeLimitMicros(test.timeLimitMicros))
+        .setTimeLimitMicros((test.timeLimitMicros * sandbox.i.timeLimitScale).toLong))
 }
 
 class WineWin32Handler extends BinaryHandler {
@@ -258,7 +258,7 @@ class WineWin32Handler extends BinaryHandler {
   def getSolutionParameters(sandbox: Sandbox, name: String, test: TestLimits) =
     sandbox.getExecutionParameters((sandbox.path / "Solution.exe").name, Nil)
       .map(_.setSolution.setMemoryLimit(test.memoryLimit)
-        .setTimeLimitMicros(test.timeLimitMicros))
+        .setTimeLimitMicros((test.timeLimitMicros * sandbox.i.timeLimitScale).toLong))
 }
 
 
@@ -270,7 +270,7 @@ class GCCSourceHandler(val compiler: String, cplusplus: Boolean, linux: Boolean,
   val commonFlags = "-static" :: "-DONLINE_JUDGE" :: "-lm" :: "-s" ::
     "-O2" :: "-o" :: "Solution." + binaryExt :: "Solution." + ext :: Nil
   val platformFlags = if (linux) ("-m32" :: commonFlags) else ("-Wl,--stack=67108864" :: commonFlags)
-  val pflags01: Seq[String] = if (c11) "-std=c++17" :: Nil else Nil
+  val pflags01: Seq[String] = if (c11) "-std=c++23" :: Nil else Nil
   val flags: ExecutionArguments = if (cplusplus) ("-x" :: "c++" :: platformFlags) ++ pflags01 else platformFlags
   val sourceName = "Solution." + ext
   val binary = "Solution." + binaryExt
@@ -378,7 +378,7 @@ class JavaBinaryHandler(val java: String, linux: Boolean) extends BinaryHandler 
         "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::
         "-Djava.security.manager" :: "-Djava.security.policy=java.policy" :: "-javaagent:contesteragent.jar" ::
         "-jar" :: "Solution.jar" :: Nil))
-      .map(_.setTimeLimitMicros(test.timeLimitMicros).setSolution)
+      .map(_.setTimeLimitMicros((test.timeLimitMicros * sandbox.i.timeLimitScale).toLong).setSolution)
 //  sandbox.getExecutionParameters(
 //    java, getTestLimits(test) ++ ("-XX:-UsePerfData" :: "-Xss64M" :: "-DONLINE_JUDGE=true" ::
 //      "-Duser.language=en" :: "-Duser.region=US" :: "-Duser.variant=US" ::

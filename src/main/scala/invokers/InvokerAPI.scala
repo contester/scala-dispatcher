@@ -19,6 +19,13 @@ class InvokerAPI(clientId: IdentifyResponse, val client: InvokerRpcClient) exten
   val disks = clientId.disks.map(file)
   val programFiles = clientId.programFiles.map(file)
 
+  val timeLimitScale: Double = {
+    if (name.startsWith("invoker24")) {
+      0.5
+    } else { 1 }
+  }
+
+
   override def toString =
     name
 
