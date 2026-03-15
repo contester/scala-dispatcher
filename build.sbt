@@ -13,7 +13,7 @@ javaOptions in run ++= Seq("-XX:+HeapDumpOnOutOfMemoryError", "-Xloggc:gclog.txt
 
 scalaVersion := "2.12.20"
 
-version := "2024.0.1"
+version := "2025.0.2"
 
 maintainer := "i@stingr.net"
 

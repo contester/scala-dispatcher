@@ -155,23 +155,24 @@ class ContestTableScanner(db: JdbcBackend#DatabaseDef, resolver: PolygonClient)
   import scala.concurrent.duration._
 
   override def receive = {
-    case ContestMap(map) =>
-      logger.trace("Contest map received: $map")
+//    case ContestMap(map) =>
+//      //logger.trace(s"Contest map received: $map")
+//      ()
 
     case Rescan =>
       logger.trace("Starting contest rescan")
       val cm = getNewContestMap
       cm.foreach { newMap =>
-        logger.trace(s"Contest rescan done, $newMap")
-        self ! ContestMap(newMap)
+        logger.trace(s"Contest rescan done, contest IDs: ${newMap.keys}")
+        // self ! ContestMap(newMap)
         val f = updateContests(newMap)
           f.onComplete { _ =>
-          logger.trace("Scheduling next rescan")
+          logger.trace("Scheduling next rescan in 1 minute")
           context.system.scheduler.scheduleOnce(60 seconds, self, Rescan)
         }
-        f.failed.foreach(e => logger.error("rescan failed", e))
+        f.failed.foreach(e => logger.error("contests update failed", e))
       }
-      cm.failed.foreach(e => logger.error("rerescan failed", e))
+      cm.failed.foreach(e => logger.error("contest rescan failed", e))
   }
 
   context.system.scheduler.scheduleOnce(0 seconds, self, Rescan)

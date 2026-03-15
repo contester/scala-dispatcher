@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ScalaCompilerConfiguration">
-    <profile name="sbt 1" modules="scala-dispatcher_7367" />
-    <profile name="sbt 2" modules="dispatcher">
+    <option name="separateProdTestSources" value="true" />
+    <profile name="sbt 1" modules="dispatcher,scala-dispatcher_7367" />
+    <profile name="sbt 2" modules="dispatcher.main,dispatcher.test">
       <option name="postfixOps" value="true" />
       <option name="implicitConversions" value="true" />
       <option name="higherKinds" value="true" />

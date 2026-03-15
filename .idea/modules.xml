@@ -3,7 +3,9 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/dispatcher.iml" filepath="$PROJECT_DIR$/.idea/modules/dispatcher.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/dispatcher-build.iml" filepath="$PROJECT_DIR$/.idea/modules/dispatcher-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/dispatcher.dispatcher-build.iml" filepath="$PROJECT_DIR$/.idea/modules/dispatcher.dispatcher-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/scala-dispatcher/dispatcher.main.iml" filepath="$PROJECT_DIR$/.idea/modules/scala-dispatcher/dispatcher.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/scala-dispatcher/dispatcher.test.iml" filepath="$PROJECT_DIR$/.idea/modules/scala-dispatcher/dispatcher.test.iml" />
     </modules>
   </component>
 </project>

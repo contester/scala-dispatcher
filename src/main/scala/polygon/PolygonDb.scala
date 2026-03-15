@@ -56,8 +56,10 @@ case class PolygonProblemFileNotFoundException(problem: PolygonProblemID) extend
 
 case class ContestClient1(service: Service[URI, Option[PolygonResponse]], store: Client)
   extends ScannerCache[PolygonContest, ContestDescription, String]{
-  def parse(key: PolygonContest, content: String) =
-    ContestDescription.parse(XML.loadString(content), key.uri)
+  def parse(key: PolygonContest, content: String) = {
+    logger.info(s"polygon content: $content")
+    ContestDescription.parse(PolygonSharedParser.pp.loadString(content), key.uri)
+  }
 
   def nearGet(contest: PolygonContest): Future[Option[String]] =
     store.get(StringToBuf(contest.redisKey)).map(_.map(BufToString(_)))
@@ -73,10 +75,18 @@ case class ContestClient1(service: Service[URI, Option[PolygonResponse]], store:
     }
 }
 
+object PolygonSharedParser {
+  val f = javax.xml.parsers.SAXParserFactory.newInstance()
+  f.setValidating(false)
+  f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
+  val p = f.newSAXParser()
+  val pp = XML.withSAXParser(p)
+}
+
 case class ProblemClient1(service: Service[URI, Option[PolygonResponse]], store: Client)
   extends ScannerCache[PolygonProblemShort, PolygonProblem, String] {
   def parse(key: PolygonProblemShort, content: String) =
-    PolygonProblem.parse(XML.loadString(content))
+    PolygonProblem.parse(PolygonSharedParser.pp.loadString(content))
 
   override def nearGet(key: PolygonProblemShort): Future[Option[String]] =
     store.get(StringToBuf(key.redisKey)).map(_.map(BufToString(_)))
